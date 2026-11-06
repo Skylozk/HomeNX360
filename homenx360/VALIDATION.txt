@@ -1,10 +1,10 @@
 NXE preview validation:
-- Host C++ checks passed for all original tile targets, NXE row navigation with 0/1/4/9/10/11/100 items, projected touch bounds, and monotonic transition easing.
-- Standalone CardsNX NRO and HOME frontend built natively with devkitA64 GCC 15.2.0.
-- Update includes the unchanged daemon built at pinned upstream source 94f2bd56698fed40f2897131ea09463775840767; exact origin is in BUILD-MANIFEST.json.
-- Build and release workflow YAML parsed; new release publishing has not yet run in Actions.
-- Binary patch reverse-application and git whitespace checks passed.
+- Full build and publish workflow 42218935324 passed for frontend source f4484c290790d68883eb8cb687fcdbb1b1545203 in the original development repository.
+- The standalone app, HOME frontend and matching daemon were built from pinned upstream source 94f2bd56698fed40f2897131ea09463775840767.
+- Host checks passed for controller navigation, empty and long libraries, projected touch targets and transition easing.
+- Published update ZIP CRC, executable signatures, frontend selection and every manifest SHA-256 were checked.
+- The dedicated repository imports the same eight release files using pinned SHA-256 digests, including corresponding source with upstream header aliases.
+- This repository move does not change the native frontend or daemon.
 
-Not performed: physical Switch testing, visual capture or FPS measurement on Switch.
-The external NXE video streams were inaccessible; no timing claims are based on watching them.
-The previously successful GitHub run 42143757646 predates the NXE frontend changes.
+Not performed: physical Switch testing, visual capture or FPS measurement on Switch. Atmosphere 1.12.1 / system 22.5.0 remains unverified.
+External NXE video streams were inaccessible; no motion timing claims are based on watching them.

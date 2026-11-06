@@ -15,7 +15,7 @@ No Xbox Live services, Xbox firmware, proprietary startup video or audio are bun
 
 ## Download
 
-Open [Releases](https://github.com/Skylozk/randomgit/releases) and choose the
+Open [Releases](https://github.com/Skylozk/HomeNX360/releases) and choose the
 NXE preview. Download **HomeNX360-preview.nro** to try the standalone app first.
 **HomeNX360-update.zip** contains the SD card update for an existing HomeNX
 installation. Do not install the GitHub-generated source ZIP as an update.
@@ -24,9 +24,9 @@ Read [installation and rollback instructions](homenx360/INSTALL.md).
 Atmosphere 1.12.1 / system 22.5.0 was reported by the user; this combination
 has **not been tested on hardware here**. Builds are experimental prereleases.
 
-A dedicated HomeNX360 repository is prepared locally, but the connected GitHub
-integration cannot create repositories. Release downloads can live in this
-repository until the account owner creates a separate empty repository.
+This is the dedicated HomeNX360 repository. The initial NXE preview preserves
+the verified build from the original development repository, including its
+checksums, source revision and complete corresponding source archive.
 
 ## Controls
 
@@ -39,8 +39,8 @@ A/B skips the startup. Returning HOME from software does not replay startup.
 
 The **Build HomeNX 360** workflow compiles the standalone app, HOME frontend and
 matching daemon, checks controller navigation, and uploads an artifact. Run it
-manually, after merging the workflow into the default branch, with an optional tag such as `v0.2.1-preview.1` to also publish a
-prerelease after a successful build. The release includes executable manifests,
+from **Actions → Build HomeNX 360 → Run workflow**, with an optional tag such as
+`v0.2.1-preview.1` to also publish a prerelease after a successful build. The release includes executable manifests,
 checksums and the complete prepared source tree with populated submodules.
 
 The readable modified files are in [the overlay](homenx360/overlay/), with a

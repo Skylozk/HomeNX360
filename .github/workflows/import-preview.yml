@@ -1,0 +1,28 @@
+name: Import verified NXE preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    if: github.repository == 'Skylozk/HomeNX360'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download and verify the original published preview
+        run: python3 tools/import_preview_release.py build/imported-preview
+      - name: Publish the identical prerelease in this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_REVISION: f4484c290790d68883eb8cb687fcdbb1b1545203
+        run: |
+          gh release create v0.2.0-preview.1 build/imported-preview/* --target "$SOURCE_REVISION" --prerelease --title 'HomeNX360 — NXE preview' --notes-file build/imported-preview/RELEASE-NOTES.md
