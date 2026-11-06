@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     container: devkitpro/devkita64
     timeout-minutes: 90
+    env:
+      PKG_CONFIG_LIBDIR: /opt/devkitpro/portlibs/switch/lib/pkgconfig:/opt/devkitpro/libnx/lib/pkgconfig
+      PKG_CONFIG_PATH: /opt/devkitpro/portlibs/switch/lib/pkgconfig:/opt/devkitpro/libnx/lib/pkgconfig
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,7 +41,7 @@ jobs:
           /tmp/dashboard360-test
       - name: Configure
         working-directory: build/homenx360-source
-        run: xmake f --yes -p cross -m release -a aarch64 --toolchain=devkita64 --homebrew=n --root
+        run: xmake f --yes -vD -p cross -m release -a aarch64 --toolchain=devkita64 --homebrew=n --root
       - name: Build and embed the loader
         working-directory: build/homenx360-source
         run: |

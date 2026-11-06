@@ -4,11 +4,17 @@ package("switch-pkg")
     set_kind("template")
     set_description("Installed devkitPro Switch package metadata")
 
+    -- Upstream wrappers call their base's load callback explicitly, including
+    -- packages whose only setup is handled by on_fetch below.
+    on_load(function(package)
+    end)
+
     on_fetch(function(package)
         local name = assert(package:data("pkgname"))
         local sdk = os.getenv("DEVKITPRO") or "/opt/devkitpro"
         import("lib.detect.find_tool")
-        local pacman = find_tool("dkp-pacman") or find_tool("pacman")
+        local pacman = find_tool("dkp-pacman", {program = "dkp-pacman"})
+                    or find_tool("pacman", {program = "pacman"})
         if not pacman then return end
         local listing = os.iorunv(pacman.program, {"-Ql", name})
         local includes, linkdirs, links, pcfiles = {}, {}, {}, {}
@@ -19,7 +25,8 @@ package("switch-pkg")
                 if file:endswith("/include/") then table.insert(includes, file) end
                 if file:endswith(".a") then
                     table.insert(linkdirs, path.directory(file))
-                    table.insert(links, path.basename(file):gsub("^lib", ""))
+                    local library = path.basename(file):gsub("^lib", "")
+                    table.insert(links, library)
                 end
                 if file:endswith(".pc") then table.insert(pcfiles, file) end
             end
