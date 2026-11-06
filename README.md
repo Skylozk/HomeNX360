@@ -5,7 +5,8 @@ inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 
 - Vertical channels and overlapping cards with a reflective floor.
 - Animated card focus and vertical channel switching; respects Animations settings.
-- The recorded original NXE-era Xbox 360 startup and a compact Guide.
+- The recorded original NXE-era Xbox 360 startup.
+- A centered NXE Guide with five blades, profile/clock, green selection and animated navigation.
 - Real Switch games, homebrew, friends, media and settings actions.
 
 This is an NXE-inspired adaptation, not an exact reproduction of every Xbox
@@ -14,6 +15,7 @@ The startup uses recorded Xbox media, credited separately from the GPL code.
 Xbox Live services and Xbox firmware are not included.
 [Startup recording, analysis and fidelity limits](homenx360/STARTUP-REFERENCES.md).
 [Dashboard reference research](homenx360/NXE-REFERENCES.md).
+[Guide references and action mapping](homenx360/GUIDE-REFERENCES.md).
 [Startup media notice](homenx360/overlay/media/STARTUP-MEDIA-NOTICE.md).
 
 ## Download
@@ -36,7 +38,9 @@ checksums, source revision and complete corresponding source archive.
 Up/Down or ZL/ZR changes channel. Left/Right or L/R changes card. A activates,
 B returns to My Xbox, Y opens the Guide, + opens game options, and − shows
 notifications. Tap a side card to focus it, then tap again to activate it.
-A/B skips the startup. Returning HOME from software does not replay startup.
+A fresh A/B press skips startup; inherited launch-button presses are ignored.
+Returning HOME from software does not replay it. Look settings include
+**Startup animation** and **Preview startup**, separate from UI animations.
 
 ## Builds and release publishing
 
@@ -71,5 +75,5 @@ python3 tools/package_dashboard360.py --output ../artifacts
 
 Based on [HomeNX by ad3333m](https://github.com/ad3333m/homenx), under
 [GPL-3.0](LICENSE), with [upstream notices](THIRD_PARTY_NOTICES.md) retained.
-Selawik Light is Copyright 2015 Microsoft Corporation, distributed unmodified
+Selawik Light, Regular and Semibold are Copyright 2015 Microsoft Corporation, distributed unmodified
 under its bundled SIL Open Font License. Not affiliated with Nintendo or Microsoft.

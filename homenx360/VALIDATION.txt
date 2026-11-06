@@ -1,11 +1,11 @@
-Original Xbox 360 startup update validation:
-- Inspected original-era MP4 and WebM recordings, a later startup WebM, and the previously supplied Metro clip. References and access limits are in STARTUP-REFERENCES.md.
-- Selected 1920x1080, 288-frame, 30 fps original-era recording. Source SHA-256 and Git blob are recorded.
-- Every lossless WebP frame decoded identically to its Lanczos-resized 1280x720 source RGB pixels; per-frame hashes are included.
-- Recorded sound converted to stereo 44.1 kHz PCM, duration 9.613061 seconds; video bank duration 9.612993 seconds.
-- Host startup parser/timing tests passed, including corrupted magic, invalid frame counts, zero frame-rate denominator, invalid frame ranges and truncated data.
-- Standalone NRO and HOME frontend compiled locally. The complete verified startup bank is embedded in the standalone NRO; HOME reads its copy from the SD assets.
-- Code patch reverse check and workflow YAML parse passed.
+NXE Guide and streaming startup validation:
+- Actual original NXE Guide reference screenshot inspected; panel dimensions and sampled colors recorded in GUIDE-REFERENCES.md. Video references were searched but unavailable streams were not claimed as viewed.
+- Five-blade bounds, up-to-seven-row layouts, all blade/row touch targets and wrap navigation checks passed.
+- Existing dashboard/library navigation tests passed.
+- All 288 startup frames read through the streaming reader matched their original bank bytes. Resident prefix/audio: 1,697,018 bytes; largest encoded frame: 414,166 bytes. The former 55,967,192-byte preload is removed.
+- Startup bank format, frame timing, audio bounds, invalid/truncated data and launch-button skip gate regression checks passed.
+- Startup now has an independent setting, a preview action and visible playback errors.
+- Final standalone NRO and HOME frontend compiled locally. Both executables contain the new Guide and streaming player code.
+- Corresponding code patch reverse check and workflow YAML parse passed.
 
-Not performed: physical Switch testing, visual capture, display calibration, FPS measurement or exact audiovisual latency measurement on Switch. Atmosphere 1.12.1 / system 22.5.0 remains unverified.
-The clip matches the selected recording; no claim of exhaustive video discovery or perfect equivalence to every original console capture is made.
+Hardware: the user reported the v0.3.0 preview startup working. This new Guide/streaming build has not been physically tested. Exact pixel matching, font equivalence, frame pacing and audiovisual latency remain unverified. Selawik is a font substitute; Guide animation timings are approximations.

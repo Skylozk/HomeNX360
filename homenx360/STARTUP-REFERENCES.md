@@ -41,8 +41,9 @@ frame's RGB hash. The source recording and conversion script are included.
 The recorded audio is preserved as 44.1 kHz stereo PCM for the existing mixer.
 
 The clip uses a real-time clock, not HomeNX's animation timer. Background music
-waits until it ends. A/B skips it and stops its sound; Animations and sound
-settings are respected. Returning HOME from software does not replay it.
+waits until it ends. A new A/B press skips it and stops its sound. Buttons held while launching
+are ignored until released. The dedicated Startup animation and sound settings
+are respected; UI transition animations are a separate preference. Returning HOME from software does not replay it.
 Missing/corrupt media fails open to the dashboard rather than trapping HOME.
 
 This matches the supplied recording's imagery and timing at 720p. Its capture
@@ -50,3 +51,13 @@ chain, the original console's rendering, display calibration, actual Switch
 frame pacing, and exact audiovisual latency have not been verified on hardware.
 Frames can be skipped to maintain sound synchronization if decoding falls behind.
 No claim of pixel-perfect equivalence to every Xbox 360 recording is made.
+
+## Streaming update
+
+Frames are now read individually from the bank. The resident header/audio is
+1,697,018 bytes, and the largest encoded frame is 414,166 bytes, instead of
+preloading the entire 55,967,192-byte recording bank. A regression check reads
+all 288 frames through the same streaming reader and compares their encoded
+bytes with the bank. Album/applet mode has limited memory; full-memory homebrew
+launch remains recommended. Playback errors are reported rather than silently
+skipping. Settings > Look > Preview startup allows an immediate playback check.

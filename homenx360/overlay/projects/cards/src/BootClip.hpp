@@ -2,6 +2,8 @@
 #include "BootFormat.hpp"
 #include <nxui/core/Texture.hpp>
 #include <chrono>
+#include <array>
+#include <string_view>
 #include <future>
 #include <memory>
 #include <string>
@@ -14,8 +16,11 @@ public:
     bool update(nxui::GpuDevice& gpu,nxui::Renderer& renderer,bool audioReady,bool sound,int volume);
     void draw(nxui::Renderer& renderer);
     void stop();
+    std::string_view error() const { return m_error.data(); }
 private:
-    struct Data { std::vector<std::uint8_t> bytes; boot360::Bank bank; };
+    using Data=boot360::Stream;
+    std::array<char,128> m_error{};
+    void fail(const char* message);
     struct Frame { unsigned index=0; std::vector<std::uint8_t> pixels; };
     using Clock=std::chrono::steady_clock;
     std::future<std::shared_ptr<Data>> m_loading;

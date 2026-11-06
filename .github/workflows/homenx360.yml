@@ -46,6 +46,8 @@ jobs:
           /tmp/dashboard360-test
           g++ -std=c++20 tests/startup360_test.cpp -o /tmp/startup360-test
           /tmp/startup360-test projects/cards/romfs/boot/nxe360.bin
+          g++ -std=c++20 tests/guide360_test.cpp -o /tmp/guide360-test
+          /tmp/guide360-test
       - name: Configure
         working-directory: build/homenx360-source
         run: xmake f --yes -vD -p cross -m release -a aarch64 --toolchain=devkita64 --homebrew=n --root
@@ -70,6 +72,7 @@ jobs:
           python3 tools/package_source360.py build/homenx360-source build/artifacts/HomeNX360-source.zip
           cp homenx360/NXE-REFERENCES.md build/artifacts/NXE-REFERENCES.md
           cp homenx360/STARTUP-REFERENCES.md build/artifacts/STARTUP-REFERENCES.md
+          cp homenx360/GUIDE-REFERENCES.md build/artifacts/GUIDE-REFERENCES.md
           cp homenx360/RELEASE-NOTES.md build/artifacts/RELEASE-NOTES.md
           cd build/artifacts
           sha256sum * > SHA256SUMS.txt

@@ -6,19 +6,14 @@
 #include <webp/decode.h>
 #include <switch.h>
 #include <fstream>
+#include <cstdio>
 namespace cards {
 BootClip::~BootClip() { stop(); }
 void BootClip::open(const std::string& path) {
-    m_active=true;m_playing=false;m_opened=Clock::now();
+    m_active=true;m_playing=false;m_error[0]=0;m_opened=Clock::now();
     m_loading=std::async(std::launch::async,[path]() {
         nxui::moveToWorkerCores();svcSetThreadPriority(CUR_THREAD_HANDLE,0x3B);
-        auto data=std::make_shared<Data>();
-        std::ifstream file(path,std::ios::binary|std::ios::ate);
-        const auto size=file.tellg();
-        if (!file || size<40 || size>96*1024*1024) throw std::runtime_error("Startup asset missing or invalid");
-        data->bytes.resize(static_cast<size_t>(size));file.seekg(0);
-        if (!file.read(reinterpret_cast<char*>(data->bytes.data()),size)) throw std::runtime_error("Startup asset truncated");
-        data->bank=boot360::parse(data->bytes);
+        auto data=std::make_shared<Data>(path);
         return data;
     });
 }
@@ -28,8 +23,9 @@ void BootClip::queue(unsigned index) {
     m_decoding=std::async(std::launch::async,[data,index]() {
         nxui::moveToWorkerCores();svcSetThreadPriority(CUR_THREAD_HANDLE,0x3B);
         const auto& b=data->bank;
-        const auto* src=data->bytes.data()+b.offsets[index];
-        const auto size=b.offsets[index+1]-b.offsets[index];
+        const auto encoded=data->frame(index);
+        const auto* src=encoded.data();
+        const auto size=encoded.size();
         int w=0,h=0;
         if (!WebPGetInfo(src,size,&w,&h) || w!=int(b.width) || h!=int(b.height)) throw std::runtime_error("Invalid startup image");
         Frame frame;frame.index=index;frame.pixels.resize(size_t(w)*h*4);
@@ -69,7 +65,7 @@ bool BootClip::update(nxui::GpuDevice& gpu,nxui::Renderer& renderer,bool audioRe
             auto texture=std::make_unique<nxui::Texture>();
             nxui::GpuDevice::EssentialScope essential;
             if (!texture->loadFromPixels(gpu,renderer,m_ready.pixels.data(),m_data->bank.width,m_data->bank.height)) {
-                stop();return false;
+                fail("Not enough video memory for startup");return false;
             }
             m_texture=std::move(texture);m_shown=m_ready.index;m_haveReady=false;m_ready.pixels.clear();
             if (starting) {
@@ -80,7 +76,12 @@ bool BootClip::update(nxui::GpuDevice& gpu,nxui::Renderer& renderer,bool audioRe
             queue(std::max(wanted,m_shown)+1);
         }
         return true;
-    } catch (const std::exception&) { stop();return false; }
+    } catch (const std::bad_alloc&) { fail("Not enough memory for startup");return false; }
+      catch (const std::exception& error) { fail(error.what());return false; }
+}
+void BootClip::fail(const char* message) {
+    std::snprintf(m_error.data(),m_error.size(),"%s",message);
+    stop();
 }
 void BootClip::draw(nxui::Renderer& renderer) {
     renderer.drawRect({0,0,1280,720},{0,0,0,1});

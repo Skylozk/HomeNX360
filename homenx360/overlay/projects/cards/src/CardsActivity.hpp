@@ -74,9 +74,26 @@ private:
     float m_dashCard = 0.f, m_dashPrevCard = 0.f, m_dashBoot = 1.f;
     int m_dashPrevTile = 0, m_dashPrevPage = 0, m_dashGuideRow = 0;
     bool m_dashGuide = false;
+    int m_guideTab=2,m_guideView=0;
+    std::array<int,5> m_guideSels{};
+    float m_guideIn=0.f,m_guideTabIn=1.f,m_guideRowAt=0.f,m_guidePos=2.f,m_guideFrom=2.f;
+    bool m_guideClosing=false;
+    std::string m_guideName="Player",m_guideNote;
+    nxui::Font m_fGuide;
+    TTF_Font* m_guideTtf=nullptr;
+    std::unordered_map<std::string,std::unique_ptr<nxui::Texture>> m_guideLabels;
+    std::vector<std::string> guideRows();
+    void openGuide();
+    void closeGuide(bool animate);
+    void guideTab(int delta);
+    void guideBack();
+    void guideLabel(nxui::Renderer& r,const std::string& label,float cx,float cy,nxui::Color tint);
+    void drawGuide(nxui::Renderer& r);
     void dashMove(int delta);
     void dashGuideActivate();
     BootClip m_bootClip;
+    boot360::SkipGate m_bootSkip;
+    bool m_bootPreview=false;
     void drawDashBoot(nxui::Renderer& r);
     int dashCount() const;
     bool dashLibrary() const;
@@ -286,6 +303,7 @@ private:
     struct Pixels {
         std::vector<std::uint8_t> rgba;
         int w = 0, h = 0;
+        std::string label;
     };
     std::unique_ptr<nxui::Texture> m_wallTex;
     std::future<Pixels> m_wallJob;

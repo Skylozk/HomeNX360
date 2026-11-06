@@ -128,20 +128,6 @@ void CardsActivity::dashMove(int delta) {
     m_audio.play("navigation");
 }
 
-void CardsActivity::dashGuideActivate() {
-    m_dashGuide = false;
-    switch (m_dashGuideRow) {
-        case 0: dashTab(1); break;
-        case 1: dashTab(2); break;
-        case 2: dashTab(3); break;
-        case 3: dashSearch(); break;
-        case 4: openPagePicker(); break;
-        case 5: openQuick(); break;
-        case 6: openSettings(); break;
-        case 7: openPower(); break;
-    }
-}
-
 bool CardsActivity::dashInput(float dt) {
     if (m_moving) return false;
     auto& in = app().input();
@@ -157,15 +143,24 @@ bool CardsActivity::dashInput(float dt) {
     if (down) m_dashRepeat=0.30f;
     else if (held && (m_dashRepeat-=dt)<=0.f) { down=true; m_dashRepeat=0.13f; }
     if (m_dashGuide) {
-        if (in.isDown(B::B) || in.isDown(B::Y)) { m_dashGuide=false; return true; }
-        if (down && direction>=2) {
-            m_dashGuideRow=nxe::nextCard(m_dashGuideRow,direction==2?-1:1,8);
-            m_audio.play("navigation");
+        if (m_guideClosing) return true;
+        if (in.isDown(B::B)) { guideBack();return true; }
+        if (in.isDown(B::Y)) { closeGuide(false);dashTab(1);return true; }
+        if (in.isDown(B::X)) { closeGuide(false);openUsers();return true; }
+        if (in.isDown(B::Plus)) { closeGuide(true);return true; }
+        if (in.isDown(B::L)) guideTab(-1);
+        if (in.isDown(B::R)) guideTab(1);
+        if (down) {
+            if (direction<2) guideTab(direction==0?-1:1);
+            else {
+                m_dashGuideRow=nxe::nextCard(m_dashGuideRow,direction==2?-1:1,guideRows().size());
+                m_guideNote.clear();m_audio.play("navigation");
+            }
         }
         if (in.isDown(B::A)) dashGuideActivate();
         return true;
     }
-    if (in.isDown(B::Y)) { m_dashGuide=true; m_dashGuideRow=0; m_audio.play("show_modal"); return true; }
+    if (in.isDown(B::Y)) { openGuide();return true; }
     if (in.isDown(B::ZL)) dashTab(m_dashTab-1);
     if (in.isDown(B::ZR)) dashTab(m_dashTab+1);
     if (in.isDown(B::L)) dashMove(-1);
@@ -189,9 +184,26 @@ bool CardsActivity::dashTouch() {
     if (!in.touchUp()) return in.isTouching();
     const float x=in.touchX(), y=in.touchY();
     if (m_dashGuide) {
-        if (x>510) { m_dashGuide=false; return true; }
-        const int row=static_cast<int>((y-184)/52);
-        if (y>=184 && row>=0 && row<8) { m_dashGuideRow=row; dashGuideActivate(); }
+        if (m_guideClosing) return true;
+        const float gy=y-(1.f-nxe::ease(m_guideIn))*18.f;
+        auto body=guide360::blade(m_guideTab,m_guideTab);
+        const float horizontal=(m_guidePos-m_guideTab)*38.f;body.x+=horizontal;
+        const int tab=body.contains(x,gy)?-1:guide360::hitBlade(x,gy,m_guideTab);
+        if (tab>=0) { guideTab(tab-m_guideTab);return true; }
+        if (gy>=146 && gy<194 && x>=body.x+249 && x<body.x+297) {
+            closeGuide(false);openUsers();return true;
+        }
+        const int row=guide360::hitRow(x-horizontal,gy,m_guideTab,guideRows().size());
+        if (row>=0) { m_dashGuideRow=row;dashGuideActivate();return true; }
+        if (gy>=523 && gy<557 && x>=body.x && x<body.x+body.w) {
+            const float local=x-body.x;
+            if (local<108) dashGuideActivate();
+            else if(local<204) guideBack();
+            else if(local<340) { closeGuide(false);openUsers(); }
+            else { closeGuide(false);dashTab(1); }
+            return true;
+        }
+        if (x<286 || x>986 || gy<146 || gy>560) closeGuide(true);
         return true;
     }
     if (y<85 && x>1050) { openUsers(); return true; }
@@ -216,7 +228,8 @@ bool CardsActivity::dashTouch() {
             }
         }
     }
-    if (y>630 && x<260) { m_dashGuide=true; m_dashGuideRow=0; }
+    if (y>640 && x<200) dashActivate();
+    else if (y>640 && x>=240 && x<360) openGuide();
     return true;
 }
 
@@ -344,19 +357,6 @@ void CardsActivity::drawDashboard(nxui::Renderer& r) {
     textMid(r,m_fBody,"Select",108,672,dark,0.9f);
     textMid(r,m_fBody,"Y  Guide    B  My Xbox    ZL / ZR  Channels",264,672,dark,0.8f);
     textMid(r,m_fBody,"HomeNX 360",1050,672,dark,0.9f);
-    if (m_dashGuide) {
-        r.drawRect({0,0,1280,720},{0,0,0,0.5f});
-        r.drawRect({36,45,490,640},{0,0,0,0.25f});
-        r.drawGradientRect({24,32,480,640},{0.97f,0.98f,0.95f,1},{0.71f,0.76f,0.67f,1});
-        r.drawGradientRect({24,32,480,108},{0.49f,0.72f,0.15f,1},green);
-        textMid(r,m_fDashNav,"HomeNX Guide",64,88,kWhite,0.9f);
-        static const char* rows[]={"My Xbox","Friends","Game Library","Search","My Pins / Pages","Quick Settings","System Settings","Turn Off Console"};
-        for (int i=0;i<8;++i) {
-            const float y=184.f+i*52;
-            if (i==m_dashGuideRow) r.drawGradientRect({38,y,452,50},green,{0.19f,0.45f,0.01f,1});
-            textMid(r,m_fBody,rows[i],66,y+25,i==m_dashGuideRow?kWhite:dark,1.f);
-        }
-        textMid(r,m_fBody,"A  Select     B / Y  Close",64,624,dark,0.85f);
-    }
+    if (m_dashGuide) drawGuide(r);
     if (m_leaving) r.drawRect({0,0,1280,720},{0,0,0,std::min(1.f,m_leaveT*1.5f)});
 }

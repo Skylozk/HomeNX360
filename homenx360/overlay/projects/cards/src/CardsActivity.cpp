@@ -1,5 +1,6 @@
 #include "CardsActivity.hpp"
 #include "Dashboard360.hpp"
+#include "GuideLayout.hpp"
 
 #include "social/NotificationLog.hpp"
 
@@ -587,7 +588,8 @@ bool CardsActivity::onCreate() {
     if (!m_fTitle.load(gpu, ren, f7, 30) || !m_fPlay.load(gpu, ren, f7, 24) || !m_fLabel.load(gpu, ren, f6, 22)
         || !m_fPill.load(gpu, ren, f6, 19) || !m_fBody.load(gpu, ren, f5, 17) || !m_fBadge.load(gpu, ren, f7, 15)
         || !m_fCount.load(gpu, ren, f7, 21)
-        || !(m_fDashNav.load(gpu, ren, fonts + "selawkl.ttf", 30) || m_fDashNav.load(gpu, ren, f5, 30)))
+        || !(m_fDashNav.load(gpu, ren, fonts + "selawkl.ttf", 30) || m_fDashNav.load(gpu, ren, f5, 30))
+        || !(m_fGuide.load(gpu,ren,fonts+"selawk.ttf",26) || m_fGuide.load(gpu,ren,f5,26)))
         return false;
     const std::uint64_t tIcons = armGetSystemTick();
     // The buttons' icons: read and decoded off the screen's thread (a first-draw read
@@ -754,7 +756,7 @@ bool CardsActivity::onCreate() {
         return out;
     });
     m_retryIn = 1.2f; // the shelf is covered by degrees, starting right away
-    if (m_dashBoot>0.f && m_settings.motion) m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
+    if (m_dashBoot>0.f && m_settings.startupClip) m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
     else m_dashBoot=0.f;
     m_intro = m_settings.motion ? 0.f : 1.f; // the cards rise in (the game's picture lets go first: see onUpdate)
 #ifdef SWITCHU_MENU
@@ -831,6 +833,8 @@ void CardsActivity::perfLine(const std::string& line) {
 
 void CardsActivity::onDestroy() {
     m_bootClip.stop();
+    m_guideLabels.clear();
+    if (m_guideTtf) { TTF_CloseFont(m_guideTtf);m_guideTtf=nullptr; }
     m_jobsStop = true; // the network jobs stop early: closing must not wait them out
     {
         std::lock_guard<std::mutex> lk(m_mu);
@@ -963,6 +967,10 @@ void CardsActivity::loadAvatar() {
         Pixels out;
         AccountProfile profile{};
         if (accountUidIsValid(&uid) && R_SUCCEEDED(accountGetProfile(&profile, uid))) {
+            AccountProfileBase base{};
+            AccountUserData userData{};
+            if (R_SUCCEEDED(accountProfileGet(&profile,&userData,&base)))
+                out.label.assign(base.nickname,std::find(base.nickname,base.nickname+sizeof(base.nickname),'\0'));
             u32 size = 0;
             if (R_SUCCEEDED(accountProfileGetImageSize(&profile, &size)) && size > 0) {
                 std::vector<std::uint8_t> jpeg(size);
@@ -5580,6 +5588,13 @@ void CardsActivity::buildSettings() {
         [this, save]() { m_settings.players = !m_settings.players; save(); }, "Green dots on games played online now"));
     look.rows.push_back(toggle("Animations", [this]() { return m_settings.motion; },
         [this, save]() { m_settings.motion = !m_settings.motion; save(); }));
+    look.rows.push_back(toggle("Startup animation", [this]() { return m_settings.startupClip; },
+        [this, save]() { m_settings.startupClip=!m_settings.startupClip;save(); },
+        "Play the original Xbox 360 startup when the app starts"));
+    look.rows.push_back(action("Preview startup", [this]() {
+        m_bootClip.stop();m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
+        m_dashBoot=1.f;m_bootSkip={};m_bootPreview=true;m_audio.setMusic(false,m_settings.musicVolume);
+    }));
     m_sheet.push_back(std::move(look));
 
     // The lock screen: its own tab (HomeNX's lock screen shares the password and the picture).
@@ -7255,7 +7270,7 @@ void CardsActivity::keepTextCachesSmall() {
         s_lastTrim = now;
         f.trimCache(124, 3u << 20); // (trimCache scales its byte limit too)
     };
-    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount, &m_fDashNav}) keep(*f);
+    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount, &m_fDashNav, &m_fGuide}) keep(*f);
 #ifdef SWITCHU_MENU
     // Discord, Social and the keyboard draw with HomeNX's font: nothing trimmed
     // its cache, and once full no new channel names or messages showed.
@@ -7771,6 +7786,7 @@ void CardsActivity::onUpdate(float dt) {
     }
     if (m_avatarJob.valid() && m_avatarJob.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
         const Pixels px = m_avatarJob.get();
+        m_guideName=px.label.empty()?"Player":px.label;
         auto tex = std::make_unique<nxui::Texture>();
         if (!px.rgba.empty() && tex->loadFromPixels(app().gpu(), app().renderer(), px.rgba.data(), px.w, px.h))
             m_avatar = std::move(tex);
@@ -7827,10 +7843,14 @@ void CardsActivity::onUpdate(float dt) {
     }
     perfMark("pictures");
     m_audio.update();
-    if (m_dashBoot>0.f && !m_settings.motion) m_bootClip.stop();
+    if (m_dashBoot>0.f && !m_settings.startupClip && !m_bootPreview) m_bootClip.stop();
     const bool bootActive=m_bootClip.update(app().gpu(),app().renderer(),m_audio.ready(),m_settings.sounds,m_settings.soundVolume);
-    if (m_dashBoot>0.f && (!bootActive || !m_settings.motion)) {
-        m_dashBoot=0.f;
+    if (m_dashBoot>0.f && (!bootActive || (!m_settings.startupClip && !m_bootPreview))) {
+        if (!m_bootClip.error().empty()) {
+            perfLine("startup: "+std::string(m_bootClip.error()));
+            say(std::string(m_bootClip.error())+". Try the full-memory homebrew launcher.");
+        }
+        m_dashBoot=0.f;m_bootPreview=false;
         m_audio.setMusic(homeMusic(),m_settings.musicVolume);
     }
     perfMark("music");
@@ -7844,6 +7864,14 @@ void CardsActivity::onUpdate(float dt) {
     if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
     step(m_pageIn, 0.38f);
     step(m_dashIn, 0.30f);
+    if (m_dashGuide) {
+        const float stepGuide=motion?std::min(dt,1.f/30.f)/0.18f:1.f;
+        m_guideIn=std::clamp(m_guideIn+(m_guideClosing?-stepGuide:stepGuide),0.f,1.f);
+        if (m_guideClosing && m_guideIn<=0.f) { m_dashGuide=false;m_guideClosing=false; }
+        step(m_guideTabIn,0.16f);
+        m_guidePos=m_guideFrom+(m_guideTab-m_guideFrom)*nxe::ease(m_guideTabIn);
+        m_guideRowAt+=(m_dashGuideRow-m_guideRowAt)*(motion?std::min(1.f,dt*24.f):1.f);
+    }
     if (dashLibrary()) m_dashTile = sel();
     m_dashCard += (static_cast<float>(m_dashTile)-m_dashCard) * (motion ? std::min(1.f,dt*15.f) : 1.f);
     if (std::abs(m_dashCard-m_dashTile)<0.002f) m_dashCard=static_cast<float>(m_dashTile);
@@ -8366,8 +8394,10 @@ void CardsActivity::onUpdate(float dt) {
 
     perfMark("HomeNX's screens, leaving");
     if (m_dashBoot > 0.f) {
-        if (app().input().isDown(nxui::Button::A) || app().input().isDown(nxui::Button::B)) {
-            m_bootClip.stop();m_dashBoot=0.f;m_audio.setMusic(homeMusic(),m_settings.musicVolume);
+        auto& bootInput=app().input();
+        if (m_bootSkip.consume(bootInput.isHeld(nxui::Button::A)||bootInput.isHeld(nxui::Button::B),
+                              bootInput.isDown(nxui::Button::A)||bootInput.isDown(nxui::Button::B))) {
+            m_bootClip.stop();m_dashBoot=0.f;m_bootPreview=false;m_audio.setMusic(homeMusic(),m_settings.musicVolume);
         }
         return;
     }
@@ -10039,5 +10069,6 @@ void CardsActivity::updateStorage() {
 }
 
 #include "Dashboard360.inc"
+#include "Guide360.inc"
 
 } // namespace cards

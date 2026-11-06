@@ -54,7 +54,7 @@ explicitly in their manifest. Native compilation is not a console test.
 | ZL/ZR | Previous/next channel |
 | A | Activate the selected card |
 | B | Return to My Xbox; close the Guide |
-| Y | Open/close the Guide |
+| Y | Open Guide; inside it, return to Dashboard |
 | + on a game card | Game options, artwork and collections |
 | X | Ask to close running software |
 | − | Notifications |
@@ -62,7 +62,8 @@ explicitly in their manifest. Native compilation is not a console test.
 
 The Guide also opens quick settings, search and power controls. Libraries use
 one continuous carousel. During the startup, A/B skips the animation. The
-existing **Animations** setting disables startup and channel/card animations.
+**Startup animation** setting in Look controls the clip. **Animations** controls
+channel/card/Guide transitions separately. **Preview startup** replays the clip.
 
 ## Undo
 
@@ -75,3 +76,9 @@ The normal Nintendo HOME menu returns. Keep your backup to reinstall HomeNX.
 
 See the root README for the pinned source preparation script and GitHub Actions
 workflow. The source overlay is in `homenx360/overlay/`.
+
+## Guide controls
+
+Inside the Guide, Left/Right or L/R changes blades; Up/Down moves between rows.
+A selects, B returns/closes, X opens profiles, Y returns to Dashboard, and Plus
+also closes it. The Media blade controls the real HomeNX music player.

@@ -42,16 +42,17 @@ index cd6ec69..ea90cbf 100644
      void update();                      // the next track once one ends
      void setMusic(bool on, int volume); // volume 0..100
 diff --git a/projects/cards/src/CardsActivity.cpp b/projects/cards/src/CardsActivity.cpp
-index 6aa39c4..a46fa73 100644
+index 6aa39c4..412d5f3 100644
 --- a/projects/cards/src/CardsActivity.cpp
 +++ b/projects/cards/src/CardsActivity.cpp
-@@ -1,4 +1,5 @@
+@@ -1,4 +1,6 @@
  #include "CardsActivity.hpp"
 +#include "Dashboard360.hpp"
++#include "GuideLayout.hpp"
  
  #include "social/NotificationLog.hpp"
  
-@@ -499,6 +500,7 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
+@@ -499,6 +501,7 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
      m_startSuspended = suspendedId;
      m_startRunning = appRunning;
      m_atBoot = atBoot;
@@ -59,7 +60,7 @@ index 6aa39c4..a46fa73 100644
      m_fromApplet = fromApplet;
  #else
      (void)suspendedId;
-@@ -535,6 +537,8 @@ bool CardsActivity::onCreate() {
+@@ -535,6 +538,8 @@ bool CardsActivity::onCreate() {
      nxui::GpuDevice::setImageBudget(std::clamp<u64>(total / 4, 64ull << 20, 160ull << 20));
  
      m_settings.load();
@@ -68,17 +69,18 @@ index 6aa39c4..a46fa73 100644
      setLanguage(m_settings.language);
      m_boxArt = m_settings.boxArt;
      m_titleArt = m_settings.titlePics;
-@@ -582,7 +586,8 @@ bool CardsActivity::onCreate() {
+@@ -582,7 +587,9 @@ bool CardsActivity::onCreate() {
      const std::string f5 = fonts + "Inter-500.ttf", f6 = fonts + "Inter-600.ttf", f7 = fonts + "Inter-700.ttf";
      if (!m_fTitle.load(gpu, ren, f7, 30) || !m_fPlay.load(gpu, ren, f7, 24) || !m_fLabel.load(gpu, ren, f6, 22)
          || !m_fPill.load(gpu, ren, f6, 19) || !m_fBody.load(gpu, ren, f5, 17) || !m_fBadge.load(gpu, ren, f7, 15)
 -        || !m_fCount.load(gpu, ren, f7, 21))
 +        || !m_fCount.load(gpu, ren, f7, 21)
-+        || !(m_fDashNav.load(gpu, ren, fonts + "selawkl.ttf", 30) || m_fDashNav.load(gpu, ren, f5, 30)))
++        || !(m_fDashNav.load(gpu, ren, fonts + "selawkl.ttf", 30) || m_fDashNav.load(gpu, ren, f5, 30))
++        || !(m_fGuide.load(gpu,ren,fonts+"selawk.ttf",26) || m_fGuide.load(gpu,ren,f5,26)))
          return false;
      const std::uint64_t tIcons = armGetSystemTick();
      // The buttons' icons: read and decoded off the screen's thread (a first-draw read
-@@ -694,7 +699,7 @@ bool CardsActivity::onCreate() {
+@@ -694,7 +701,7 @@ bool CardsActivity::onCreate() {
  
      // Always the first card on the list, in the sort you chose (it was put back to Title here
      // at every start, so Last Played never stuck).
@@ -87,24 +89,26 @@ index 6aa39c4..a46fa73 100644
      sortGames(m_settings.sort, false);
      for (int& s : m_sels) s = 0;
      m_scroll = 0.f;
-@@ -749,6 +754,8 @@ bool CardsActivity::onCreate() {
+@@ -749,6 +756,8 @@ bool CardsActivity::onCreate() {
          return out;
      });
      m_retryIn = 1.2f; // the shelf is covered by degrees, starting right away
-+    if (m_dashBoot>0.f && m_settings.motion) m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
++    if (m_dashBoot>0.f && m_settings.startupClip) m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
 +    else m_dashBoot=0.f;
      m_intro = m_settings.motion ? 0.f : 1.f; // the cards rise in (the game's picture lets go first: see onUpdate)
  #ifdef SWITCHU_MENU
      if (m_atBoot && m_settings.lockScreen) lock();
-@@ -823,6 +830,7 @@ void CardsActivity::perfLine(const std::string& line) {
+@@ -823,6 +832,9 @@ void CardsActivity::perfLine(const std::string& line) {
  }
  
  void CardsActivity::onDestroy() {
 +    m_bootClip.stop();
++    m_guideLabels.clear();
++    if (m_guideTtf) { TTF_CloseFont(m_guideTtf);m_guideTtf=nullptr; }
      m_jobsStop = true; // the network jobs stop early: closing must not wait them out
      {
          std::lock_guard<std::mutex> lk(m_mu);
-@@ -904,7 +912,7 @@ const Game* CardsActivity::current() {
+@@ -904,7 +916,7 @@ const Game* CardsActivity::current() {
  
  void CardsActivity::applyTheme() {
      m_theme = nxui::Theme::dark();
@@ -113,7 +117,7 @@ index 6aa39c4..a46fa73 100644
      m_theme.panelBorder = nxui::Color(1.f, 1.f, 1.f, 0.16f);
      m_theme.panelHighlight = nxui::Color(1.f, 1.f, 1.f, 0.05f);
      m_theme.iconDefault = nxui::Color(1.f, 1.f, 1.f, 0.06f);
-@@ -915,7 +923,7 @@ void CardsActivity::applyTheme() {
+@@ -915,7 +927,7 @@ void CardsActivity::applyTheme() {
  }
  
  nxui::Color CardsActivity::accent(float a) const {
@@ -122,7 +126,18 @@ index 6aa39c4..a46fa73 100644
  }
  
  nxui::Color CardsActivity::glassTint(float a) const {
-@@ -1288,6 +1296,8 @@ void CardsActivity::wantArt() {
+@@ -955,6 +967,10 @@ void CardsActivity::loadAvatar() {
+         Pixels out;
+         AccountProfile profile{};
+         if (accountUidIsValid(&uid) && R_SUCCEEDED(accountGetProfile(&profile, uid))) {
++            AccountProfileBase base{};
++            AccountUserData userData{};
++            if (R_SUCCEEDED(accountProfileGet(&profile,&userData,&base)))
++                out.label.assign(base.nickname,std::find(base.nickname,base.nickname+sizeof(base.nickname),'\0'));
+             u32 size = 0;
+             if (R_SUCCEEDED(accountProfileGetImageSize(&profile, &size)) && size > 0) {
+                 std::vector<std::uint8_t> jpeg(size);
+@@ -1288,6 +1304,8 @@ void CardsActivity::wantArt() {
          jobs.push_back({page[(size_t)i], what, m_artGen});
      };
      const int s = sel();
@@ -131,7 +146,7 @@ index 6aa39c4..a46fa73 100644
      add(s, kCard);
      add(s, kBackground);
      add(s, kIcon); // (a title picture can mean a search online: after the pictures you see)
-@@ -1631,6 +1641,9 @@ void CardsActivity::goToPage(int page, int dir) {
+@@ -1631,6 +1649,9 @@ void CardsActivity::goToPage(int page, int dir) {
      if (m_moving) finishMove(true);
      if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
      m_page = page;
@@ -141,7 +156,7 @@ index 6aa39c4..a46fa73 100644
      m_pageDir = dir > 0 ? 1 : -1;
      m_pageIn = m_settings.motion ? 0.f : 1.f;
      m_detailIn = m_pageIn;
-@@ -2042,7 +2055,7 @@ void CardsActivity::comeBack() {
+@@ -2042,7 +2063,7 @@ void CardsActivity::comeBack() {
      m_leaveT = 0.f;
      m_leaveThen = nullptr;
      m_intro = std::min(m_intro, 0.6f); // the cards rise back in
@@ -150,7 +165,7 @@ index 6aa39c4..a46fa73 100644
  }
  
  void CardsActivity::play() {
-@@ -4674,7 +4687,7 @@ void CardsActivity::quickChange(int row, int delta) {
+@@ -4674,7 +4695,7 @@ void CardsActivity::quickChange(int row, int delta) {
      takeFacts(true);
      if (row == kQMusic) {
          m_settings.musicVolume = std::clamp(m_settings.musicVolume + delta * 10, 0, 100);
@@ -159,7 +174,7 @@ index 6aa39c4..a46fa73 100644
      } else if (row == kQSounds) {
          m_settings.soundVolume = std::clamp(m_settings.soundVolume + delta * 10, 0, 100);
          m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
-@@ -4877,7 +4890,7 @@ void CardsActivity::updateMusic() {
+@@ -4877,7 +4898,7 @@ void CardsActivity::updateMusic() {
              spotifyDo(Spotify::Cmd::Volume, std::clamp(std::max(0, m_sp.volume) + (right ? 5 : -5), 0, 100));
          } else if (left || right) {
              m_settings.musicVolume = std::clamp(m_settings.musicVolume + (right ? 5 : -5), 0, 100);
@@ -168,7 +183,7 @@ index 6aa39c4..a46fa73 100644
              m_settings.save();
          }
      } else {
-@@ -5061,7 +5074,7 @@ void CardsActivity::updateSpotifyQr() {
+@@ -5061,7 +5082,7 @@ void CardsActivity::updateSpotifyQr() {
      if (state == Spotify::Login::Done) {
          m_spQrOpen = false;
          m_settings.spotify = true; // signed in: the music player shows it
@@ -177,7 +192,21 @@ index 6aa39c4..a46fa73 100644
          m_settings.save();
          m_audio.play("activation");
          say("Signed in: Spotify is in the music player now");
-@@ -5639,7 +5652,7 @@ void CardsActivity::buildSettings() {
+@@ -5567,6 +5588,13 @@ void CardsActivity::buildSettings() {
+         [this, save]() { m_settings.players = !m_settings.players; save(); }, "Green dots on games played online now"));
+     look.rows.push_back(toggle("Animations", [this]() { return m_settings.motion; },
+         [this, save]() { m_settings.motion = !m_settings.motion; save(); }));
++    look.rows.push_back(toggle("Startup animation", [this]() { return m_settings.startupClip; },
++        [this, save]() { m_settings.startupClip=!m_settings.startupClip;save(); },
++        "Play the original Xbox 360 startup when the app starts"));
++    look.rows.push_back(action("Preview startup", [this]() {
++        m_bootClip.stop();m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
++        m_dashBoot=1.f;m_bootSkip={};m_bootPreview=true;m_audio.setMusic(false,m_settings.musicVolume);
++    }));
+     m_sheet.push_back(std::move(look));
+ 
+     // The lock screen: its own tab (HomeNX's lock screen shares the password and the picture).
+@@ -5639,7 +5667,7 @@ void CardsActivity::buildSettings() {
      Section sound{"Sound", "music", {}};
      sound.rows.push_back(toggle("Music", [this]() { return m_settings.music; }, [this, save]() {
          m_settings.music = !m_settings.music;
@@ -186,16 +215,16 @@ index 6aa39c4..a46fa73 100644
          save();
      }, "HomeNX's HOME music"));
      sound.rows.push_back(slider("Music volume", [this]() { return m_settings.musicVolume; }, [this, save](int v) {
-@@ -7242,7 +7255,7 @@ void CardsActivity::keepTextCachesSmall() {
+@@ -7242,7 +7270,7 @@ void CardsActivity::keepTextCachesSmall() {
          s_lastTrim = now;
          f.trimCache(124, 3u << 20); // (trimCache scales its byte limit too)
      };
 -    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount}) keep(*f);
-+    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount, &m_fDashNav}) keep(*f);
++    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount, &m_fDashNav, &m_fGuide}) keep(*f);
  #ifdef SWITCHU_MENU
      // Discord, Social and the keyboard draw with HomeNX's font: nothing trimmed
      // its cache, and once full no new channel names or messages showed.
-@@ -7744,13 +7757,13 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7744,13 +7772,13 @@ void CardsActivity::onUpdate(float dt) {
      // song were a stall on frames 2-3) at 1.5 s, the avatar at 3 s, and the
      // icons decoded on a thread meanwhile.
      if (m_startStage < 3) {
@@ -211,7 +240,15 @@ index 6aa39c4..a46fa73 100644
          } else if (m_startStage == 2 && m_time > 3.f) {
              m_startStage = 3;
              loadAvatar();
-@@ -7794,6 +7807,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7758,6 +7786,7 @@ void CardsActivity::onUpdate(float dt) {
+     }
+     if (m_avatarJob.valid() && m_avatarJob.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+         const Pixels px = m_avatarJob.get();
++        m_guideName=px.label.empty()?"Player":px.label;
+         auto tex = std::make_unique<nxui::Texture>();
+         if (!px.rgba.empty() && tex->loadFromPixels(app().gpu(), app().renderer(), px.rgba.data(), px.w, px.h))
+             m_avatar = std::move(tex);
+@@ -7794,6 +7823,7 @@ void CardsActivity::onUpdate(float dt) {
          app().gpu().endTextureUploadBatch();
      }
      m_time += dt;
@@ -219,44 +256,58 @@ index 6aa39c4..a46fa73 100644
      updateNotices(dt);
      updateStorage();
      perfMark("start-up");
-@@ -7813,6 +7827,12 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7813,6 +7843,16 @@ void CardsActivity::onUpdate(float dt) {
      }
      perfMark("pictures");
      m_audio.update();
-+    if (m_dashBoot>0.f && !m_settings.motion) m_bootClip.stop();
++    if (m_dashBoot>0.f && !m_settings.startupClip && !m_bootPreview) m_bootClip.stop();
 +    const bool bootActive=m_bootClip.update(app().gpu(),app().renderer(),m_audio.ready(),m_settings.sounds,m_settings.soundVolume);
-+    if (m_dashBoot>0.f && (!bootActive || !m_settings.motion)) {
-+        m_dashBoot=0.f;
++    if (m_dashBoot>0.f && (!bootActive || (!m_settings.startupClip && !m_bootPreview))) {
++        if (!m_bootClip.error().empty()) {
++            perfLine("startup: "+std::string(m_bootClip.error()));
++            say(std::string(m_bootClip.error())+". Try the full-memory homebrew launcher.");
++        }
++        m_dashBoot=0.f;m_bootPreview=false;
 +        m_audio.setMusic(homeMusic(),m_settings.musicVolume);
 +    }
      perfMark("music");
      const bool motion = m_settings.motion;
      // A lagged frame doesn't skip through the animations: they take real time
-@@ -7823,6 +7843,10 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7823,6 +7863,18 @@ void CardsActivity::onUpdate(float dt) {
      // rise hidden behind a still frame.
      if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
      step(m_pageIn, 0.38f);
 +    step(m_dashIn, 0.30f);
++    if (m_dashGuide) {
++        const float stepGuide=motion?std::min(dt,1.f/30.f)/0.18f:1.f;
++        m_guideIn=std::clamp(m_guideIn+(m_guideClosing?-stepGuide:stepGuide),0.f,1.f);
++        if (m_guideClosing && m_guideIn<=0.f) { m_dashGuide=false;m_guideClosing=false; }
++        step(m_guideTabIn,0.16f);
++        m_guidePos=m_guideFrom+(m_guideTab-m_guideFrom)*nxe::ease(m_guideTabIn);
++        m_guideRowAt+=(m_dashGuideRow-m_guideRowAt)*(motion?std::min(1.f,dt*24.f):1.f);
++    }
 +    if (dashLibrary()) m_dashTile = sel();
 +    m_dashCard += (static_cast<float>(m_dashTile)-m_dashCard) * (motion ? std::min(1.f,dt*15.f) : 1.f);
 +    if (std::abs(m_dashCard-m_dashTile)<0.002f) m_dashCard=static_cast<float>(m_dashTile);
      step(m_detailIn, 0.25f);
      step(m_sheen, 0.8f);
      step(m_menuIn, 0.2f);
-@@ -8341,6 +8365,12 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8341,6 +8393,14 @@ void CardsActivity::onUpdate(float dt) {
      }
  
      perfMark("HomeNX's screens, leaving");
 +    if (m_dashBoot > 0.f) {
-+        if (app().input().isDown(nxui::Button::A) || app().input().isDown(nxui::Button::B)) {
-+            m_bootClip.stop();m_dashBoot=0.f;m_audio.setMusic(homeMusic(),m_settings.musicVolume);
++        auto& bootInput=app().input();
++        if (m_bootSkip.consume(bootInput.isHeld(nxui::Button::A)||bootInput.isHeld(nxui::Button::B),
++                              bootInput.isDown(nxui::Button::A)||bootInput.isDown(nxui::Button::B))) {
++            m_bootClip.stop();m_dashBoot=0.f;m_bootPreview=false;m_audio.setMusic(homeMusic(),m_settings.musicVolume);
 +        }
 +        return;
 +    }
      if (updateLock(dt)) return;
      perfMark("lock screen");
      if (!m_settings.introDone && !m_introOpen && m_time > 0.8f && !m_leaving) { // the first time
-@@ -8370,7 +8400,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8370,7 +8430,7 @@ void CardsActivity::onUpdate(float dt) {
          updateTask();
          return;
      }
@@ -265,7 +316,7 @@ index 6aa39c4..a46fa73 100644
  
      if (m_pickOpen) { // (over Settings too)
          updatePicker();
-@@ -8425,6 +8455,8 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8425,6 +8485,8 @@ void CardsActivity::onUpdate(float dt) {
          return;
      }
  
@@ -274,7 +325,7 @@ index 6aa39c4..a46fa73 100644
      // Left / right: repeating while held.
      const bool left = in.isHeld(B::DLeft) || in.isHeld(B::LStickL) || in.isHeld(B::RStickL);
      const bool right = in.isHeld(B::DRight) || in.isHeld(B::LStickR) || in.isHeld(B::RStickR);
-@@ -8527,51 +8559,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
+@@ -8527,51 +8589,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
      m_drawMarkTick = armGetSystemTick();
      m_drawMarkMs = 0.f;
      m_drawMarkName = "";
@@ -329,7 +380,7 @@ index 6aa39c4..a46fa73 100644
      drawStep("draw: the menus");
      drawSheet(r);
      drawPopup(r); // (over Settings)
-@@ -8621,8 +8611,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
+@@ -8621,8 +8641,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
  }
  
  void CardsActivity::frost(nxui::Renderer& r, const nxui::Rect& rect, float radius, const nxui::Color& tint) {
@@ -340,7 +391,7 @@ index 6aa39c4..a46fa73 100644
  }
  
  void CardsActivity::glassCircle(nxui::Renderer& r, float cx, float cy, float d, bool focused, const char* name,
-@@ -8783,6 +8773,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
+@@ -8783,6 +8803,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
  }
  
  bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
@@ -358,7 +409,7 @@ index 6aa39c4..a46fa73 100644
      const float rel = static_cast<float>(index) - m_scroll;
      // A page switch slides the row in from the side.
      float slide = (1.f - easeOut(m_pageIn)) * 160.f * static_cast<float>(m_pageDir);
-@@ -9310,7 +9311,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
+@@ -9310,7 +9341,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
      // The control on the right, and the room it leaves for the label.
      const float right = row.x + row.width - 18.f;
      float control = 0.f;
@@ -367,15 +418,16 @@ index 6aa39c4..a46fa73 100644
      switch (item.kind) {
          case MenuItem::Toggle: {
              const float on = item.level ? item.level() : 0.f;
-@@ -10037,4 +10038,6 @@ void CardsActivity::updateStorage() {
+@@ -10037,4 +10068,7 @@ void CardsActivity::updateStorage() {
      }
  }
  
 +#include "Dashboard360.inc"
++#include "Guide360.inc"
 +
  } // namespace cards
 diff --git a/projects/cards/src/CardsActivity.hpp b/projects/cards/src/CardsActivity.hpp
-index 0fed0fa..d5176f8 100644
+index 0fed0fa..d18972d 100644
 --- a/projects/cards/src/CardsActivity.hpp
 +++ b/projects/cards/src/CardsActivity.hpp
 @@ -1,5 +1,6 @@
@@ -385,7 +437,7 @@ index 0fed0fa..d5176f8 100644
  #include "Library.hpp"
  #include "Mtp.hpp"
  #include "Settings.hpp"
-@@ -63,6 +64,31 @@ public:
+@@ -63,6 +64,48 @@ public:
      nxui::Widget* focusRoot() override; // HomeNX's screens when one is open; else it reads the buttons itself
  
  private:
@@ -399,9 +451,26 @@ index 0fed0fa..d5176f8 100644
 +    float m_dashCard = 0.f, m_dashPrevCard = 0.f, m_dashBoot = 1.f;
 +    int m_dashPrevTile = 0, m_dashPrevPage = 0, m_dashGuideRow = 0;
 +    bool m_dashGuide = false;
++    int m_guideTab=2,m_guideView=0;
++    std::array<int,5> m_guideSels{};
++    float m_guideIn=0.f,m_guideTabIn=1.f,m_guideRowAt=0.f,m_guidePos=2.f,m_guideFrom=2.f;
++    bool m_guideClosing=false;
++    std::string m_guideName="Player",m_guideNote;
++    nxui::Font m_fGuide;
++    TTF_Font* m_guideTtf=nullptr;
++    std::unordered_map<std::string,std::unique_ptr<nxui::Texture>> m_guideLabels;
++    std::vector<std::string> guideRows();
++    void openGuide();
++    void closeGuide(bool animate);
++    void guideTab(int delta);
++    void guideBack();
++    void guideLabel(nxui::Renderer& r,const std::string& label,float cx,float cy,nxui::Color tint);
++    void drawGuide(nxui::Renderer& r);
 +    void dashMove(int delta);
 +    void dashGuideActivate();
 +    BootClip m_bootClip;
++    boot360::SkipGate m_bootSkip;
++    bool m_bootPreview=false;
 +    void drawDashBoot(nxui::Renderer& r);
 +    int dashCount() const;
 +    bool dashLibrary() const;
@@ -417,6 +486,43 @@ index 0fed0fa..d5176f8 100644
      enum class Zone { Top, Cards, Bottom };
      enum Page { kGames, kHomebrew, kNintendo, kMedia, kPageCount };
      int pageCount() const { return kPageCount + static_cast<int>(m_settings.customPages.size()); }
+@@ -260,6 +303,7 @@ private:
+     struct Pixels {
+         std::vector<std::uint8_t> rgba;
+         int w = 0, h = 0;
++        std::string label;
+     };
+     std::unique_ptr<nxui::Texture> m_wallTex;
+     std::future<Pixels> m_wallJob;
+diff --git a/projects/cards/src/Settings.hpp b/projects/cards/src/Settings.hpp
+index b7d5dff..a23c64c 100644
+--- a/projects/cards/src/Settings.hpp
++++ b/projects/cards/src/Settings.hpp
+@@ -39,6 +39,7 @@ struct Settings {
+     bool sounds = true;
+     int soundVolume = 80;     // 0..100
+     bool players = true;      // Nextendo's green dots
++    bool startupClip = true; // recorded startup, independent of UI transitions
+     bool motion = true;       // animations (off: things move straight to place)
+     bool bgMotion = true;     // the background art drifts
+     int startPage = 0;        // (old: the page order's first is where it opens now)
+@@ -116,6 +117,7 @@ struct Settings {
+             soundVolume = j.value("soundVolume", soundVolume);
+             players = j.value("players", players);
+             motion = j.value("motion", motion);
++            startupClip = j.value("startupClip",startupClip);
+             bgMotion = j.value("bgMotion", bgMotion);
+             startPage = j.value("startPage", startPage);
+             pageOrder = j.value("pageOrder", pageOrder);
+@@ -186,7 +188,7 @@ struct Settings {
+     void save() const {
+         nlohmann::json j = {{"music", music}, {"musicVolume", musicVolume}, {"shuffle", shuffle}, {"repeat", repeat},
+                             {"sounds", sounds}, {"soundVolume", soundVolume}, {"players", players},
+-                            {"motion", motion}, {"bgMotion", bgMotion}, {"startPage", startPage}, {"pageOrder", pageOrder},
++                            {"motion", motion}, {"startupClip", startupClip}, {"bgMotion", bgMotion}, {"startPage", startPage}, {"pageOrder", pageOrder},
+                             {"sortOrder", sort}, {"haze", haze}, {"boxArt", boxArt}, {"accent", accent},
+                             {"glass", glass}, {"launchStyle", launchStyle}, {"clock24", clock24}, {"showFree", showFree}, {"showTemp", showTemp}, {"titlePics", titlePics}, {"mediaIn", mediaIn}, {"mediaOut", mediaOut}, {"gamesIn", gamesIn}, {"gamesOut", gamesOut}, {"fullCards", fullCards}, {"nroHash", nroHash}, {"titles", titles}, {"askUser", askUser}, {"panelApp", panelApp},
+                             {"lockScreen", lockScreen}, {"lockMusic", lockMusic}, {"keepHomebrew", keepHomebrew}, {"hbPath", hbPath}, {"hbHost", hbHost}, {"hiddenCards", hiddenCards}, {"sheetBack", sheetBack}, {"sheetBackRow", sheetBackRow}, {"hiddenPages", hiddenPages}, {"spotify", spotify}, {"picturesAt", picturesAt}, {"achSeenAt", achSeenAt},{"introDone", introDone}, {"wallpaper", wallpaper}, {"names", names},
 diff --git a/xmake.lua b/xmake.lua
 index d9ca0a5..d8987fb 100644
 --- a/xmake.lua
@@ -440,6 +546,74 @@ index d9ca0a5..d8987fb 100644
          os.cp(path.join(os.projectdir(), "projects/cards/romfs/icons/*.png"), path.join(romfs_dir, "icons"))
          os.mkdir(path.join(romfs_dir, "certs"))
          os.cp(path.join(os.projectdir(), "projects/cards/romfs/certs/*.pem"), path.join(romfs_dir, "certs"))
+diff --git a/GUIDE-REFERENCES.md b/GUIDE-REFERENCES.md
+new file mode 100644
+index 0000000..6eb66eb
+--- /dev/null
++++ b/GUIDE-REFERENCES.md
+@@ -0,0 +1,62 @@
++# NXE Guide references and validation
++
++The user requested the original NXE-era Xbox 360 Guide. This update replaces the
++previous tall left-hand shortcut panel with the centered five-blade layout.
++
++## Images inspected
++
++The principal reference is the [original NXE Guide screenshot published with
++Rodrigo Copetti's Xbox 360 analysis](https://www.copetti.org/writings/consoles/xbox-360/#the-new-xbox-experience-2008):
++[direct image](https://www.copetti.org/images/consoles/xbox360/screenshots/nxe/guide.3199fe644a358860acfba56768106022a6312f587ab6f6b45098e97fecb73c26.jpg).
++The article attributes its NXE captures to Jacob R TWO and Stubbertville.
++The inspected image shows Stubbertville's offline Guide, including the music
++player behind it and a Halo 3: ODST play shortcut.
++
++Measured against that 1276×720 image, the native 1280×720 layout uses:
++
++- A 548×316 slate-blue active panel at y=200, profile panel x=362.
++- Four narrow silver blades at approximately 38 pixels each, arranged around
++  the selected Marketplace, Games, Profile, Media or Settings blade.
++- A 472×41 green highlight and 43-pixel row spacing, starting at y=212.
++- A vertical profile label centered near y=355; avatar and clock above.
++- A/B/X/Y prompts below, with the original colored circular button treatment.
++
++An [Xenia Dashboard screenshot](https://github.com/mfrafael/xenia-dashboard/blob/main/docs/screenshots/nxe-guide.jpg)
++was also downloaded and inspected. It showed a different simplified popup and
++was rejected as the visual target. The current Metro Guide was distinguished
++from the blue NXE design in the article's comparison images/search results.
++
++## Videos researched
++
++- [Xbox 360 NXE dashboard, 2.0.8498.0, by Stubbertville](https://www.youtube.com/watch?v=ucJoSC29UL8): the article's cited capture source.
++- [Exploring the Xbox 360 NXE dashboard in 2021, by Jacob R TWO](https://www.youtube.com/watch?v=4Twtx8vC3fY): the article's other cited source.
++- [New Xbox Experience Guide, ApFaqTech](https://www.youtube.com/watch?v=NEvJSMt8KsM): period Guide walkthrough located through search.
++- [PluginUI NXE Guide demonstration](https://www.reddit.com/r/360hacks/comments/1o7qukm/pluginui_nxe_guide_beta_progress_update/): a modern console restoration project, located through search; its video endpoint returned HTTP 403.
++
++These video streams were not downloaded or viewed here. No animation timings
++are claimed to have been measured from them. Panel opening/closing (0.18 s),
++blade switching (0.16 s) and row easing are chosen approximations.
++
++## Switch behavior
++
++Your real Switch profile name, image, clock and battery replace the sample
++account and hardware values. Marketplace entries route to Nintendo eShop or
++installed media apps and say so. Xbox LIVE shows an unavailable message;
++no Xbox sign-in, friends, party service or gamerscore is fabricated.
++
++Quick Launch gives access to games, homebrew, pins, search, friends and
++notifications. The Games blade opens existing HomeNX library and achievement
++features. Media controls operate HomeNX's actual music player. Settings routes
++to profile, preferences, system, storage, audio, network and power functions.
++These action labels and destinations adapt the Guide to Switch capabilities;
++not every original Xbox service or submenu is reproduced.
++
++Y opens the Guide; inside it, Left/Right or L/R changes blades, Up/Down moves,
++A selects, B returns/closes, X opens Switch profiles and Y returns to the
++Dashboard. Plus also closes the Guide. Touch follows the same animated panel
++positions and row/blade rectangles.
++
++The shapes, proportions and sampled panel/highlight colors follow the reference.
++Selawik is a font substitute under the SIL Open Font License, not the console's
++original font. Physical Switch rendering, frame pacing and an exact pixel
++comparison with Xbox hardware have not been performed.
 diff --git a/NXE-REFERENCES.md b/NXE-REFERENCES.md
 new file mode 100644
 index 0000000..dcc2837
@@ -507,10 +681,10 @@ index 0000000..dcc2837
 +frame verification and remaining hardware limits.
 diff --git a/README-360.md b/README-360.md
 new file mode 100644
-index 0000000..320e27f
+index 0000000..7d3028c
 --- /dev/null
 +++ b/README-360.md
-@@ -0,0 +1,77 @@
+@@ -0,0 +1,84 @@
 +# HomeNX 360 — experimental dashboard fork
 +
 +Based on `ad3333m/homenx` commit `94f2bd56698fed40f2897131ea09463775840767`.
@@ -567,7 +741,7 @@ index 0000000..320e27f
 +| ZL/ZR | Previous/next channel |
 +| A | Activate the selected card |
 +| B | Return to My Xbox; close the Guide |
-+| Y | Open/close the Guide |
++| Y | Open Guide; inside it, return to Dashboard |
 +| + on a game card | Game options, artwork and collections |
 +| X | Ask to close running software |
 +| − | Notifications |
@@ -575,7 +749,8 @@ index 0000000..320e27f
 +
 +The Guide also opens quick settings, search and power controls. Libraries use
 +one continuous carousel. During the startup, A/B skips the animation. The
-+existing **Animations** setting disables startup and channel/card animations.
++**Startup animation** setting in Look controls the clip. **Animations** controls
++channel/card/Guide transitions separately. **Preview startup** replays the clip.
 +
 +## Undo
 +
@@ -588,12 +763,18 @@ index 0000000..320e27f
 +
 +See the root README for the pinned source preparation script and GitHub Actions
 +workflow. The source overlay is in `homenx360/overlay/`.
++
++## Guide controls
++
++Inside the Guide, Left/Right or L/R changes blades; Up/Down moves between rows.
++A selects, B returns/closes, X opens profiles, Y returns to Dashboard, and Plus
++also closes it. The Media blade controls the real HomeNX music player.
 diff --git a/STARTUP-REFERENCES.md b/STARTUP-REFERENCES.md
 new file mode 100644
-index 0000000..59f952d
+index 0000000..8693ff9
 --- /dev/null
 +++ b/STARTUP-REFERENCES.md
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,63 @@
 +# Original Xbox 360 startup research
 +
 +The selected target is the original pre-Kinect (2005–2010) animation used with
@@ -637,8 +818,9 @@ index 0000000..59f952d
 +The recorded audio is preserved as 44.1 kHz stereo PCM for the existing mixer.
 +
 +The clip uses a real-time clock, not HomeNX's animation timer. Background music
-+waits until it ends. A/B skips it and stops its sound; Animations and sound
-+settings are respected. Returning HOME from software does not replay it.
++waits until it ends. A new A/B press skips it and stops its sound. Buttons held while launching
++are ignored until released. The dedicated Startup animation and sound settings
++are respected; UI transition animations are a separate preference. Returning HOME from software does not replay it.
 +Missing/corrupt media fails open to the dashboard rather than trapping HOME.
 +
 +This matches the supplied recording's imagery and timing at 720p. Its capture
@@ -646,6 +828,16 @@ index 0000000..59f952d
 +frame pacing, and exact audiovisual latency have not been verified on hardware.
 +Frames can be skipped to maintain sound synchronization if decoding falls behind.
 +No claim of pixel-perfect equivalence to every Xbox 360 recording is made.
++
++## Streaming update
++
++Frames are now read individually from the bank. The resident header/audio is
++1,697,018 bytes, and the largest encoded frame is 414,166 bytes, instead of
++preloading the entire 55,967,192-byte recording bank. A regression check reads
++all 288 frames through the same streaming reader and compares their encoded
++bytes with the bank. Album/applet mode has limited memory; full-memory homebrew
++launch remains recommended. Playback errors are reported rather than silently
++skipping. Settings > Look > Preview startup allows an immediate playback check.
 diff --git a/media/STARTUP-MEDIA-NOTICE.md b/media/STARTUP-MEDIA-NOTICE.md
 new file mode 100644
 index 0000000..5049317
@@ -1158,6 +1350,500 @@ index 0000000..ac8fdb9
 +DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 +FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 +OTHER DEALINGS IN THE FONT SOFTWARE.
+diff --git a/projects/cards/romfs/fonts/selawk.ttf b/projects/cards/romfs/fonts/selawk.ttf
+new file mode 100644
+index 0000000000000000000000000000000000000000..736bac3c210abb56f305c0c2307da8e002cd6c91
+GIT binary patch
+literal 44224
+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
+
+literal 0
+HcmV?d00001
+
 diff --git a/projects/cards/romfs/fonts/selawkl.ttf b/projects/cards/romfs/fonts/selawkl.ttf
 new file mode 100644
 index 0000000000000000000000000000000000000000..cbfaaf99cc89bdfcb964aaaba1ef0bc105923588
@@ -1651,12 +2337,511 @@ GD&)VU2tQE(
 literal 0
 HcmV?d00001
 
+diff --git a/projects/cards/romfs/fonts/selawksb.ttf b/projects/cards/romfs/fonts/selawksb.ttf
+new file mode 100644
+index 0000000000000000000000000000000000000000..5ec501d8e3e30086e0d7069db5eab2751fef23ed
+GIT binary patch
+literal 44192
+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
+zh&2(%B2Gno7x6gKE;2Z>P2|AH>5+>fH%0D^JQ?{Y$~!6w0xUqoi9A$ZgI>oGBchM!
+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
+XNW;VIpK^;^3QYQX?pdM-b7B7j$H*n$
+
+literal 0
+HcmV?d00001
+
 diff --git a/projects/cards/src/BootClip.cpp b/projects/cards/src/BootClip.cpp
 new file mode 100644
-index 0000000..ff7553a
+index 0000000..ed1aab6
 --- /dev/null
 +++ b/projects/cards/src/BootClip.cpp
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,95 @@
 +#include "BootClip.hpp"
 +#include <nxui/core/Renderer.hpp>
 +#include <nxui/core/ThreadPool.hpp>
@@ -1665,19 +2850,14 @@ index 0000000..ff7553a
 +#include <webp/decode.h>
 +#include <switch.h>
 +#include <fstream>
++#include <cstdio>
 +namespace cards {
 +BootClip::~BootClip() { stop(); }
 +void BootClip::open(const std::string& path) {
-+    m_active=true;m_playing=false;m_opened=Clock::now();
++    m_active=true;m_playing=false;m_error[0]=0;m_opened=Clock::now();
 +    m_loading=std::async(std::launch::async,[path]() {
 +        nxui::moveToWorkerCores();svcSetThreadPriority(CUR_THREAD_HANDLE,0x3B);
-+        auto data=std::make_shared<Data>();
-+        std::ifstream file(path,std::ios::binary|std::ios::ate);
-+        const auto size=file.tellg();
-+        if (!file || size<40 || size>96*1024*1024) throw std::runtime_error("Startup asset missing or invalid");
-+        data->bytes.resize(static_cast<size_t>(size));file.seekg(0);
-+        if (!file.read(reinterpret_cast<char*>(data->bytes.data()),size)) throw std::runtime_error("Startup asset truncated");
-+        data->bank=boot360::parse(data->bytes);
++        auto data=std::make_shared<Data>(path);
 +        return data;
 +    });
 +}
@@ -1687,8 +2867,9 @@ index 0000000..ff7553a
 +    m_decoding=std::async(std::launch::async,[data,index]() {
 +        nxui::moveToWorkerCores();svcSetThreadPriority(CUR_THREAD_HANDLE,0x3B);
 +        const auto& b=data->bank;
-+        const auto* src=data->bytes.data()+b.offsets[index];
-+        const auto size=b.offsets[index+1]-b.offsets[index];
++        const auto encoded=data->frame(index);
++        const auto* src=encoded.data();
++        const auto size=encoded.size();
 +        int w=0,h=0;
 +        if (!WebPGetInfo(src,size,&w,&h) || w!=int(b.width) || h!=int(b.height)) throw std::runtime_error("Invalid startup image");
 +        Frame frame;frame.index=index;frame.pixels.resize(size_t(w)*h*4);
@@ -1728,7 +2909,7 @@ index 0000000..ff7553a
 +            auto texture=std::make_unique<nxui::Texture>();
 +            nxui::GpuDevice::EssentialScope essential;
 +            if (!texture->loadFromPixels(gpu,renderer,m_ready.pixels.data(),m_data->bank.width,m_data->bank.height)) {
-+                stop();return false;
++                fail("Not enough video memory for startup");return false;
 +            }
 +            m_texture=std::move(texture);m_shown=m_ready.index;m_haveReady=false;m_ready.pixels.clear();
 +            if (starting) {
@@ -1739,7 +2920,12 @@ index 0000000..ff7553a
 +            queue(std::max(wanted,m_shown)+1);
 +        }
 +        return true;
-+    } catch (const std::exception&) { stop();return false; }
++    } catch (const std::bad_alloc&) { fail("Not enough memory for startup");return false; }
++      catch (const std::exception& error) { fail(error.what());return false; }
++}
++void BootClip::fail(const char* message) {
++    std::snprintf(m_error.data(),m_error.size(),"%s",message);
++    stop();
 +}
 +void BootClip::draw(nxui::Renderer& renderer) {
 +    renderer.drawRect({0,0,1280,720},{0,0,0,1});
@@ -1753,14 +2939,16 @@ index 0000000..ff7553a
 +} // namespace cards
 diff --git a/projects/cards/src/BootClip.hpp b/projects/cards/src/BootClip.hpp
 new file mode 100644
-index 0000000..320f2d2
+index 0000000..be50fdd
 --- /dev/null
 +++ b/projects/cards/src/BootClip.hpp
-@@ -0,0 +1,32 @@
+@@ -0,0 +1,37 @@
 +#pragma once
 +#include "BootFormat.hpp"
 +#include <nxui/core/Texture.hpp>
 +#include <chrono>
++#include <array>
++#include <string_view>
 +#include <future>
 +#include <memory>
 +#include <string>
@@ -1773,8 +2961,11 @@ index 0000000..320f2d2
 +    bool update(nxui::GpuDevice& gpu,nxui::Renderer& renderer,bool audioReady,bool sound,int volume);
 +    void draw(nxui::Renderer& renderer);
 +    void stop();
++    std::string_view error() const { return m_error.data(); }
 +private:
-+    struct Data { std::vector<std::uint8_t> bytes; boot360::Bank bank; };
++    using Data=boot360::Stream;
++    std::array<char,128> m_error{};
++    void fail(const char* message);
 +    struct Frame { unsigned index=0; std::vector<std::uint8_t> pixels; };
 +    using Clock=std::chrono::steady_clock;
 +    std::future<std::shared_ptr<Data>> m_loading;
@@ -1791,17 +2982,26 @@ index 0000000..320f2d2
 +} // namespace cards
 diff --git a/projects/cards/src/BootFormat.hpp b/projects/cards/src/BootFormat.hpp
 new file mode 100644
-index 0000000..3add3fe
+index 0000000..713b448
 --- /dev/null
 +++ b/projects/cards/src/BootFormat.hpp
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,75 @@
 +#pragma once
 +#include <algorithm>
 +#include <cmath>
 +#include <cstdint>
 +#include <stdexcept>
 +#include <vector>
++#include <fstream>
++#include <string>
 +namespace cards::boot360 {
++struct SkipGate {
++    bool armed=false;
++    bool consume(bool held,bool down) {
++        if (!held) armed=true;
++        return armed && down;
++    }
++};
 +struct Bank {
 +    std::uint32_t width=0,height=0,num=0,den=0,count=0,durationUs=0,audioSize=0,audioOffset=0;
 +    std::vector<std::uint32_t> offsets;
@@ -1810,9 +3010,9 @@ index 0000000..3add3fe
 +    }
 +    double duration() const { return durationUs/1000000.; }
 +};
-+inline Bank parse(const std::vector<std::uint8_t>& bytes) {
++inline Bank parsePrefix(const std::vector<std::uint8_t>& bytes,std::uint64_t fileSize) {
 +    const char magic[8]={'N','X','B','O','O','T','1','\0'};
-+    if (bytes.size()<40 || bytes.size()>96u*1024u*1024u || !std::equal(magic,magic+8,bytes.begin()))
++    if (bytes.size()<40 || fileSize>96u*1024u*1024u || !std::equal(magic,magic+8,bytes.begin()))
 +        throw std::runtime_error("Invalid startup bank");
 +    auto u32=[&](size_t p) { return std::uint32_t(bytes.at(p)) | std::uint32_t(bytes.at(p+1))<<8 |
 +        std::uint32_t(bytes.at(p+2))<<16 | std::uint32_t(bytes.at(p+3))<<24; };
@@ -1823,16 +3023,43 @@ index 0000000..3add3fe
 +        b.durationUs<1 || b.durationUs>20000000 || std::abs(b.duration()-double(b.count)*b.den/b.num)>0.1)
 +        throw std::runtime_error("Unsupported startup bank");
 +    b.audioOffset=40+(b.count+1)*4;
-+    if (std::uint64_t(b.audioOffset)+b.audioSize>=bytes.size() || u32(36)!=b.audioOffset+b.audioSize)
++    if (std::uint64_t(b.audioOffset)+b.audioSize>=fileSize ||
++        std::uint64_t(b.audioOffset)+b.audioSize>bytes.size() || u32(36)!=b.audioOffset+b.audioSize)
 +        throw std::runtime_error("Invalid startup table");
 +    for (unsigned i=0;i<=b.count;++i) b.offsets.push_back(u32(40+i*4));
-+    if (b.offsets.front()!=b.audioOffset+b.audioSize || b.offsets.back()!=bytes.size())
++    if (b.offsets.front()!=b.audioOffset+b.audioSize || b.offsets.back()!=fileSize)
 +        throw std::runtime_error("Invalid startup bounds");
 +    for (unsigned i=0;i<b.count;++i)
 +        if (b.offsets[i+1]<=b.offsets[i] || b.offsets[i+1]-b.offsets[i]>8u*1024u*1024u)
 +            throw std::runtime_error("Invalid startup frame");
 +    return b;
 +}
++inline Bank parse(const std::vector<std::uint8_t>& bytes) { return parsePrefix(bytes,bytes.size()); }
++// Only the table and PCM audio stay resident. One encoded frame is read per job.
++struct Stream {
++    std::ifstream file;
++    std::vector<std::uint8_t> bytes;
++    Bank bank;
++    explicit Stream(const std::string& path):file(path,std::ios::binary|std::ios::ate) {
++        const auto size=file.tellg();
++        if (!file || size<40 || size>96*1024*1024) throw std::runtime_error("Startup clip is missing or incomplete");
++        bytes.resize(40);file.seekg(0);
++        if (!file.read(reinterpret_cast<char*>(bytes.data()),40)) throw std::runtime_error("Startup header is incomplete");
++        const std::uint32_t prefix=std::uint32_t(bytes[36])|std::uint32_t(bytes[37])<<8|
++            std::uint32_t(bytes[38])<<16|std::uint32_t(bytes[39])<<24;
++        if (prefix<40 || prefix>5u*1024u*1024u || prefix>=size) throw std::runtime_error("Invalid startup header size");
++        bytes.resize(prefix);
++        if (!file.read(reinterpret_cast<char*>(bytes.data()+40),prefix-40)) throw std::runtime_error("Startup audio is incomplete");
++        bank=parsePrefix(bytes,static_cast<std::uint64_t>(size));
++    }
++    std::vector<std::uint8_t> frame(unsigned index) {
++        if (index>=bank.count) throw std::runtime_error("Invalid startup frame index");
++        std::vector<std::uint8_t> encoded(bank.offsets[index+1]-bank.offsets[index]);
++        file.clear();file.seekg(bank.offsets[index]);
++        if (!file.read(reinterpret_cast<char*>(encoded.data()),encoded.size())) throw std::runtime_error("Could not read startup frame");
++        return encoded;
++    }
++};
 +} // namespace cards::boot360
 diff --git a/projects/cards/src/Dashboard360.hpp b/projects/cards/src/Dashboard360.hpp
 new file mode 100644
@@ -1890,7 +3117,7 @@ index 0000000..4c5e392
 +} // namespace cards::dash360
 diff --git a/projects/cards/src/Dashboard360.inc b/projects/cards/src/Dashboard360.inc
 new file mode 100644
-index 0000000..8ba8af7
+index 0000000..171ce28
 --- /dev/null
 +++ b/projects/cards/src/Dashboard360.inc
 @@ -0,0 +1,362 @@
@@ -2024,20 +3251,6 @@ index 0000000..8ba8af7
 +    m_audio.play("navigation");
 +}
 +
-+void CardsActivity::dashGuideActivate() {
-+    m_dashGuide = false;
-+    switch (m_dashGuideRow) {
-+        case 0: dashTab(1); break;
-+        case 1: dashTab(2); break;
-+        case 2: dashTab(3); break;
-+        case 3: dashSearch(); break;
-+        case 4: openPagePicker(); break;
-+        case 5: openQuick(); break;
-+        case 6: openSettings(); break;
-+        case 7: openPower(); break;
-+    }
-+}
-+
 +bool CardsActivity::dashInput(float dt) {
 +    if (m_moving) return false;
 +    auto& in = app().input();
@@ -2053,15 +3266,24 @@ index 0000000..8ba8af7
 +    if (down) m_dashRepeat=0.30f;
 +    else if (held && (m_dashRepeat-=dt)<=0.f) { down=true; m_dashRepeat=0.13f; }
 +    if (m_dashGuide) {
-+        if (in.isDown(B::B) || in.isDown(B::Y)) { m_dashGuide=false; return true; }
-+        if (down && direction>=2) {
-+            m_dashGuideRow=nxe::nextCard(m_dashGuideRow,direction==2?-1:1,8);
-+            m_audio.play("navigation");
++        if (m_guideClosing) return true;
++        if (in.isDown(B::B)) { guideBack();return true; }
++        if (in.isDown(B::Y)) { closeGuide(false);dashTab(1);return true; }
++        if (in.isDown(B::X)) { closeGuide(false);openUsers();return true; }
++        if (in.isDown(B::Plus)) { closeGuide(true);return true; }
++        if (in.isDown(B::L)) guideTab(-1);
++        if (in.isDown(B::R)) guideTab(1);
++        if (down) {
++            if (direction<2) guideTab(direction==0?-1:1);
++            else {
++                m_dashGuideRow=nxe::nextCard(m_dashGuideRow,direction==2?-1:1,guideRows().size());
++                m_guideNote.clear();m_audio.play("navigation");
++            }
 +        }
 +        if (in.isDown(B::A)) dashGuideActivate();
 +        return true;
 +    }
-+    if (in.isDown(B::Y)) { m_dashGuide=true; m_dashGuideRow=0; m_audio.play("show_modal"); return true; }
++    if (in.isDown(B::Y)) { openGuide();return true; }
 +    if (in.isDown(B::ZL)) dashTab(m_dashTab-1);
 +    if (in.isDown(B::ZR)) dashTab(m_dashTab+1);
 +    if (in.isDown(B::L)) dashMove(-1);
@@ -2085,9 +3307,26 @@ index 0000000..8ba8af7
 +    if (!in.touchUp()) return in.isTouching();
 +    const float x=in.touchX(), y=in.touchY();
 +    if (m_dashGuide) {
-+        if (x>510) { m_dashGuide=false; return true; }
-+        const int row=static_cast<int>((y-184)/52);
-+        if (y>=184 && row>=0 && row<8) { m_dashGuideRow=row; dashGuideActivate(); }
++        if (m_guideClosing) return true;
++        const float gy=y-(1.f-nxe::ease(m_guideIn))*18.f;
++        auto body=guide360::blade(m_guideTab,m_guideTab);
++        const float horizontal=(m_guidePos-m_guideTab)*38.f;body.x+=horizontal;
++        const int tab=body.contains(x,gy)?-1:guide360::hitBlade(x,gy,m_guideTab);
++        if (tab>=0) { guideTab(tab-m_guideTab);return true; }
++        if (gy>=146 && gy<194 && x>=body.x+249 && x<body.x+297) {
++            closeGuide(false);openUsers();return true;
++        }
++        const int row=guide360::hitRow(x-horizontal,gy,m_guideTab,guideRows().size());
++        if (row>=0) { m_dashGuideRow=row;dashGuideActivate();return true; }
++        if (gy>=523 && gy<557 && x>=body.x && x<body.x+body.w) {
++            const float local=x-body.x;
++            if (local<108) dashGuideActivate();
++            else if(local<204) guideBack();
++            else if(local<340) { closeGuide(false);openUsers(); }
++            else { closeGuide(false);dashTab(1); }
++            return true;
++        }
++        if (x<286 || x>986 || gy<146 || gy>560) closeGuide(true);
 +        return true;
 +    }
 +    if (y<85 && x>1050) { openUsers(); return true; }
@@ -2112,7 +3351,8 @@ index 0000000..8ba8af7
 +            }
 +        }
 +    }
-+    if (y>630 && x<260) { m_dashGuide=true; m_dashGuideRow=0; }
++    if (y>640 && x<200) dashActivate();
++    else if (y>640 && x>=240 && x<360) openGuide();
 +    return true;
 +}
 +
@@ -2240,22 +3480,229 @@ index 0000000..8ba8af7
 +    textMid(r,m_fBody,"Select",108,672,dark,0.9f);
 +    textMid(r,m_fBody,"Y  Guide    B  My Xbox    ZL / ZR  Channels",264,672,dark,0.8f);
 +    textMid(r,m_fBody,"HomeNX 360",1050,672,dark,0.9f);
-+    if (m_dashGuide) {
-+        r.drawRect({0,0,1280,720},{0,0,0,0.5f});
-+        r.drawRect({36,45,490,640},{0,0,0,0.25f});
-+        r.drawGradientRect({24,32,480,640},{0.97f,0.98f,0.95f,1},{0.71f,0.76f,0.67f,1});
-+        r.drawGradientRect({24,32,480,108},{0.49f,0.72f,0.15f,1},green);
-+        textMid(r,m_fDashNav,"HomeNX Guide",64,88,kWhite,0.9f);
-+        static const char* rows[]={"My Xbox","Friends","Game Library","Search","My Pins / Pages","Quick Settings","System Settings","Turn Off Console"};
-+        for (int i=0;i<8;++i) {
-+            const float y=184.f+i*52;
-+            if (i==m_dashGuideRow) r.drawGradientRect({38,y,452,50},green,{0.19f,0.45f,0.01f,1});
-+            textMid(r,m_fBody,rows[i],66,y+25,i==m_dashGuideRow?kWhite:dark,1.f);
-+        }
-+        textMid(r,m_fBody,"A  Select     B / Y  Close",64,624,dark,0.85f);
-+    }
++    if (m_dashGuide) drawGuide(r);
 +    if (m_leaving) r.drawRect({0,0,1280,720},{0,0,0,std::min(1.f,m_leaveT*1.5f)});
 +}
+diff --git a/projects/cards/src/Guide360.inc b/projects/cards/src/Guide360.inc
+new file mode 100644
+index 0000000..564a384
+--- /dev/null
++++ b/projects/cards/src/Guide360.inc
+@@ -0,0 +1,182 @@
++// The original NXE Guide's centered, five-blade overlay. Actions use Switch services.
++std::vector<std::string> CardsActivity::guideRows() {
++    if (m_guideView==1) return {"My Games","My Apps","My Pins","Search","Friends","Messages"};
++    switch (m_guideTab) {
++        case 0: return {"Game Marketplace","Video Marketplace"};
++        case 1: return {"Achievements","Quick Launch","My Games","My Apps","My Pins"};
++        case 2: return {"Xbox Dashboard","Quick Launch","Connect to Xbox LIVE",current()?"Play "+current()->name:"Game Library"};
++        case 3: return {"Music Player","Picture Library","Video Library","Previous Track","Play / Pause","Next Track"};
++        default: return {"Profile","Preferences","System Settings","Storage","Audio","Network","Turn Off Console"};
++    }
++}
++void CardsActivity::openGuide() {
++    m_dashGuide=true;m_guideClosing=false;m_guideIn=m_settings.motion?0.f:1.f;
++    m_guideTab=2;m_guideView=0;m_guidePos=m_guideFrom=2.f;m_guideTabIn=1.f;m_dashGuideRow=0;m_guideRowAt=0.f;m_guideNote.clear();
++    m_audio.play("show_modal");
++}
++void CardsActivity::closeGuide(bool animate) {
++    if (animate && m_settings.motion) m_guideClosing=true;
++    else { m_dashGuide=false;m_guideClosing=false;m_guideIn=0.f; }
++    m_audio.play("hide_modal");
++}
++void CardsActivity::guideTab(int delta) {
++    if (m_guideView==0) m_guideSels[m_guideTab]=m_dashGuideRow;
++    m_guideFrom=m_guidePos;
++    m_guideTab=guide360::wrap(m_guideTab+delta);m_guideView=0;
++    m_dashGuideRow=m_guideSels[m_guideTab];m_guideRowAt=static_cast<float>(m_dashGuideRow);
++    m_guideNote.clear();m_guideTabIn=m_settings.motion?0.f:1.f;
++    m_audio.play("tab_transition");
++}
++void CardsActivity::guideBack() {
++    if (m_guideView) {
++        m_guideView=0;m_dashGuideRow=m_guideSels[m_guideTab];
++        m_guideRowAt=static_cast<float>(m_dashGuideRow);m_guideNote.clear();
++        m_audio.play("hide_modal");
++    } else closeGuide(true);
++}
++void CardsActivity::dashGuideActivate() {
++    m_audio.play("activation");
++    const int row=m_dashGuideRow;
++    auto quick=[&]() { m_guideSels[m_guideTab]=row;m_guideView=1;m_dashGuideRow=0;m_guideRowAt=0; };
++    if (m_guideView==1) {
++        closeGuide(false);
++        switch(row) {
++            case 0:dashTab(3);break;
++            case 1:dashTab(6);break;
++            case 2:openPagePicker();break;
++            case 3:dashSearch();break;
++            case 4:dashTab(2);m_dashTile=0;dashActivate();break;
++            case 5:openNotifications();break;
++        }
++    } else if (m_guideTab==0) {
++        closeGuide(false);
++        if (row==0) { Game shop;shop.action="eshop";openNintendo(shop); }
++        else dashTab(4);
++    } else if (m_guideTab==1) {
++        if (row==1) { quick();return; }
++        if (row==0 && !current()) { m_guideNote="Select a game in your library first.";return; }
++        closeGuide(false);
++        if (row==0) openAchievements(*current());
++        else if (row==2) dashTab(3);
++        else if (row==3) dashTab(6);
++        else openPagePicker();
++    } else if (m_guideTab==2) {
++        if (row==1) { quick();return; }
++        if (row==2) { m_guideNote="Xbox LIVE is unavailable on Nintendo Switch.";return; }
++        closeGuide(false);
++        if (row==0) dashTab(1);
++        else if (current()) play(); else dashTab(3);
++    } else if (m_guideTab==3) {
++        if (row>=3) {
++            if (row==3) m_audio.skip(-1);
++            else if(row==4) m_audio.togglePause(); else m_audio.skip(1);
++            return;
++        }
++        closeGuide(false);
++        if (row==0) openMusic();else if(row==1) openGallery();else dashTab(4);
++    } else {
++        closeGuide(false);
++        switch(row) {
++            case 0:openUsers();break;
++            case 1:dashSettings("Look");break;
++            case 2:dashSettings("Console");break;
++            case 3:openStorage();break;
++            case 4:dashSettings("Sound");break;
++            case 5:dashSettings("Internet");break;
++            case 6:openPower();break;
++        }
++    }
++}
++void CardsActivity::guideLabel(nxui::Renderer& r,const std::string& label,float cx,float cy,nxui::Color tint) {
++    if (!m_guideTtf) m_guideTtf=TTF_OpenFont((std::string(kAssets)+"fonts/selawksb.ttf").c_str(),
++        std::max(1,int(18*m_fGuide.pixelScale())));
++    if (!m_guideTtf) return;
++    auto& texture=m_guideLabels[label];
++    if (!texture) {
++        SDL_Surface* raw=TTF_RenderUTF8_Blended(m_guideTtf,label.c_str(),SDL_Color{255,255,255,255});
++        if (!raw) return;
++        SDL_Surface* rgba=SDL_ConvertSurfaceFormat(raw,SDL_PIXELFORMAT_RGBA32,0);SDL_FreeSurface(raw);
++        if (!rgba) return;
++        std::vector<std::uint8_t> rotated(size_t(rgba->w)*rgba->h*4);
++        for(int y=0;y<rgba->h;++y) for(int x=0;x<rgba->w;++x)
++            std::memcpy(rotated.data()+(size_t(x)*rgba->h+rgba->h-1-y)*4,
++                static_cast<std::uint8_t*>(rgba->pixels)+size_t(y)*rgba->pitch+x*4,4);
++        texture=std::make_unique<nxui::Texture>();
++        nxui::GpuDevice::EssentialScope essential;
++        if (!texture->loadFromPixels(app().gpu(),r,rotated.data(),rgba->h,rgba->w)) texture.reset();
++        SDL_FreeSurface(rgba);
++    }
++    if (texture) {
++        const float w=texture->width()/m_fGuide.pixelScale(),h=texture->height()/m_fGuide.pixelScale();
++        r.drawTexture(texture.get(),{cx-w/2,cy-h/2,w,h},tint);
++    }
++}
++void CardsActivity::drawGuide(nxui::Renderer& r) {
++    const float a=nxe::ease(m_guideIn),shift=(1.f-a)*18.f;
++    const auto white=nxui::Color(0.95f,0.97f,0.98f,a);
++    const auto dark=nxui::Color(0.27f,0.31f,0.32f,a);
++    r.drawRect({0,0,1280,720},{0,0,0,0.80f*a});
++    auto body=guide360::blade(m_guideTab,m_guideTab);
++    const float horizontal=(m_guidePos-m_guideTab)*38.f;body.x+=horizontal;
++    r.drawRoundedRect({286,212+shift,700,292},{0.76f,0.82f,0.83f,a},5);
++    // Draw the furthest blades first, then the active dark body.
++    for(int distance=4;distance>=1;--distance) for(int sign:{-1,1}) {
++        const int i=m_guideTab+distance*sign;
++        if(i<0 || i>=5) continue;
++        auto b=guide360::blade(i,m_guideTab);b.y+=shift;
++        r.drawRoundedRect({b.x,b.y+3,b.w,b.h},{0,0,0,0.25f*a},5);
++        r.drawRoundedRect({b.x,b.y,b.w,b.h},{201/255.f,215/255.f,218/255.f,a},5);
++        r.drawGradientRect({b.x+2,b.y+4,6,b.h-8},{0.88f,0.94f,0.95f,0.6f*a},{0.68f,0.74f,0.76f,0.3f*a});
++        guideLabel(r,i==2?m_guideName:std::string(guide360::names[i]),b.x+19,b.y+b.h/2,dark);
++    }
++    r.drawRoundedRect({body.x+3,body.y+shift+6,body.w,body.h},{0,0,0,0.45f*a},6);
++    r.drawRoundedRect({body.x,body.y+shift,body.w,body.h},{44/255.f,60/255.f,73/255.f,a},6);
++    r.drawGradientRect({body.x+2,body.y+shift+2,body.w-4,28},{0.30f,0.37f,0.42f,0.30f*a},{0.17f,0.23f,0.28f,0.f});
++    r.drawRect({body.x+46,body.y+shift+4,2,body.h-8},{0.19f,0.26f,0.31f,0.5f*a});
++    const auto& name=m_guideTab==2?m_guideName:std::string(guide360::names[m_guideTab]);
++    guideLabel(r,name,body.x+24,body.y+shift+155,white);
++    r.drawCircle({body.x+24,body.y+shift+24},13,{0.50f,0.59f,0.63f,a});
++    r.drawCircle({body.x+24,body.y+shift+24},10,{0.19f,0.26f,0.31f,a});
++    r.drawLine({body.x+15,body.y+shift+16},{body.x+23,body.y+shift+12},{0.55f,0.77f,0.15f,a},4);
++    // Real profile picture, console battery and clock replace the reference account.
++    if(m_avatar && m_avatar->valid()) r.drawTexture(m_avatar.get(),{body.x+249,146+shift,48,48},white);
++    else icon(r,"friends",body.x+273,170+shift,40,white);
++    r.drawRectOutline({body.x+10,173+shift,27,18},white,2);
++    r.drawRect({body.x+37,178+shift,3,8},white);
++    const float battery=std::clamp(std::atoi(m_battery.c_str()),0,100)/100.f;
++    for(int i=0;i<4;++i) if(battery>i/4.f) r.drawRect({body.x+14+i*5.f,177+shift,3,10},white);
++    icon(r,"pad",body.x+65,182+shift,28,white);
++    textMid(r,m_fLabel,m_clock,body.x+body.w-measured(m_fLabel,m_clock).x-2,184+shift,white,1.f);
++    auto rows=guideRows();
++    m_dashGuideRow=std::clamp(m_dashGuideRow,0,std::max(0,int(rows.size())-1));
++    if(m_guideView) textMid(r,m_fBody,"Quick Launch",body.x+61,185+shift,white,0.95f);
++    const float rowOpacity=a*(0.65f+0.35f*nxe::ease(m_guideTabIn));
++    auto chosen=guide360::row(0,m_guideTab);chosen.x+=horizontal;chosen.y+=m_guideRowAt*43.f+shift;
++    r.drawRoundedRect({chosen.x,chosen.y,chosen.w,chosen.h},{90/255.f,155/255.f,3/255.f,rowOpacity},3);
++    r.drawGradientRect({chosen.x+1,chosen.y+1,chosen.w-2,19},{140/255.f,193/255.f,53/255.f,rowOpacity},{0.48f,0.70f,0.13f,rowOpacity});
++    r.drawLine({chosen.x+3,chosen.y+1},{chosen.x+chosen.w-3,chosen.y+1},{0.80f,0.90f,0.62f,0.45f*rowOpacity},1);
++    for(int i=0;i<int(rows.size());++i) {
++        auto box=guide360::row(i,m_guideTab);box.x+=horizontal;box.y+=shift;
++        const bool gameRow=m_guideTab==2 && !m_guideView && i==3 && current();
++        const float room=box.w-(gameRow?62:16);
++        textMid(r,m_fGuide,fit(m_fGuide,rows[i],room,1.f),box.x+8,box.y+21,white.withAlpha(rowOpacity),1.f);
++        if(gameRow) {
++            const auto art=m_thumbs.find(current()->id);
++            if(art!=m_thumbs.end() && art->second.tex) r.drawTexture(art->second.tex.get(),{box.x+box.w-42,box.y+4,32,32},white);
++        }
++    }
++    if(m_guideTab==3 && !m_audio.trackName().empty())
++        textMid(r,m_fBadge,fit(m_fBadge,m_audio.trackName(),460,1.f),body.x+61,493+shift,white,1.f);
++    if(!m_guideNote.empty()) textMid(r,m_fBadge,fit(m_fBadge,m_guideNote,460,1.f),body.x+61,493+shift,white,1.f);
++    if(m_guideTab==0 && m_guideNote.empty()) textMid(r,m_fBadge,m_dashGuideRow==0?"Opens Nintendo eShop":"Opens installed media apps",body.x+61,493+shift,white,1.f);
++    const char* buttons[]={"A","B","X","Y"};
++    const char* labels[]={"Select","Back","Profile","Xbox Dashboard"};
++    const float x[]={22,130,226,362};
++    const nxui::Color colors[]={{0.44f,0.69f,0.08f,a},{0.68f,0.08f,0.08f,a},{0.08f,0.35f,0.69f,a},{0.83f,0.86f,0.08f,a}};
++    for(int i=0;i<4;++i) {
++        const float cx=body.x+x[i],cy=538+shift;
++        r.drawCircle({cx,cy},9,colors[i]);
++        textMid(r,m_fBadge,buttons[i],cx-4,cy,{1,1,1,a},0.8f);
++        textMid(r,m_fPill,labels[i],cx+13,cy,white,0.95f);
++    }
++}
+diff --git a/projects/cards/src/GuideLayout.hpp b/projects/cards/src/GuideLayout.hpp
+new file mode 100644
+index 0000000..d042a3c
+--- /dev/null
++++ b/projects/cards/src/GuideLayout.hpp
+@@ -0,0 +1,26 @@
++#pragma once
++#include <algorithm>
++#include <array>
++#include <cmath>
++namespace cards::guide360 {
++struct Box {
++    float x,y,w,h;
++    bool contains(float px,float py) const { return px>=x && px<x+w && py>=y && py<y+h; }
++};
++inline constexpr std::array<const char*,5> names={"Marketplace","Games","Profile","Media","Settings"};
++inline int wrap(int tab) { return (tab%5+5)%5; }
++inline Box blade(int index,int selected) {
++    const float x=286.f+index*38.f+(index>selected?510.f:0.f);
++    const float inset=6.f*std::abs(index-selected);
++    return {x,200.f+inset,index==selected?548.f:38.f,316.f-2.f*inset};
++}
++inline Box row(int index,int selected) { return {blade(selected,selected).x+59.f,212.f+index*43.f,472.f,41.f}; }
++inline int hitBlade(float x,float y,int selected) {
++    for(int i=0;i<5;++i) if(i!=selected && blade(i,selected).contains(x,y)) return i;
++    return -1;
++}
++inline int hitRow(float x,float y,int selected,int count) {
++    for(int i=0;i<count;++i) if(row(i,selected).contains(x,y)) return i;
++    return -1;
++}
++} // namespace cards::guide360
 diff --git a/projects/cards/src/NxeLayout.hpp b/projects/cards/src/NxeLayout.hpp
 new file mode 100644
 index 0000000..0b3028e
@@ -2353,12 +3800,43 @@ index 0000000..0ef3056
 +  }
 +} nxeNavigationChecks;
 +}
+diff --git a/tests/guide360_test.cpp b/tests/guide360_test.cpp
+new file mode 100644
+index 0000000..6256a89
+--- /dev/null
++++ b/tests/guide360_test.cpp
+@@ -0,0 +1,25 @@
++#include "../projects/cards/src/GuideLayout.hpp"
++#include <cassert>
++#include <iostream>
++int main() {
++    using namespace cards::guide360;
++    assert(wrap(-1)==4 && wrap(5)==0);
++    for(int selected=0;selected<5;++selected) {
++        const auto body=blade(selected,selected);
++        assert(body.y==200 && body.h==316);
++        for(int i=0;i<5;++i) {
++            const auto box=blade(i,selected);
++            assert(box.x>=286 && box.x+box.w<=986);
++            if(i!=selected) assert(hitBlade(box.x+box.w/2,box.y+box.h/2,selected)==i);
++            for(int j=i+1;j<5;++j) {const auto other=blade(j,selected);assert(box.x+box.w<=other.x);}
++        }
++        for(int count=1;count<=7;++count) for(int i=0;i<count;++i) {
++            const auto box=row(i,selected);
++            assert(box.x>=body.x && box.x+box.w<=body.x+body.w);
++            assert(box.y+box.h<=body.y+body.h);
++            assert(hitRow(box.x+box.w/2,box.y+box.h/2,selected,count)==i);
++            assert(!box.contains(box.x+box.w,box.y));
++        }
++    }
++    std::cout << "Guide blade bounds, seven-row layouts, touch targets and tab wrapping passed\n";
++}
 diff --git a/tests/startup360_test.cpp b/tests/startup360_test.cpp
 new file mode 100644
-index 0000000..f750eb0
+index 0000000..a48d19b
 --- /dev/null
 +++ b/tests/startup360_test.cpp
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,43 @@
 +#include "../projects/cards/src/BootFormat.hpp"
 +#include <cassert>
 +#include <fstream>
@@ -2366,9 +3844,28 @@ index 0000000..f750eb0
 +#include <iterator>
 +int main(int argc,char** argv) {
 +    assert(argc==2);
++    cards::boot360::SkipGate gate;
++    assert(!gate.consume(true,true)); // A inherited from launching the app
++    assert(!gate.consume(true,false));
++    assert(!gate.consume(false,false));
++    assert(gate.consume(true,true)); // a new deliberate press can skip
++    gate={};
++    assert(!gate.consume(false,false));
++    assert(gate.consume(true,true));
 +    std::ifstream f(argv[1],std::ios::binary);
 +    std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(f)),{});
 +    const auto bank=cards::boot360::parse(bytes);
++    cards::boot360::Stream stream(argv[1]);
++    assert(stream.bytes.size()<2u*1024u*1024u); // regression: never preload the 55 MB movie
++    assert(stream.bank.offsets==bank.offsets);
++    size_t largest=0;
++    for(unsigned i=0;i<bank.count;++i) {
++        const auto encoded=stream.frame(i);
++        largest=std::max(largest,encoded.size());
++        assert(std::equal(encoded.begin(),encoded.end(),bytes.begin()+bank.offsets[i]));
++    }
++    assert(largest<1024u*1024u);
++    std::cout<<"Streaming prefix: "<<stream.bytes.size()<<" bytes; largest frame: "<<largest<<" bytes\n";
 +    assert(bank.count==288 && bank.num==30 && bank.den==1);
 +    assert(bank.frameAt(0)==0 && bank.frameAt(1)==30 && bank.frameAt(99)==287);
 +    assert(bank.frameAt(-1)==0);
