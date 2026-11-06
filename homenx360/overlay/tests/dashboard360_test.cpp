@@ -21,3 +21,32 @@ int main() {
   assert(wrapTab(-1)==7&&wrapTab(8)==0);
   std::cout<<"Dashboard navigation, tile hit areas and tab wrapping passed\n";
 }
+
+// NXE's single row must reach every game, including beyond the old ten-item page.
+namespace {
+struct NxeNavigationChecks {
+  NxeNavigationChecks() {
+    using namespace cards::nxe;
+    for (int count : {0,1,4,9,10,11,100}) {
+      int selected=0;
+      for (int i=1;i<count;++i) { selected=nextCard(selected,1,count); assert(selected==i); }
+      assert(nextCard(selected,1,count)==std::max(0,count-1));
+      for (int i=count-2;i>=0;--i) { selected=nextCard(selected,-1,count); assert(selected==i); }
+      assert(nextCard(0,-1,count)==0);
+    }
+    // Touch uses the same projected trapezoids as drawing, also while scrolling.
+    for (int frame=0;frame<=100;++frame) {
+      const float scroll=frame/100.f;
+      for (int index=-2;index<=6;++index) {
+        const auto p=panel(index-scroll);
+        assert(p.w>0 && p.height(0)>0 && p.height(1)>0);
+        assert(p.contains(p.x+p.w/2,p.top(0.5f)+p.height(0.5f)/2));
+        assert(!p.contains(p.x+p.w,p.y+p.h/2));
+      }
+    }
+    assert(ease(0)==0 && ease(1)==1);
+    for (int i=0;i<100;++i) assert(ease(i/100.f)<=ease((i+1)/100.f));
+    std::cout << "NXE full-library navigation, projected touch targets and transition easing passed\n";
+  }
+} nxeNavigationChecks;
+}

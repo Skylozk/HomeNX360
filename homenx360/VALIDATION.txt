@@ -1,11 +1,10 @@
-Validation completed:
-- Shared native controller navigation: all home tiles and partial library pages reachable.
-- Tile hit areas, non-overlap and tab wrapping checked.
-- Standalone NRO and HOME frontend compiled with devkitA64 GCC 15.2.0.
-- Final standalone NRO contains the final Selawik Light font and its license.
-- Archive CRC, path layout, executable signatures and every manifest SHA-256 checked.
-- Included official daemon matches workflow 198, source 94f2bd56698fed40f2897131ea09463775840767.
-- Git whitespace checks passed.
+NXE preview validation:
+- Host C++ checks passed for all original tile targets, NXE row navigation with 0/1/4/9/10/11/100 items, projected touch bounds, and monotonic transition easing.
+- Standalone CardsNX NRO and HOME frontend built natively with devkitA64 GCC 15.2.0.
+- Update includes the unchanged daemon built at pinned upstream source 94f2bd56698fed40f2897131ea09463775840767; exact origin is in BUILD-MANIFEST.json.
+- Build and release workflow YAML parsed; new release publishing has not yet run in Actions.
+- Binary patch reverse-application and git whitespace checks passed.
 
-Not performed: Switch hardware testing or the new manual GitHub Actions workflow.
-The layout preview uses sample game art and is not a hardware screenshot.
+Not performed: physical Switch testing, visual capture or FPS measurement on Switch.
+The external NXE video streams were inaccessible; no timing claims are based on watching them.
+The previously successful GitHub run 42143757646 predates the NXE frontend changes.

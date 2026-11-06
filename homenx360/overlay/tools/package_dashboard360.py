@@ -11,6 +11,7 @@ root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--daemon-provenance', type=Path)
+parser.add_argument('--revision', default='local working tree')
 args = parser.parse_args()
 output = args.output.resolve()
 release = root / 'build/cross/aarch64/release'
@@ -53,6 +54,8 @@ output.mkdir(parents=True, exist_ok=True)
 manifest = {'name': 'HomeNX 360 experimental',
             'upstream_commit': '94f2bd56698fed40f2897131ea09463775840767',
             'hardware_tested': False,
+            'dashboard_style': 'NXE',
+            'frontend_source_revision': args.revision,
             'sha256': {name: hashlib.sha256(p.read_bytes()).hexdigest() for name, p in sorted(files.items())}}
 if args.daemon_provenance:
     manifest['daemon'] = json.loads(args.daemon_provenance.read_text())

@@ -1,50 +1,51 @@
-# HomeNX 360 for Switch
+# HomeNX 360 — NXE preview
 
-An experimental Xbox 360 styled dashboard for an existing HomeNX installation.
-It recreates the gray background, green tile groups, large featured panel and
-top navigation from the supplied reference, using your Switch's games and art.
-Nintendo's separate system applets keep their existing interfaces.
-Tabs use a short slide and fade transition, controlled by the existing
-**Animations** setting. Controller input stays active during the transition.
+An experimental native Nintendo Switch dashboard for an existing HomeNX install,
+inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 
-![Dashboard layout preview with sample Switch game artwork](homenx360/preview.png)
+- Vertical channels and overlapping cards with a reflective floor.
+- Animated card focus and vertical channel switching; respects Animations settings.
+- A skippable, original HomeNX startup and a compact Guide.
+- Real Switch games, homebrew, friends, media and settings actions.
 
-This is a layout preview, not a screenshot from Switch hardware.
+This is an NXE-inspired adaptation, not an exact reproduction of every Xbox
+screen. Existing HomeNX dialogs and Nintendo applets retain their interfaces.
+No Xbox Live services, Xbox firmware, proprietary startup video or audio are bundled.
+[Research sources and access limitations](homenx360/NXE-REFERENCES.md).
 
-## Install and rollback
+## Download
 
-Read [the installation guide](homenx360/INSTALL.md) before installing. Start with
-the standalone preview NRO. The HOME update selects **CardsNX** in NXToggle;
-in this fork, that look opens the 360 dashboard.
+Open [Releases](https://github.com/Skylozk/randomgit/releases) and choose the
+NXE preview. Download **HomeNX360-preview.nro** to try the standalone app first.
+**HomeNX360-update.zip** contains the SD card update for an existing HomeNX
+installation. Do not install the GitHub-generated source ZIP as an update.
 
-The reported console is running Atmosphere 1.12.1 and system 22.5.0. **Hardware
-compatibility has not been verified.** Both native builds and host navigation
-checks passed locally; the archive's layout, executable formats and hashes were
-checked. See [validation](homenx360/VALIDATION.txt) and the
-[local build manifest](homenx360/LOCAL-BUILD-MANIFEST.json).
+Read [installation and rollback instructions](homenx360/INSTALL.md).
+Atmosphere 1.12.1 / system 22.5.0 was reported by the user; this combination
+has **not been tested on hardware here**. Builds are experimental prereleases.
 
-## Get a build from GitHub Actions
+A dedicated HomeNX360 repository is prepared locally, but the connected GitHub
+integration cannot create repositories. Release downloads can live in this
+repository until the account owner creates a separate empty repository.
 
-The **Build HomeNX 360** workflow builds the source and uploads an artifact named
-**HomeNX360-experimental** containing:
+## Controls
 
-- `HomeNX360-preview.nro`: standalone app to try before changing HOME.
-- `HomeNX360-update.zip`: SD card update for an existing HomeNX installation.
-- `INSTALL.md` and `BUILD-MANIFEST.json`.
+Up/Down or ZL/ZR changes channel. Left/Right or L/R changes card. A activates,
+B returns to My Xbox, Y opens the Guide, + opens game options, and − shows
+notifications. Tap a side card to focus it, then tap again to activate it.
+A/B skips the startup. Returning HOME from software does not replay startup.
 
-PR checks can run the workflow. Once the workflow is on your default branch,
-you can also open **Actions → Build HomeNX 360 → Run workflow**. After a successful
-run, download the artifact from the run summary. Extract that download first;
-the inner `HomeNX360-update.zip` contains the SD card layout. Do not copy this
-source repository directly onto the SD card.
+## Builds and release publishing
 
-## Source and local builds
+The **Build HomeNX 360** workflow compiles the standalone app, HOME frontend and
+matching daemon, checks controller navigation, and uploads an artifact. Run it
+manually, after merging the workflow into the default branch, with an optional tag such as `v0.2.1-preview.1` to also publish a
+prerelease after a successful build. The release includes executable manifests,
+checksums and the complete prepared source tree with populated submodules.
 
-The complete modified files are readable in [the source overlay](homenx360/overlay/).
-[HomeNX360.patch](homenx360/HomeNX360.patch) contains the changes against upstream.
-The preparation script fetches `ad3333m/homenx` at the fixed commit
-`94f2bd56698fed40f2897131ea09463775840767`, initializes its submodules and applies
-the overlay. It refuses to overwrite an existing dirty checkout.
+The readable modified files are in [the overlay](homenx360/overlay/), with a
+[patch](homenx360/HomeNX360.patch). Upstream HomeNX is pinned to
+`94f2bd56698fed40f2897131ea09463775840767`.
 
 With devkitPro devkitA64, its Switch packages, xmake 3.1.2, CMake and Python 3:
 
@@ -62,16 +63,9 @@ xmake build -j2 SwitchU
 python3 tools/package_dashboard360.py --output ../artifacts
 ```
 
-The GitHub workflow rebuilds the daemon from source. The earlier local package
-used the unmodified official daemon from upstream workflow 198 at the same source
-revision; its provenance is recorded in the local build manifest. A local build
-passing does not establish that the new GitHub workflow has passed.
+## Credits
 
-## Credits and license
-
-Based on [HomeNX by ad3333m](https://github.com/ad3333m/homenx), licensed under
-[GPL-3.0](LICENSE). Upstream source and credits are retained through the pinned
-checkout and [third-party notices](THIRD_PARTY_NOTICES.md). Selawik Light is
-Copyright 2015 Microsoft Corporation and is distributed unmodified under the
-[SIL Open Font License 1.1](homenx360/overlay/projects/cards/romfs/fonts/Selawik-OFL.txt).
-This project is not affiliated with Nintendo or Microsoft.
+Based on [HomeNX by ad3333m](https://github.com/ad3333m/homenx), under
+[GPL-3.0](LICENSE), with [upstream notices](THIRD_PARTY_NOTICES.md) retained.
+Selawik Light is Copyright 2015 Microsoft Corporation, distributed unmodified
+under its bundled SIL Open Font License. Not affiliated with Nintendo or Microsoft.

@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include "NxeLayout.hpp"
 #include <cmath>
 #include <limits>
 

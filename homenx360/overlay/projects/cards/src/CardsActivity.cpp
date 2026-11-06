@@ -500,6 +500,7 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
     m_startSuspended = suspendedId;
     m_startRunning = appRunning;
     m_atBoot = atBoot;
+    if (!atBoot) m_dashBoot = 0.f;
     m_fromApplet = fromApplet;
 #else
     (void)suspendedId;
@@ -1638,7 +1639,8 @@ void CardsActivity::goToPage(int page, int dir) {
     if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
     m_page = page;
     dashBeginTab(page == kHomebrew ? 6 : page == kMedia ? 4 : 3);
-    m_dashTile = sel() % 10;
+    m_dashTile = sel();
+    m_dashCard = static_cast<float>(m_dashTile);
     m_pageDir = dir > 0 ? 1 : -1;
     m_pageIn = m_settings.motion ? 0.f : 1.f;
     m_detailIn = m_pageIn;
@@ -7802,6 +7804,8 @@ void CardsActivity::onUpdate(float dt) {
         app().gpu().endTextureUploadBatch();
     }
     m_time += dt;
+    if (!m_settings.motion) m_dashBoot = 0.f;
+    if (m_dashBoot > 0.f) m_dashBoot = std::max(0.f, m_dashBoot - std::min(dt, 1.f/30.f));
     updateNotices(dt);
     updateStorage();
     perfMark("start-up");
@@ -7831,7 +7835,10 @@ void CardsActivity::onUpdate(float dt) {
     // rise hidden behind a still frame.
     if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
     step(m_pageIn, 0.38f);
-    step(m_dashIn, 0.18f);
+    step(m_dashIn, 0.30f);
+    if (dashLibrary()) m_dashTile = sel();
+    m_dashCard += (static_cast<float>(m_dashTile)-m_dashCard) * (motion ? std::min(1.f,dt*15.f) : 1.f);
+    if (std::abs(m_dashCard-m_dashTile)<0.002f) m_dashCard=static_cast<float>(m_dashTile);
     step(m_detailIn, 0.25f);
     step(m_sheen, 0.8f);
     step(m_menuIn, 0.2f);
@@ -8350,6 +8357,10 @@ void CardsActivity::onUpdate(float dt) {
     }
 
     perfMark("HomeNX's screens, leaving");
+    if (m_dashBoot > 0.f) {
+        if (app().input().isDown(nxui::Button::A) || app().input().isDown(nxui::Button::B)) m_dashBoot=0.f;
+        return;
+    }
     if (updateLock(dt)) return;
     perfMark("lock screen");
     if (!m_settings.introDone && !m_introOpen && m_time > 0.8f && !m_leaving) { // the first time
@@ -8539,6 +8550,7 @@ void CardsActivity::draw(nxui::Renderer& r) {
     m_drawMarkMs = 0.f;
     m_drawMarkName = "";
     m_frosted = false;
+    if (m_dashBoot > 0.f) { drawDashBoot(r); return; }
     drawDashboard(r);
     drawStep("draw: the menus");
     drawSheet(r);
@@ -8752,16 +8764,14 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
 
 bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
     if (!m_moving) {
-        const int start = (sel() / 10) * 10;
-        if (dashLibrary() && index >= start && index < start + 10) {
-            const auto t = dash360::grid(index - start);
-            card = {t.x, t.y, t.w, t.h};
-        } else if (index == sel()) {
-            const auto t = dash360::home[3];
-            card = {t.x, t.y, t.w, t.h};
+        if (dashLibrary() && index >= 0 && index < static_cast<int>(games().size())) {
+            const auto t=nxe::panel(index-m_dashCard, dashSlide());
+            card={t.x,t.y,t.w,t.h};
+        } else if (m_dashTab==1 && index==sel()) {
+            const auto t=nxe::panel(m_dashTile-m_dashCard,dashSlide());
+            card={t.x,t.y,t.w,t.h};
         } else return false;
-        chosen = index == sel() ? 1.f : 0.f;
-        card.x += dashSlide();
+        chosen=index==sel()?1.f:0.f;
         return true;
     }
     const float rel = static_cast<float>(index) - m_scroll;

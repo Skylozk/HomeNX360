@@ -2,18 +2,23 @@ name: Build HomeNX 360
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Optional prerelease tag, for example v0.2.1-preview.1'
+        required: false
+        type: string
   pull_request:
     paths:
       - '.github/workflows/homenx360.yml'
       - 'homenx360/**'
-      - 'tools/prepare_homenx360.py'
+      - 'tools/**'
 
 permissions:
   contents: read
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: devkitpro/devkita64
     timeout-minutes: 90
     env:
@@ -55,11 +60,39 @@ jobs:
           xmake build --root -j2 SwitchU
       - name: Package the existing-install update
         working-directory: build/homenx360-source
-        run: python3 tools/package_dashboard360.py --output ../artifacts
-      - name: Add the layout preview
-        run: cp homenx360/preview.png build/artifacts/dashboard-preview.png
+        run: python3 tools/package_dashboard360.py --output ../artifacts --revision "$SOURCE_REVISION"
+        env:
+          SOURCE_REVISION: ${{ github.sha }}
+      - name: Package complete corresponding source and checksums
+        run: |
+          python3 tools/package_source360.py build/homenx360-source build/artifacts/HomeNX360-source.zip
+          cp homenx360/NXE-REFERENCES.md build/artifacts/NXE-REFERENCES.md
+          cp homenx360/RELEASE-NOTES.md build/artifacts/RELEASE-NOTES.md
+          cd build/artifacts
+          sha256sum * > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: HomeNX360-experimental
           path: build/artifacts/*
           retention-days: 30
+
+  release:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: HomeNX360-experimental
+          path: artifacts
+      - name: Publish tested build files as a prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 -c 'import os,re; assert re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:-preview\.[0-9]+)?",os.environ["RELEASE_TAG"]), "Invalid release tag"'
+          gh release create "$RELEASE_TAG" artifacts/* --target "$RELEASE_COMMIT" --prerelease --title "HomeNX360 $RELEASE_TAG" --notes-file artifacts/RELEASE-NOTES.md

@@ -3,12 +3,12 @@
 Based on `ad3333m/homenx` commit `94f2bd56698fed40f2897131ea09463775840767`.
 License: GPL-3.0, with the upstream credits and third-party notices retained.
 
-This changes CardsNX, including CardsNX running as the HomeNX HOME screen. It
-recreates the gray background, green tile groups, large featured panel, navigation
-tabs and selection outline in the supplied Xbox 360 dashboard reference. Game
-artwork and names come from the Switch's library. It does not install Xbox
-firmware, provide Xbox services, or change Nintendo's separate system applets.
-HomeNX's existing dialogs remain available with gray panels and green accents.
+This changes CardsNX, including CardsNX running as the HomeNX HOME screen, into
+an experimental 2008 NXE-inspired dashboard: vertical channels, overlapping
+cards, reflections, a Guide and an original skippable startup. Game artwork and
+names come from the Switch's library. Existing HomeNX dialogs remain available.
+The startup runs inside HomeNX; it does not replace the console bootloader.
+See [the reference log](NXE-REFERENCES.md) for the evidence and remaining gaps.
 
 ## Your console
 
@@ -40,32 +40,29 @@ available in the menu replacement build. Press HOME to leave the standalone app.
 The update archive is for an existing, functioning HomeNX installation; it does
 not bundle a fresh Atmosphere installation or change your firmware.
 
-The supplied package uses the unmodified official daemon from upstream workflow
-198, for the same source revision as this fork. `BUILD-MANIFEST.json` records its
-origin and hashes alongside the custom frontend and assets. Building the commands
-below locally rebuilds the daemon from source instead.
+`BUILD-MANIFEST.json` records the exact executable hashes and daemon origin.
+CI builds the daemon from the pinned source. Local preview packages can reuse
+an unmodified official daemon from the same upstream revision; this is recorded
+explicitly in their manifest. Native compilation is not a console test.
 
 ## Controls
 
 | Control | Action |
 |---|---|
-| D-pad / either stick | Move between tiles; Up from the top row enters the tab bar |
-| L / R | Previous / next hub |
-| A | Select or launch |
-| B | Return to Home |
-| Y | Guide: Search, pages/pins, quick settings, settings, power |
-| ZR | Quick settings |
-| + on a game tile | Game options, artwork, collections and achievements |
-| X | Ask to close the running software |
+| D-pad Up/Down or either stick | Previous/next vertical channel |
+| D-pad Left/Right or L/R | Previous/next card |
+| ZL/ZR | Previous/next channel |
+| A | Activate the selected card |
+| B | Return to My Xbox; close the Guide |
+| Y | Open/close the Guide |
+| + on a game card | Game options, artwork and collections |
+| X | Ask to close running software |
 | − | Notifications |
-| Touch | Select a tab or activate a tile; Prev/Next below the library changes pages |
+| Touch | Tap a side card to focus, then tap the focused card to activate |
 
-The library shows ten items at a time. Continue right past the last tile to
-reach the next page. The **bing** tab searches installed games and homebrew;
-its browser tile uses HomeNX's existing BrowseNX integration. **My Pins** opens
-HomeNX's page/collection picker. **tv & movies** shows the existing media apps;
-**music** opens HomeNX's player and sound settings. The preview image uses Zelda
-art only as a sample and is not a screenshot from Switch hardware.
+The Guide also opens quick settings, search and power controls. Libraries use
+one continuous carousel. During the startup, A/B skips the animation. The
+existing **Animations** setting disables startup and channel/card animations.
 
 ## Undo
 

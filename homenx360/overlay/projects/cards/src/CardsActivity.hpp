@@ -70,6 +70,12 @@ private:
     int m_dashPrevTab = 1, m_dashDir = 1;
     bool m_dashNav = false;
     float m_dashRepeat = 0.f, m_dashIn = 1.f;
+    float m_dashCard = 0.f, m_dashPrevCard = 0.f, m_dashBoot = 3.2f;
+    int m_dashPrevTile = 0, m_dashPrevPage = 0, m_dashGuideRow = 0;
+    bool m_dashGuide = false;
+    void dashMove(int delta);
+    void dashGuideActivate();
+    void drawDashBoot(nxui::Renderer& r);
     int dashCount() const;
     bool dashLibrary() const;
     void dashTab(int tab);
