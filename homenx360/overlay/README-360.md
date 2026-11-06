@@ -9,6 +9,8 @@ tabs and selection outline in the supplied Xbox 360 dashboard reference. Game
 artwork and names come from the Switch's library. It does not install Xbox
 firmware, provide Xbox services, or change Nintendo's separate system applets.
 HomeNX's existing dialogs remain available with gray panels and green accents.
+Switching tabs adds a subtle 180 ms slide and fade. The existing **Animations**
+setting turns this motion off, and navigation remains active during transitions.
 
 ## Your console
 

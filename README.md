@@ -4,6 +4,8 @@ An experimental Xbox 360 styled dashboard for an existing HomeNX installation.
 It recreates the gray background, green tile groups, large featured panel and
 top navigation from the supplied reference, using your Switch's games and art.
 Nintendo's separate system applets keep their existing interfaces.
+Tabs use a short slide and fade transition, controlled by the existing
+**Animations** setting. Controller input stays active during the transition.
 
 ![Dashboard layout preview with sample Switch game artwork](homenx360/preview.png)
 

@@ -1637,7 +1637,7 @@ void CardsActivity::goToPage(int page, int dir) {
     if (m_moving) finishMove(true);
     if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
     m_page = page;
-    m_dashTab = page == kHomebrew ? 6 : page == kMedia ? 4 : 3;
+    dashBeginTab(page == kHomebrew ? 6 : page == kMedia ? 4 : 3);
     m_dashTile = sel() % 10;
     m_pageDir = dir > 0 ? 1 : -1;
     m_pageIn = m_settings.motion ? 0.f : 1.f;
@@ -7831,6 +7831,7 @@ void CardsActivity::onUpdate(float dt) {
     // rise hidden behind a still frame.
     if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
     step(m_pageIn, 0.38f);
+    step(m_dashIn, 0.18f);
     step(m_detailIn, 0.25f);
     step(m_sheen, 0.8f);
     step(m_menuIn, 0.2f);
@@ -8760,6 +8761,7 @@ bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
             card = {t.x, t.y, t.w, t.h};
         } else return false;
         chosen = index == sel() ? 1.f : 0.f;
+        card.x += dashSlide();
         return true;
     }
     const float rel = static_cast<float>(index) - m_scroll;

@@ -67,11 +67,14 @@ private:
     // remain owned by CardsActivity.
     nxui::Font m_fDashNav;
     int m_dashTab = 1, m_dashTile = 0;
+    int m_dashPrevTab = 1, m_dashDir = 1;
     bool m_dashNav = false;
-    float m_dashRepeat = 0.f;
+    float m_dashRepeat = 0.f, m_dashIn = 1.f;
     int dashCount() const;
     bool dashLibrary() const;
     void dashTab(int tab);
+    void dashBeginTab(int tab);
+    float dashSlide() const;
     void dashActivate();
     void dashSearch();
     void dashSettings(const std::string& section);

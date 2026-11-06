@@ -15,7 +15,7 @@ index 67af324..5f256bd 100644
 +1.01. The complete license accompanies it in
 +`projects/cards/romfs/fonts/Selawik-OFL.txt` and the packaged font assets.
 diff --git a/projects/cards/src/CardsActivity.cpp b/projects/cards/src/CardsActivity.cpp
-index 6aa39c4..4900c13 100644
+index 6aa39c4..ed88678 100644
 --- a/projects/cards/src/CardsActivity.cpp
 +++ b/projects/cards/src/CardsActivity.cpp
 @@ -1,4 +1,5 @@
@@ -83,7 +83,7 @@ index 6aa39c4..4900c13 100644
      if (m_moving) finishMove(true);
      if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
      m_page = page;
-+    m_dashTab = page == kHomebrew ? 6 : page == kMedia ? 4 : 3;
++    dashBeginTab(page == kHomebrew ? 6 : page == kMedia ? 4 : 3);
 +    m_dashTile = sel() % 10;
      m_pageDir = dir > 0 ? 1 : -1;
      m_pageIn = m_settings.motion ? 0.f : 1.f;
@@ -97,7 +97,15 @@ index 6aa39c4..4900c13 100644
  #ifdef SWITCHU_MENU
      // Discord, Social and the keyboard draw with HomeNX's font: nothing trimmed
      // its cache, and once full no new channel names or messages showed.
-@@ -8370,7 +8378,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7823,6 +7831,7 @@ void CardsActivity::onUpdate(float dt) {
+     // rise hidden behind a still frame.
+     if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
+     step(m_pageIn, 0.38f);
++    step(m_dashIn, 0.18f);
+     step(m_detailIn, 0.25f);
+     step(m_sheen, 0.8f);
+     step(m_menuIn, 0.2f);
+@@ -8370,7 +8379,7 @@ void CardsActivity::onUpdate(float dt) {
          updateTask();
          return;
      }
@@ -106,7 +114,7 @@ index 6aa39c4..4900c13 100644
  
      if (m_pickOpen) { // (over Settings too)
          updatePicker();
-@@ -8425,6 +8433,8 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8425,6 +8434,8 @@ void CardsActivity::onUpdate(float dt) {
          return;
      }
  
@@ -115,7 +123,7 @@ index 6aa39c4..4900c13 100644
      // Left / right: repeating while held.
      const bool left = in.isHeld(B::DLeft) || in.isHeld(B::LStickL) || in.isHeld(B::RStickL);
      const bool right = in.isHeld(B::DRight) || in.isHeld(B::LStickR) || in.isHeld(B::RStickR);
-@@ -8527,51 +8537,8 @@ void CardsActivity::draw(nxui::Renderer& r) {
+@@ -8527,51 +8538,8 @@ void CardsActivity::draw(nxui::Renderer& r) {
      m_drawMarkTick = armGetSystemTick();
      m_drawMarkMs = 0.f;
      m_drawMarkName = "";
@@ -169,7 +177,7 @@ index 6aa39c4..4900c13 100644
      drawStep("draw: the menus");
      drawSheet(r);
      drawPopup(r); // (over Settings)
-@@ -8621,8 +8588,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
+@@ -8621,8 +8589,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
  }
  
  void CardsActivity::frost(nxui::Renderer& r, const nxui::Rect& rect, float radius, const nxui::Color& tint) {
@@ -180,7 +188,7 @@ index 6aa39c4..4900c13 100644
  }
  
  void CardsActivity::glassCircle(nxui::Renderer& r, float cx, float cy, float d, bool focused, const char* name,
-@@ -8783,6 +8750,18 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
+@@ -8783,6 +8751,19 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
  }
  
  bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
@@ -194,12 +202,13 @@ index 6aa39c4..4900c13 100644
 +            card = {t.x, t.y, t.w, t.h};
 +        } else return false;
 +        chosen = index == sel() ? 1.f : 0.f;
++        card.x += dashSlide();
 +        return true;
 +    }
      const float rel = static_cast<float>(index) - m_scroll;
      // A page switch slides the row in from the side.
      float slide = (1.f - easeOut(m_pageIn)) * 160.f * static_cast<float>(m_pageDir);
-@@ -9310,7 +9289,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
+@@ -9310,7 +9291,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
      // The control on the right, and the room it leaves for the label.
      const float right = row.x + row.width - 18.f;
      float control = 0.f;
@@ -208,7 +217,7 @@ index 6aa39c4..4900c13 100644
      switch (item.kind) {
          case MenuItem::Toggle: {
              const float on = item.level ? item.level() : 0.f;
-@@ -10037,4 +10016,6 @@ void CardsActivity::updateStorage() {
+@@ -10037,4 +10018,6 @@ void CardsActivity::updateStorage() {
      }
  }
  
@@ -216,10 +225,10 @@ index 6aa39c4..4900c13 100644
 +
  } // namespace cards
 diff --git a/projects/cards/src/CardsActivity.hpp b/projects/cards/src/CardsActivity.hpp
-index 0fed0fa..69f0d5a 100644
+index 0fed0fa..f76db40 100644
 --- a/projects/cards/src/CardsActivity.hpp
 +++ b/projects/cards/src/CardsActivity.hpp
-@@ -63,6 +63,21 @@ public:
+@@ -63,6 +63,24 @@ public:
      nxui::Widget* focusRoot() override; // HomeNX's screens when one is open; else it reads the buttons itself
  
  private:
@@ -227,11 +236,14 @@ index 0fed0fa..69f0d5a 100644
 +    // remain owned by CardsActivity.
 +    nxui::Font m_fDashNav;
 +    int m_dashTab = 1, m_dashTile = 0;
++    int m_dashPrevTab = 1, m_dashDir = 1;
 +    bool m_dashNav = false;
-+    float m_dashRepeat = 0.f;
++    float m_dashRepeat = 0.f, m_dashIn = 1.f;
 +    int dashCount() const;
 +    bool dashLibrary() const;
 +    void dashTab(int tab);
++    void dashBeginTab(int tab);
++    float dashSlide() const;
 +    void dashActivate();
 +    void dashSearch();
 +    void dashSettings(const std::string& section);
@@ -305,10 +317,10 @@ index 0000000..127fa68
 +          path: build/dashboard360/*
 diff --git a/README-360.md b/README-360.md
 new file mode 100644
-index 0000000..918c879
+index 0000000..40b1e78
 --- /dev/null
 +++ b/README-360.md
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,103 @@
 +# HomeNX 360 — experimental dashboard fork
 +
 +Based on `ad3333m/homenx` commit `94f2bd56698fed40f2897131ea09463775840767`.
@@ -320,6 +332,8 @@ index 0000000..918c879
 +artwork and names come from the Switch's library. It does not install Xbox
 +firmware, provide Xbox services, or change Nintendo's separate system applets.
 +HomeNX's existing dialogs remain available with gray panels and green accents.
++Switching tabs adds a subtle 180 ms slide and fade. The existing **Animations**
++setting turns this motion off, and navigation remains active during transitions.
 +
 +## Your console
 +
@@ -1111,10 +1125,10 @@ index 0000000..45fa4a6
 +} // namespace cards::dash360
 diff --git a/projects/cards/src/Dashboard360.inc b/projects/cards/src/Dashboard360.inc
 new file mode 100644
-index 0000000..a517641
+index 0000000..50e1fcb
 --- /dev/null
 +++ b/projects/cards/src/Dashboard360.inc
-@@ -0,0 +1,314 @@
+@@ -0,0 +1,336 @@
 +// Included inside namespace cards, after CardsActivity's drawing helpers.
 +bool CardsActivity::dashLibrary() const {
 +    return m_dashTab == 3 || m_dashTab == 4 || m_dashTab == 6;
@@ -1132,8 +1146,22 @@ index 0000000..a517641
 +    return 10;
 +}
 +
++void CardsActivity::dashBeginTab(int tab) {
++    const int next = dash360::wrapTab(tab);
++    if (next == m_dashTab) return;
++    m_dashPrevTab = m_dashTab;
++    // Preserve shoulder-button direction when wrapping between the end tabs.
++    m_dashDir = tab < 0 ? -1 : tab >= 8 ? 1 : next < m_dashTab ? -1 : 1;
++    m_dashTab = next;
++    m_dashIn = m_settings.motion ? 0.f : 1.f;
++}
++
++float CardsActivity::dashSlide() const {
++    return m_settings.motion ? m_dashDir * 28.f * (1.f - easeOut(m_dashIn)) : 0.f;
++}
++
 +void CardsActivity::dashTab(int tab) {
-+    m_dashTab = dash360::wrapTab(tab);
++    dashBeginTab(tab);
 +    m_dashTile = 0;
 +    m_zone = Zone::Cards;
 +    const int target = m_dashTab == 6 ? kHomebrew : m_dashTab == 4 ? kMedia : kGames;
@@ -1301,15 +1329,16 @@ index 0000000..a517641
 +        return true;
 +    }
 +    if (dashLibrary() && y >= 590 && y < 640) {
++        const float pageX = x - dashSlide();
 +        const int base = (sel()/10)*10;
-+        if (x >= 970 && base+10 < static_cast<int>(games().size())) select(base+10);
-+        else if (x >= 870 && x < 970 && base >= 10) select(base-10);
++        if (pageX >= 970 && base+10 < static_cast<int>(games().size())) select(base+10);
++        else if (pageX >= 870 && pageX < 970 && base >= 10) select(base-10);
 +        m_dashTile = sel()%10;
 +        return true;
 +    }
 +    if (y < 100 && x > 1100) { openUsers(); return true; }
 +    for (int i = 0; i < dashCount(); ++i)
-+        if (dash360::tile(i, m_dashTab == 1).contains(x,y)) {
++        if (dash360::tile(i, m_dashTab == 1).contains(x - dashSlide(),y)) {
 +            m_dashNav = false;
 +            m_dashTile = i;
 +            if (dashLibrary()) select((sel()/10)*10+i);
@@ -1321,14 +1350,20 @@ index 0000000..a517641
 +
 +void CardsActivity::drawDashboard(nxui::Renderer& r) {
 +    const nxui::Color green(0.f,0.52f,0.f,1.f), pale(0.67f,0.67f,0.67f,1.f);
++    const float progress = m_settings.motion ? easeOut(m_dashIn) : 1.f;
++    const float slide = dashSlide(), alpha = 0.4f + 0.6f * progress;
++    const nxui::Color ink = kWhite.withAlpha(alpha);
 +    r.drawGradientRect({0,0,1280,610}, {0.22f,0.22f,0.22f,1}, {0.72f,0.72f,0.72f,1});
 +    r.drawGradientRect({0,610,1280,110}, {0.72f,0.72f,0.72f,1}, {0.50f,0.50f,0.50f,1});
 +    for (int i = 0; i < 8; ++i) {
 +        const float scale = i == 4 ? 0.93f : 1.f;
++        const float selected = (i == m_dashTab ? progress : 0.f)
++                             + (i == m_dashPrevTab ? 1.f - progress : 0.f);
++        const float light = 0.58f + 0.42f * selected;
 +        textMid(r, m_fDashNav, dash360::tabs[i], dash360::tabX[i], 143,
-+                i == m_dashTab ? kWhite : nxui::Color(0.58f,0.58f,0.58f,1), scale);
-+        if (m_dashNav && i == m_dashTab)
-+            r.drawRect({dash360::tabX[i],162,measured(m_fDashNav,dash360::tabs[i]).x*scale,2}, kWhite);
++                nxui::Color(light,light,light,1), scale);
++        if (m_dashNav && selected > 0.f)
++            r.drawRect({dash360::tabX[i],162,measured(m_fDashNav,dash360::tabs[i]).x*scale,2}, kWhite.withAlpha(selected));
 +    }
 +    if (m_avatar && m_avatar->valid()) r.drawTexture(m_avatar.get(), {1154,40,28,34});
 +    else icon(r,"friends",1168,57,28,kWhite);
@@ -1352,10 +1387,11 @@ index 0000000..a517641
 +    static const char* musicIcons[] = {"music","speaker","play"};
 +    for (int i = 0; i < count; ++i) {
 +        auto t = dash360::tile(i,m_dashTab == 1);
++        t.x += slide;
 +        const nxui::Rect box{t.x,t.y,t.w,t.h};
 +        const bool chosen = i == m_dashTile && !m_dashNav;
-+        r.drawRect({t.x+2,t.y+5,t.w,t.h},nxui::Color(0,0,0,0.15f));
-+        r.drawGradientRect(box,green, nxui::Color(0.f,0.43f,0.f,1));
++        r.drawRect({t.x+2,t.y+5,t.w,t.h},nxui::Color(0,0,0,0.15f*alpha));
++        r.drawGradientRect(box,green.withAlpha(alpha), nxui::Color(0.f,0.43f,0.f,alpha));
 +        std::string label;
 +        const char* glyph = "home";
 +        const Game* game = nullptr;
@@ -1382,44 +1418,44 @@ index 0000000..a517641
 +            if (!tex) { const auto th = m_thumbs.find(game->id); if (th != m_thumbs.end() && th->second.tex) tex = th->second.tex.get(); }
 +        }
 +        if (tex && tex->valid()) {
-+            drawCover(r,tex,box,0,kWhite,0,0);
-+            r.drawGradientRect({t.x,t.y+t.h-48,t.w,48},nxui::Color(0,0,0,0),nxui::Color(0,0,0,0.9f));
++            drawCover(r,tex,box,0,ink,0,0);
++            r.drawGradientRect({t.x,t.y+t.h-48,t.w,48},nxui::Color(0,0,0,0),nxui::Color(0,0,0,0.9f*alpha));
 +        } else {
 +            const float size = t.h < 100 ? 34 : m_dashTab == 1 && i == 3 ? 88 : 62;
 +            const float cx = t.x+t.w/2, cy = t.y+(t.h-24)/2;
 +            if (m_dashTab == 1 && i == 2) {
-+                r.drawCircle({cx,cy},26,kWhite);
-+                r.drawCircle({cx,cy},21,green);
-+                r.drawLine({cx,cy},{cx,cy-14},kWhite,4);
-+                r.drawLine({cx,cy},{cx+12,cy},kWhite,4);
++                r.drawCircle({cx,cy},26,ink);
++                r.drawCircle({cx,cy},21,green.withAlpha(alpha));
++                r.drawLine({cx,cy},{cx,cy-14},ink,4);
++                r.drawLine({cx,cy},{cx+12,cy},ink,4);
 +            } else if (m_dashTab == 1 && i == 1) {
 +                // The diagonal white pushpin used by the reference dashboard.
-+                r.drawTriangle({cx+5,cy-24},{cx+24,cy-5},{cx+8,cy+2},kWhite);
-+                r.drawTriangle({cx+5,cy-24},{cx+8,cy+2},{cx-2,cy-8},kWhite);
-+                r.drawTriangle({cx-2,cy-8},{cx+8,cy+2},{cx-9,cy+18},kWhite);
-+                r.drawTriangle({cx-13,cy-2},{cx+2,cy+13},{cx-9,cy+18},kWhite);
-+                r.drawLine({cx-9,cy+12},{cx-22,cy+25},kWhite,3);
-+            } else icon(r,glyph,cx,cy,size,kWhite.withAlpha(0.91f));
++                r.drawTriangle({cx+5,cy-24},{cx+24,cy-5},{cx+8,cy+2},ink);
++                r.drawTriangle({cx+5,cy-24},{cx+8,cy+2},{cx-2,cy-8},ink);
++                r.drawTriangle({cx-2,cy-8},{cx+8,cy+2},{cx-9,cy+18},ink);
++                r.drawTriangle({cx-13,cy-2},{cx+2,cy+13},{cx-9,cy+18},ink);
++                r.drawLine({cx-9,cy+12},{cx-22,cy+25},ink,3);
++            } else icon(r,glyph,cx,cy,size,kWhite.withAlpha(0.91f*alpha));
 +        }
-+        textMid(r,m_fBody,fit(m_fBody,label,t.w-20,0.96f),t.x+10,t.y+t.h-16,kWhite,0.96f);
++        textMid(r,m_fBody,fit(m_fBody,label,t.w-20,0.96f),t.x+10,t.y+t.h-16,ink,0.96f);
 +        if (chosen) {
-+            r.drawRectOutline({t.x-4,t.y-4,t.w+8,t.h+8},kWhite.withAlpha(0.90f),3);
-+            r.drawRectOutline(box,nxui::Color(0.40f,0.90f,0.10f,1),2);
++            r.drawRectOutline({t.x-4,t.y-4,t.w+8,t.h+8},kWhite.withAlpha(0.90f*alpha),3);
++            r.drawRectOutline(box,nxui::Color(0.40f,0.90f,0.10f,alpha),2);
 +        }
 +        // Faint floor reflection, kept to the last row of the tile group.
 +        if (t.y+t.h >= 580) {
-+            r.drawGradientRect({t.x,588,t.w,32},green.withAlpha(0.12f),green.withAlpha(0));
++            r.drawGradientRect({t.x,588,t.w,32},green.withAlpha(0.12f*alpha),green.withAlpha(0));
 +        }
 +    }
 +    if (library && count == 0) {
 +        const std::string message = m_dashTab == 6 ? "No homebrew found in sdmc:/switch" : m_dashTab == 4 ? "No media apps found" : "No games installed";
-+        textMid(r,m_fLabel,message,228,310,kWhite);
++        textMid(r,m_fLabel,message,228+slide,310,ink);
 +    }
 +    if (library) {
-+        textMid(r,m_fBody,"< Prev     Next >",880,610,kWhite.withAlpha(0.8f),0.85f);
++        textMid(r,m_fBody,"< Prev     Next >",880+slide,610,kWhite.withAlpha(0.8f*alpha),0.85f);
 +        const auto n = games().size();
 +        const auto page = static_cast<size_t>(sel()/10+1);
-+        textMid(r,m_fBody,std::to_string(n)+" items    "+std::to_string(page)+" / "+std::to_string(std::max<size_t>(1,(n+9)/10)),228,610,kWhite.withAlpha(0.8f),0.85f);
++        textMid(r,m_fBody,std::to_string(n)+" items    "+std::to_string(page)+" / "+std::to_string(std::max<size_t>(1,(n+9)/10)),228+slide,610,kWhite.withAlpha(0.8f*alpha),0.85f);
 +    }
 +    r.drawCircle({104,660},9,{0.35f,0.72f,0.1f,1});
 +    textMid(r,m_fBadge,"A",99,660,kWhite,0.8f);

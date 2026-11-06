@@ -15,8 +15,22 @@ int CardsActivity::dashCount() const {
     return 10;
 }
 
+void CardsActivity::dashBeginTab(int tab) {
+    const int next = dash360::wrapTab(tab);
+    if (next == m_dashTab) return;
+    m_dashPrevTab = m_dashTab;
+    // Preserve shoulder-button direction when wrapping between the end tabs.
+    m_dashDir = tab < 0 ? -1 : tab >= 8 ? 1 : next < m_dashTab ? -1 : 1;
+    m_dashTab = next;
+    m_dashIn = m_settings.motion ? 0.f : 1.f;
+}
+
+float CardsActivity::dashSlide() const {
+    return m_settings.motion ? m_dashDir * 28.f * (1.f - easeOut(m_dashIn)) : 0.f;
+}
+
 void CardsActivity::dashTab(int tab) {
-    m_dashTab = dash360::wrapTab(tab);
+    dashBeginTab(tab);
     m_dashTile = 0;
     m_zone = Zone::Cards;
     const int target = m_dashTab == 6 ? kHomebrew : m_dashTab == 4 ? kMedia : kGames;
@@ -184,15 +198,16 @@ bool CardsActivity::dashTouch() {
         return true;
     }
     if (dashLibrary() && y >= 590 && y < 640) {
+        const float pageX = x - dashSlide();
         const int base = (sel()/10)*10;
-        if (x >= 970 && base+10 < static_cast<int>(games().size())) select(base+10);
-        else if (x >= 870 && x < 970 && base >= 10) select(base-10);
+        if (pageX >= 970 && base+10 < static_cast<int>(games().size())) select(base+10);
+        else if (pageX >= 870 && pageX < 970 && base >= 10) select(base-10);
         m_dashTile = sel()%10;
         return true;
     }
     if (y < 100 && x > 1100) { openUsers(); return true; }
     for (int i = 0; i < dashCount(); ++i)
-        if (dash360::tile(i, m_dashTab == 1).contains(x,y)) {
+        if (dash360::tile(i, m_dashTab == 1).contains(x - dashSlide(),y)) {
             m_dashNav = false;
             m_dashTile = i;
             if (dashLibrary()) select((sel()/10)*10+i);
@@ -204,14 +219,20 @@ bool CardsActivity::dashTouch() {
 
 void CardsActivity::drawDashboard(nxui::Renderer& r) {
     const nxui::Color green(0.f,0.52f,0.f,1.f), pale(0.67f,0.67f,0.67f,1.f);
+    const float progress = m_settings.motion ? easeOut(m_dashIn) : 1.f;
+    const float slide = dashSlide(), alpha = 0.4f + 0.6f * progress;
+    const nxui::Color ink = kWhite.withAlpha(alpha);
     r.drawGradientRect({0,0,1280,610}, {0.22f,0.22f,0.22f,1}, {0.72f,0.72f,0.72f,1});
     r.drawGradientRect({0,610,1280,110}, {0.72f,0.72f,0.72f,1}, {0.50f,0.50f,0.50f,1});
     for (int i = 0; i < 8; ++i) {
         const float scale = i == 4 ? 0.93f : 1.f;
+        const float selected = (i == m_dashTab ? progress : 0.f)
+                             + (i == m_dashPrevTab ? 1.f - progress : 0.f);
+        const float light = 0.58f + 0.42f * selected;
         textMid(r, m_fDashNav, dash360::tabs[i], dash360::tabX[i], 143,
-                i == m_dashTab ? kWhite : nxui::Color(0.58f,0.58f,0.58f,1), scale);
-        if (m_dashNav && i == m_dashTab)
-            r.drawRect({dash360::tabX[i],162,measured(m_fDashNav,dash360::tabs[i]).x*scale,2}, kWhite);
+                nxui::Color(light,light,light,1), scale);
+        if (m_dashNav && selected > 0.f)
+            r.drawRect({dash360::tabX[i],162,measured(m_fDashNav,dash360::tabs[i]).x*scale,2}, kWhite.withAlpha(selected));
     }
     if (m_avatar && m_avatar->valid()) r.drawTexture(m_avatar.get(), {1154,40,28,34});
     else icon(r,"friends",1168,57,28,kWhite);
@@ -235,10 +256,11 @@ void CardsActivity::drawDashboard(nxui::Renderer& r) {
     static const char* musicIcons[] = {"music","speaker","play"};
     for (int i = 0; i < count; ++i) {
         auto t = dash360::tile(i,m_dashTab == 1);
+        t.x += slide;
         const nxui::Rect box{t.x,t.y,t.w,t.h};
         const bool chosen = i == m_dashTile && !m_dashNav;
-        r.drawRect({t.x+2,t.y+5,t.w,t.h},nxui::Color(0,0,0,0.15f));
-        r.drawGradientRect(box,green, nxui::Color(0.f,0.43f,0.f,1));
+        r.drawRect({t.x+2,t.y+5,t.w,t.h},nxui::Color(0,0,0,0.15f*alpha));
+        r.drawGradientRect(box,green.withAlpha(alpha), nxui::Color(0.f,0.43f,0.f,alpha));
         std::string label;
         const char* glyph = "home";
         const Game* game = nullptr;
@@ -265,44 +287,44 @@ void CardsActivity::drawDashboard(nxui::Renderer& r) {
             if (!tex) { const auto th = m_thumbs.find(game->id); if (th != m_thumbs.end() && th->second.tex) tex = th->second.tex.get(); }
         }
         if (tex && tex->valid()) {
-            drawCover(r,tex,box,0,kWhite,0,0);
-            r.drawGradientRect({t.x,t.y+t.h-48,t.w,48},nxui::Color(0,0,0,0),nxui::Color(0,0,0,0.9f));
+            drawCover(r,tex,box,0,ink,0,0);
+            r.drawGradientRect({t.x,t.y+t.h-48,t.w,48},nxui::Color(0,0,0,0),nxui::Color(0,0,0,0.9f*alpha));
         } else {
             const float size = t.h < 100 ? 34 : m_dashTab == 1 && i == 3 ? 88 : 62;
             const float cx = t.x+t.w/2, cy = t.y+(t.h-24)/2;
             if (m_dashTab == 1 && i == 2) {
-                r.drawCircle({cx,cy},26,kWhite);
-                r.drawCircle({cx,cy},21,green);
-                r.drawLine({cx,cy},{cx,cy-14},kWhite,4);
-                r.drawLine({cx,cy},{cx+12,cy},kWhite,4);
+                r.drawCircle({cx,cy},26,ink);
+                r.drawCircle({cx,cy},21,green.withAlpha(alpha));
+                r.drawLine({cx,cy},{cx,cy-14},ink,4);
+                r.drawLine({cx,cy},{cx+12,cy},ink,4);
             } else if (m_dashTab == 1 && i == 1) {
                 // The diagonal white pushpin used by the reference dashboard.
-                r.drawTriangle({cx+5,cy-24},{cx+24,cy-5},{cx+8,cy+2},kWhite);
-                r.drawTriangle({cx+5,cy-24},{cx+8,cy+2},{cx-2,cy-8},kWhite);
-                r.drawTriangle({cx-2,cy-8},{cx+8,cy+2},{cx-9,cy+18},kWhite);
-                r.drawTriangle({cx-13,cy-2},{cx+2,cy+13},{cx-9,cy+18},kWhite);
-                r.drawLine({cx-9,cy+12},{cx-22,cy+25},kWhite,3);
-            } else icon(r,glyph,cx,cy,size,kWhite.withAlpha(0.91f));
+                r.drawTriangle({cx+5,cy-24},{cx+24,cy-5},{cx+8,cy+2},ink);
+                r.drawTriangle({cx+5,cy-24},{cx+8,cy+2},{cx-2,cy-8},ink);
+                r.drawTriangle({cx-2,cy-8},{cx+8,cy+2},{cx-9,cy+18},ink);
+                r.drawTriangle({cx-13,cy-2},{cx+2,cy+13},{cx-9,cy+18},ink);
+                r.drawLine({cx-9,cy+12},{cx-22,cy+25},ink,3);
+            } else icon(r,glyph,cx,cy,size,kWhite.withAlpha(0.91f*alpha));
         }
-        textMid(r,m_fBody,fit(m_fBody,label,t.w-20,0.96f),t.x+10,t.y+t.h-16,kWhite,0.96f);
+        textMid(r,m_fBody,fit(m_fBody,label,t.w-20,0.96f),t.x+10,t.y+t.h-16,ink,0.96f);
         if (chosen) {
-            r.drawRectOutline({t.x-4,t.y-4,t.w+8,t.h+8},kWhite.withAlpha(0.90f),3);
-            r.drawRectOutline(box,nxui::Color(0.40f,0.90f,0.10f,1),2);
+            r.drawRectOutline({t.x-4,t.y-4,t.w+8,t.h+8},kWhite.withAlpha(0.90f*alpha),3);
+            r.drawRectOutline(box,nxui::Color(0.40f,0.90f,0.10f,alpha),2);
         }
         // Faint floor reflection, kept to the last row of the tile group.
         if (t.y+t.h >= 580) {
-            r.drawGradientRect({t.x,588,t.w,32},green.withAlpha(0.12f),green.withAlpha(0));
+            r.drawGradientRect({t.x,588,t.w,32},green.withAlpha(0.12f*alpha),green.withAlpha(0));
         }
     }
     if (library && count == 0) {
         const std::string message = m_dashTab == 6 ? "No homebrew found in sdmc:/switch" : m_dashTab == 4 ? "No media apps found" : "No games installed";
-        textMid(r,m_fLabel,message,228,310,kWhite);
+        textMid(r,m_fLabel,message,228+slide,310,ink);
     }
     if (library) {
-        textMid(r,m_fBody,"< Prev     Next >",880,610,kWhite.withAlpha(0.8f),0.85f);
+        textMid(r,m_fBody,"< Prev     Next >",880+slide,610,kWhite.withAlpha(0.8f*alpha),0.85f);
         const auto n = games().size();
         const auto page = static_cast<size_t>(sel()/10+1);
-        textMid(r,m_fBody,std::to_string(n)+" items    "+std::to_string(page)+" / "+std::to_string(std::max<size_t>(1,(n+9)/10)),228,610,kWhite.withAlpha(0.8f),0.85f);
+        textMid(r,m_fBody,std::to_string(n)+" items    "+std::to_string(page)+" / "+std::to_string(std::max<size_t>(1,(n+9)/10)),228+slide,610,kWhite.withAlpha(0.8f*alpha),0.85f);
     }
     r.drawCircle({104,660},9,{0.35f,0.72f,0.1f,1});
     textMid(r,m_fBadge,"A",99,660,kWhite,0.8f);
