@@ -5,7 +5,7 @@ License: GPL-3.0, with the upstream credits and third-party notices retained.
 
 This changes CardsNX, including CardsNX running as the HomeNX HOME screen, into
 an experimental 2008 NXE-inspired dashboard: vertical channels, overlapping
-cards, reflections, a Guide and a skippable recorded Xbox 360 startup. Game artwork and
+cards, reflections, a Guide, full-screen NXE settings and a skippable recorded Xbox 360 startup. Game artwork and
 names come from the Switch's library. Existing HomeNX dialogs remain available.
 The startup runs inside HomeNX; it does not replace the console bootloader.
 See [the reference log](NXE-REFERENCES.md) for the evidence and remaining gaps.
@@ -64,6 +64,22 @@ The Guide also opens quick settings, search and power controls. Libraries use
 one continuous carousel. During the startup, A/B skips the animation. The
 **Startup animation** setting in Look controls the clip. **Animations** controls
 channel/card/Guide transitions separately. **Preview startup** replays the clip.
+Startup controls also appear in **System Settings → Console Settings → Startup
+and Shutdown**.
+
+## Settings controls
+
+System Settings opens the NXE screen. Up/Down and either stick select rows;
+A opens or changes a setting, Left/Right adjusts values, B returns to the
+previous page and row, and Plus closes settings. Touch a category to open it.
+A first touch on a different value only focuses it; touch it again or use
+the right-hand minus/plus controls to change it. The A/B footer is touchable.
+
+HomeNX Preferences is the added eighth root entry for dashboard, games/apps,
+lock screen, notifications, pictures and update tools. Console Settings uses
+the eight NXE category names. Xbox camera, disc auto-play and LIVE features are
+explicitly unavailable. Console date/time and Nintendo network configuration
+require the HOME frontend. See `SETTINGS-REFERENCES.md` for the complete mapping.
 
 ## Undo
 

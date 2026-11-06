@@ -1,23 +1,31 @@
-# HomeNX360 NXE Guide preview
+# HomeNX360 NXE Settings preview
 
-Adds the centered original NXE-style Guide: five silver blades, slate-blue
-panel, green selection bar, vertical profile labels, avatar, clock and colored
-button prompts. Includes animated panel opening/closing, blade changes and
-row navigation, with controller and touch support. Switch profile and hardware
-values are real. Quick Launch, games, homebrew, achievements, media/music and
-settings use existing HomeNX features. Xbox LIVE is explicitly unavailable.
+Replaces the floating settings sheet with full-screen original NXE-style
+settings: green circular background, slate-blue panel, silver category icons,
+green selection bar, descriptions/current values on the right, and A/B prompts.
+The eight original Console Settings categories open working submenus.
 
-Includes the recorded original Xbox 360 startup from v0.3.0-preview.1, with
-all 288 frames encoded losslessly at 720p and its recorded sound. Frames are now
-streamed instead of preloading the 55 MB bank. Startup has a separate Look
-setting and a Preview startup action; inherited launch-button presses no longer
-skip it, and playback errors are reported.
+All 23 pages are connected to real HomeNX controls: display/brightness, audio,
+language, clock, startup/sleep, controllers, memory/software transfer, network
+and USB MTP. HomeNX Preferences preserves the additional tools. The existing
+recorded startup and five-blade Guide are retained.
 
-Download `HomeNX360-preview.nro` to try first. Read `INSTALL.md` before applying
-`HomeNX360-update.zip` to an existing HomeNX installation. Corresponding source,
-checksums and the research/fidelity notes are included.
+Includes animated focus, scrolling, page transitions and opening/closing.
+Up/Down selects, A opens or changes, Left/Right adjusts values, B returns to the
+previous page and row, and Plus closes. Touch category links and value controls
+are supported. A first touch on a different value only focuses it.
 
-This is a Switch adaptation. Selawik substitutes the original font and animation
-timings are approximations. No physical Switch visual, FPS or audio-latency test
-has been performed. Atmosphere 1.12.1 / system 22.5.0 remains unverified.
-See `GUIDE-REFERENCES.md` and `STARTUP-REFERENCES.md` for the exact scope.
+Host tests exercise the production page builder and controller/touch handlers
+in preview and HOME configurations, including every page route, callback
+ownership, shared saved values and scrolling bounds.
+
+Try `HomeNX360-preview.nro` first. Read `INSTALL.md` before installing
+`HomeNX360-update.zip` over an existing HomeNX installation. Source, checksums
+and research notes are included.
+
+This is a Switch adaptation. Xbox LIVE Vision, Xbox disc auto-play and Xbox LIVE
+services cannot operate on Switch; their limitations are shown explicitly.
+Fonts, vector icons/background/orb and animation timing are approximations.
+Nintendo applets and existing HomeNX tool dialogs retain their own interfaces.
+Physical Switch behavior and Atmosphere 1.12.1 / system 22.5.0 remain unverified.
+See `SETTINGS-REFERENCES.md` for inspected references and the full action mapping.

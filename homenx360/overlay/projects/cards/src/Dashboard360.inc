@@ -51,9 +51,11 @@ void CardsActivity::dashTab(int tab) {
 }
 
 void CardsActivity::dashSettings(const std::string& section) {
-    openSettings();
-    for (int i = 0; i < static_cast<int>(m_sheet.size()); ++i)
-        if (m_sheet[i].name == section) { m_sheetSec = i; m_sheetRow = 0; break; }
+    using namespace settings360;
+    const std::map<std::string,int> pages={{"Console",System},{"Look",Look},{"Sound",settings360::Audio},{"Internet",Network},
+        {"Bluetooth",Remote},{"Storage",Memory},{"Home",Home},{"Notifications",Notifications},{"About",SystemInfo},
+        {"Updates",Updates},{"Lock screen",Lock},{"Pictures",Pictures}};
+    const auto found=pages.find(section);openSettings(found==pages.end()?System:found->second);
 }
 
 void CardsActivity::dashSearch() {
@@ -92,7 +94,7 @@ void CardsActivity::dashActivate() {
             case 4: openMusic(); break;
             case 5: openGallery(); break;
             case 6: dashTab(6); break;
-            case 7: dashTab(7); break;
+            case 7: openSettings(); break;
         }
     } else if (m_dashTab == 2) {
         switch (m_dashTile) {

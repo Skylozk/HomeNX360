@@ -7,6 +7,7 @@ inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 - Animated card focus and vertical channel switching; respects Animations settings.
 - The recorded original NXE-era Xbox 360 startup.
 - A centered NXE Guide with five blades, profile/clock, green selection and animated navigation.
+- Full-screen NXE settings with the original Console Settings categories, animated submenus and real HomeNX controls.
 - Real Switch games, homebrew, friends, media and settings actions.
 
 This is an NXE-inspired adaptation, not an exact reproduction of every Xbox
@@ -16,6 +17,7 @@ Xbox Live services and Xbox firmware are not included.
 [Startup recording, analysis and fidelity limits](homenx360/STARTUP-REFERENCES.md).
 [Dashboard reference research](homenx360/NXE-REFERENCES.md).
 [Guide references and action mapping](homenx360/GUIDE-REFERENCES.md).
+[Settings references, controls and functional mapping](homenx360/SETTINGS-REFERENCES.md).
 [Startup media notice](homenx360/overlay/media/STARTUP-MEDIA-NOTICE.md).
 
 ## Download
@@ -41,6 +43,11 @@ notifications. Tap a side card to focus it, then tap again to activate it.
 A fresh A/B press skips startup; inherited launch-button presses are ignored.
 Returning HOME from software does not replay it. Look settings include
 **Startup animation** and **Preview startup**, separate from UI animations.
+
+System Settings opens the full-screen NXE menu. Up/Down selects, A opens or
+changes a setting, Left/Right adjusts values, B returns to the previous page,
+and Plus closes settings. HomeNX Preferences retains the additional tools.
+Startup controls also appear under Console Settings → Startup and Shutdown.
 
 ## Builds and release publishing
 

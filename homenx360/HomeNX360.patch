@@ -1,554 +1,6 @@
-diff --git a/THIRD_PARTY_NOTICES.md b/THIRD_PARTY_NOTICES.md
-index 67af324..653b30c 100644
---- a/THIRD_PARTY_NOTICES.md
-+++ b/THIRD_PARTY_NOTICES.md
-@@ -62,3 +62,14 @@ Wii U sounds and music are Nintendo's.
- 
- - **PowerCmptr**: the HomeNX lock screen and Discord token sign-in
-   ([ad3333m/homenx#5](https://github.com/ad3333m/homenx/pull/5)).
-+
-+
-+## HomeNX 360 navigation typeface
-+
-+Selawik Light, Copyright 2015 Microsoft Corporation. Licensed under the SIL
-+Open Font License 1.1. The unmodified font is from Microsoft/Selawik release
-+1.01. The complete license accompanies it in
-+`projects/cards/romfs/fonts/Selawik-OFL.txt` and the packaged font assets.
-+
-+Xbox 360 startup footage and sound are Microsoft material, separate from the
-+GPL code. See media/STARTUP-MEDIA-NOTICE.md for the source recording and hashes.
-diff --git a/projects/cards/src/Audio.cpp b/projects/cards/src/Audio.cpp
-index 3e32dd8..9698a73 100644
---- a/projects/cards/src/Audio.cpp
-+++ b/projects/cards/src/Audio.cpp
-@@ -243,6 +243,7 @@ bool Audio::start() {
- 
- void Audio::opened() {
-     Mix_AllocateChannels(8);
-+    Mix_ReserveChannels(1); // channel 0 belongs to the startup clip
-     m_open = true;
-     Mix_Volume(-1, MIX_MAX_VOLUME * m_soundVolume / 100);
-     Mix_HookMusicFinished(onTrackEnded);
-diff --git a/projects/cards/src/Audio.hpp b/projects/cards/src/Audio.hpp
-index cd6ec69..ea90cbf 100644
---- a/projects/cards/src/Audio.hpp
-+++ b/projects/cards/src/Audio.hpp
-@@ -15,6 +15,7 @@ namespace cards {
- class Audio {
- public:
-     bool start();
-+    bool ready() const { return m_open; }
-     void stop();
-     void update();                      // the next track once one ends
-     void setMusic(bool on, int volume); // volume 0..100
-diff --git a/projects/cards/src/CardsActivity.cpp b/projects/cards/src/CardsActivity.cpp
-index 6aa39c4..412d5f3 100644
---- a/projects/cards/src/CardsActivity.cpp
-+++ b/projects/cards/src/CardsActivity.cpp
-@@ -1,4 +1,6 @@
- #include "CardsActivity.hpp"
-+#include "Dashboard360.hpp"
-+#include "GuideLayout.hpp"
- 
- #include "social/NotificationLog.hpp"
- 
-@@ -499,6 +501,7 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
-     m_startSuspended = suspendedId;
-     m_startRunning = appRunning;
-     m_atBoot = atBoot;
-+    if (!atBoot) m_dashBoot = 0.f;
-     m_fromApplet = fromApplet;
- #else
-     (void)suspendedId;
-@@ -535,6 +538,8 @@ bool CardsActivity::onCreate() {
-     nxui::GpuDevice::setImageBudget(std::clamp<u64>(total / 4, 64ull << 20, 160ull << 20));
- 
-     m_settings.load();
-+    m_settings.introDone = true;
-+    m_settings.launchStyle = 0;
-     setLanguage(m_settings.language);
-     m_boxArt = m_settings.boxArt;
-     m_titleArt = m_settings.titlePics;
-@@ -582,7 +587,9 @@ bool CardsActivity::onCreate() {
-     const std::string f5 = fonts + "Inter-500.ttf", f6 = fonts + "Inter-600.ttf", f7 = fonts + "Inter-700.ttf";
-     if (!m_fTitle.load(gpu, ren, f7, 30) || !m_fPlay.load(gpu, ren, f7, 24) || !m_fLabel.load(gpu, ren, f6, 22)
-         || !m_fPill.load(gpu, ren, f6, 19) || !m_fBody.load(gpu, ren, f5, 17) || !m_fBadge.load(gpu, ren, f7, 15)
--        || !m_fCount.load(gpu, ren, f7, 21))
-+        || !m_fCount.load(gpu, ren, f7, 21)
-+        || !(m_fDashNav.load(gpu, ren, fonts + "selawkl.ttf", 30) || m_fDashNav.load(gpu, ren, f5, 30))
-+        || !(m_fGuide.load(gpu,ren,fonts+"selawk.ttf",26) || m_fGuide.load(gpu,ren,f5,26)))
-         return false;
-     const std::uint64_t tIcons = armGetSystemTick();
-     // The buttons' icons: read and decoded off the screen's thread (a first-draw read
-@@ -694,7 +701,7 @@ bool CardsActivity::onCreate() {
- 
-     // Always the first card on the list, in the sort you chose (it was put back to Title here
-     // at every start, so Last Played never stuck).
--    m_page = firstShownPage(); // the first page in your order (that isn't hidden)
-+    m_page = kGames; // the 360 Home hub opens on the game library
-     sortGames(m_settings.sort, false);
-     for (int& s : m_sels) s = 0;
-     m_scroll = 0.f;
-@@ -749,6 +756,8 @@ bool CardsActivity::onCreate() {
-         return out;
-     });
-     m_retryIn = 1.2f; // the shelf is covered by degrees, starting right away
-+    if (m_dashBoot>0.f && m_settings.startupClip) m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
-+    else m_dashBoot=0.f;
-     m_intro = m_settings.motion ? 0.f : 1.f; // the cards rise in (the game's picture lets go first: see onUpdate)
- #ifdef SWITCHU_MENU
-     if (m_atBoot && m_settings.lockScreen) lock();
-@@ -823,6 +832,9 @@ void CardsActivity::perfLine(const std::string& line) {
- }
- 
- void CardsActivity::onDestroy() {
-+    m_bootClip.stop();
-+    m_guideLabels.clear();
-+    if (m_guideTtf) { TTF_CloseFont(m_guideTtf);m_guideTtf=nullptr; }
-     m_jobsStop = true; // the network jobs stop early: closing must not wait them out
-     {
-         std::lock_guard<std::mutex> lk(m_mu);
-@@ -904,7 +916,7 @@ const Game* CardsActivity::current() {
- 
- void CardsActivity::applyTheme() {
-     m_theme = nxui::Theme::dark();
--    m_theme.panelBase = nxui::Color(0.08f, 0.09f, 0.13f, 0.86f);
-+    m_theme.panelBase = nxui::Color(0.16f, 0.16f, 0.16f, 0.98f);
-     m_theme.panelBorder = nxui::Color(1.f, 1.f, 1.f, 0.16f);
-     m_theme.panelHighlight = nxui::Color(1.f, 1.f, 1.f, 0.05f);
-     m_theme.iconDefault = nxui::Color(1.f, 1.f, 1.f, 0.06f);
-@@ -915,7 +927,7 @@ void CardsActivity::applyTheme() {
- }
- 
- nxui::Color CardsActivity::accent(float a) const {
--    return kAccents[std::clamp(m_settings.accent, 0, kAccentCount - 1)].color.withAlpha(a);
-+    return nxui::Color(0.35f, 0.85f, 0.06f, a);
- }
- 
- nxui::Color CardsActivity::glassTint(float a) const {
-@@ -955,6 +967,10 @@ void CardsActivity::loadAvatar() {
-         Pixels out;
-         AccountProfile profile{};
-         if (accountUidIsValid(&uid) && R_SUCCEEDED(accountGetProfile(&profile, uid))) {
-+            AccountProfileBase base{};
-+            AccountUserData userData{};
-+            if (R_SUCCEEDED(accountProfileGet(&profile,&userData,&base)))
-+                out.label.assign(base.nickname,std::find(base.nickname,base.nickname+sizeof(base.nickname),'\0'));
-             u32 size = 0;
-             if (R_SUCCEEDED(accountProfileGetImageSize(&profile, &size)) && size > 0) {
-                 std::vector<std::uint8_t> jpeg(size);
-@@ -1288,6 +1304,8 @@ void CardsActivity::wantArt() {
-         jobs.push_back({page[(size_t)i], what, m_artGen});
-     };
-     const int s = sel();
-+    if (dashLibrary())
-+        for (int i = (s/10)*10; i < std::min((s/10)*10+10, static_cast<int>(page.size())); ++i) add(i, kCard);
-     add(s, kCard);
-     add(s, kBackground);
-     add(s, kIcon); // (a title picture can mean a search online: after the pictures you see)
-@@ -1631,6 +1649,9 @@ void CardsActivity::goToPage(int page, int dir) {
-     if (m_moving) finishMove(true);
-     if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
-     m_page = page;
-+    dashBeginTab(page == kHomebrew ? 6 : page == kMedia ? 4 : 3);
-+    m_dashTile = sel();
-+    m_dashCard = static_cast<float>(m_dashTile);
-     m_pageDir = dir > 0 ? 1 : -1;
-     m_pageIn = m_settings.motion ? 0.f : 1.f;
-     m_detailIn = m_pageIn;
-@@ -2042,7 +2063,7 @@ void CardsActivity::comeBack() {
-     m_leaveT = 0.f;
-     m_leaveThen = nullptr;
-     m_intro = std::min(m_intro, 0.6f); // the cards rise back in
--    m_audio.setMusic(homeMusic(), m_settings.musicVolume);
-+    m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
- }
- 
- void CardsActivity::play() {
-@@ -4674,7 +4695,7 @@ void CardsActivity::quickChange(int row, int delta) {
-     takeFacts(true);
-     if (row == kQMusic) {
-         m_settings.musicVolume = std::clamp(m_settings.musicVolume + delta * 10, 0, 100);
--        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
-+        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
-     } else if (row == kQSounds) {
-         m_settings.soundVolume = std::clamp(m_settings.soundVolume + delta * 10, 0, 100);
-         m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
-@@ -4877,7 +4898,7 @@ void CardsActivity::updateMusic() {
-             spotifyDo(Spotify::Cmd::Volume, std::clamp(std::max(0, m_sp.volume) + (right ? 5 : -5), 0, 100));
-         } else if (left || right) {
-             m_settings.musicVolume = std::clamp(m_settings.musicVolume + (right ? 5 : -5), 0, 100);
--            m_audio.setMusic(homeMusic(), m_settings.musicVolume);
-+            m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
-             m_settings.save();
-         }
-     } else {
-@@ -5061,7 +5082,7 @@ void CardsActivity::updateSpotifyQr() {
-     if (state == Spotify::Login::Done) {
-         m_spQrOpen = false;
-         m_settings.spotify = true; // signed in: the music player shows it
--        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
-+        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
-         m_settings.save();
-         m_audio.play("activation");
-         say("Signed in: Spotify is in the music player now");
-@@ -5567,6 +5588,13 @@ void CardsActivity::buildSettings() {
-         [this, save]() { m_settings.players = !m_settings.players; save(); }, "Green dots on games played online now"));
-     look.rows.push_back(toggle("Animations", [this]() { return m_settings.motion; },
-         [this, save]() { m_settings.motion = !m_settings.motion; save(); }));
-+    look.rows.push_back(toggle("Startup animation", [this]() { return m_settings.startupClip; },
-+        [this, save]() { m_settings.startupClip=!m_settings.startupClip;save(); },
-+        "Play the original Xbox 360 startup when the app starts"));
-+    look.rows.push_back(action("Preview startup", [this]() {
-+        m_bootClip.stop();m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
-+        m_dashBoot=1.f;m_bootSkip={};m_bootPreview=true;m_audio.setMusic(false,m_settings.musicVolume);
-+    }));
-     m_sheet.push_back(std::move(look));
- 
-     // The lock screen: its own tab (HomeNX's lock screen shares the password and the picture).
-@@ -5639,7 +5667,7 @@ void CardsActivity::buildSettings() {
-     Section sound{"Sound", "music", {}};
-     sound.rows.push_back(toggle("Music", [this]() { return m_settings.music; }, [this, save]() {
-         m_settings.music = !m_settings.music;
--        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
-+        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
-         save();
-     }, "HomeNX's HOME music"));
-     sound.rows.push_back(slider("Music volume", [this]() { return m_settings.musicVolume; }, [this, save](int v) {
-@@ -7242,7 +7270,7 @@ void CardsActivity::keepTextCachesSmall() {
-         s_lastTrim = now;
-         f.trimCache(124, 3u << 20); // (trimCache scales its byte limit too)
-     };
--    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount}) keep(*f);
-+    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount, &m_fDashNav, &m_fGuide}) keep(*f);
- #ifdef SWITCHU_MENU
-     // Discord, Social and the keyboard draw with HomeNX's font: nothing trimmed
-     // its cache, and once full no new channel names or messages showed.
-@@ -7744,13 +7772,13 @@ void CardsActivity::onUpdate(float dt) {
-     // song were a stall on frames 2-3) at 1.5 s, the avatar at 3 s, and the
-     // icons decoded on a thread meanwhile.
-     if (m_startStage < 3) {
--        if (m_startStage < 2 && m_time > 1.5f) {
-+        if (m_startStage < 2 && (m_time > 1.5f || m_dashBoot>0.f)) {
-             m_startStage = 2;
-             m_audio.start();
-             m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
-             m_audio.setShuffle(m_settings.shuffle);
-             m_audio.setRepeat(m_settings.repeat);
--            m_audio.setMusic(homeMusic(), m_settings.musicVolume);
-+            m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
-         } else if (m_startStage == 2 && m_time > 3.f) {
-             m_startStage = 3;
-             loadAvatar();
-@@ -7758,6 +7786,7 @@ void CardsActivity::onUpdate(float dt) {
-     }
-     if (m_avatarJob.valid() && m_avatarJob.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-         const Pixels px = m_avatarJob.get();
-+        m_guideName=px.label.empty()?"Player":px.label;
-         auto tex = std::make_unique<nxui::Texture>();
-         if (!px.rgba.empty() && tex->loadFromPixels(app().gpu(), app().renderer(), px.rgba.data(), px.w, px.h))
-             m_avatar = std::move(tex);
-@@ -7794,6 +7823,7 @@ void CardsActivity::onUpdate(float dt) {
-         app().gpu().endTextureUploadBatch();
-     }
-     m_time += dt;
-+
-     updateNotices(dt);
-     updateStorage();
-     perfMark("start-up");
-@@ -7813,6 +7843,16 @@ void CardsActivity::onUpdate(float dt) {
-     }
-     perfMark("pictures");
-     m_audio.update();
-+    if (m_dashBoot>0.f && !m_settings.startupClip && !m_bootPreview) m_bootClip.stop();
-+    const bool bootActive=m_bootClip.update(app().gpu(),app().renderer(),m_audio.ready(),m_settings.sounds,m_settings.soundVolume);
-+    if (m_dashBoot>0.f && (!bootActive || (!m_settings.startupClip && !m_bootPreview))) {
-+        if (!m_bootClip.error().empty()) {
-+            perfLine("startup: "+std::string(m_bootClip.error()));
-+            say(std::string(m_bootClip.error())+". Try the full-memory homebrew launcher.");
-+        }
-+        m_dashBoot=0.f;m_bootPreview=false;
-+        m_audio.setMusic(homeMusic(),m_settings.musicVolume);
-+    }
-     perfMark("music");
-     const bool motion = m_settings.motion;
-     // A lagged frame doesn't skip through the animations: they take real time
-@@ -7823,6 +7863,18 @@ void CardsActivity::onUpdate(float dt) {
-     // rise hidden behind a still frame.
-     if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
-     step(m_pageIn, 0.38f);
-+    step(m_dashIn, 0.30f);
-+    if (m_dashGuide) {
-+        const float stepGuide=motion?std::min(dt,1.f/30.f)/0.18f:1.f;
-+        m_guideIn=std::clamp(m_guideIn+(m_guideClosing?-stepGuide:stepGuide),0.f,1.f);
-+        if (m_guideClosing && m_guideIn<=0.f) { m_dashGuide=false;m_guideClosing=false; }
-+        step(m_guideTabIn,0.16f);
-+        m_guidePos=m_guideFrom+(m_guideTab-m_guideFrom)*nxe::ease(m_guideTabIn);
-+        m_guideRowAt+=(m_dashGuideRow-m_guideRowAt)*(motion?std::min(1.f,dt*24.f):1.f);
-+    }
-+    if (dashLibrary()) m_dashTile = sel();
-+    m_dashCard += (static_cast<float>(m_dashTile)-m_dashCard) * (motion ? std::min(1.f,dt*15.f) : 1.f);
-+    if (std::abs(m_dashCard-m_dashTile)<0.002f) m_dashCard=static_cast<float>(m_dashTile);
-     step(m_detailIn, 0.25f);
-     step(m_sheen, 0.8f);
-     step(m_menuIn, 0.2f);
-@@ -8341,6 +8393,14 @@ void CardsActivity::onUpdate(float dt) {
-     }
- 
-     perfMark("HomeNX's screens, leaving");
-+    if (m_dashBoot > 0.f) {
-+        auto& bootInput=app().input();
-+        if (m_bootSkip.consume(bootInput.isHeld(nxui::Button::A)||bootInput.isHeld(nxui::Button::B),
-+                              bootInput.isDown(nxui::Button::A)||bootInput.isDown(nxui::Button::B))) {
-+            m_bootClip.stop();m_dashBoot=0.f;m_bootPreview=false;m_audio.setMusic(homeMusic(),m_settings.musicVolume);
-+        }
-+        return;
-+    }
-     if (updateLock(dt)) return;
-     perfMark("lock screen");
-     if (!m_settings.introDone && !m_introOpen && m_time > 0.8f && !m_leaving) { // the first time
-@@ -8370,7 +8430,7 @@ void CardsActivity::onUpdate(float dt) {
-         updateTask();
-         return;
-     }
--    if (handleTouch()) return;
-+    if (dashTouch()) return;
- 
-     if (m_pickOpen) { // (over Settings too)
-         updatePicker();
-@@ -8425,6 +8485,8 @@ void CardsActivity::onUpdate(float dt) {
-         return;
-     }
- 
-+    if (dashInput(dt)) return;
-+
-     // Left / right: repeating while held.
-     const bool left = in.isHeld(B::DLeft) || in.isHeld(B::LStickL) || in.isHeld(B::RStickL);
-     const bool right = in.isHeld(B::DRight) || in.isHeld(B::LStickR) || in.isHeld(B::RStickR);
-@@ -8527,51 +8589,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
-     m_drawMarkTick = armGetSystemTick();
-     m_drawMarkMs = 0.f;
-     m_drawMarkName = "";
--    drawStep("draw: the background");
--    drawBackground(r);
--    drawStep("draw: the cards");
--    drawCards(r);
--    drawStep("draw: the glass");
--    // One blurred copy of the frame for every glass shape on top of it, made
--    // again when what's behind changed: at once while things move, every 6th
--    // frame while only the background drifts, else kept (HomeNX's screens blur
--    // into the same copy: it's made each frame while one is open).
--    // While HOME is still settling in — the way back from a game, exactly when
--    // every cover uploads and the pop-up animates — the glass is drawn plain:
--    // re-rendering the blurred copy every frame on top of all that is what
--    // made the first seconds GPU-bound (the menu's own slow-GPU fallback used
--    // to catch it a moment later and stay plain for the whole session). Here
--    // the fancy glass only comes back once HOME is running steady.
--    m_frosted = r.gpu().offscreenReady() && !m_gpuSlow && m_time > 1.5f;
--    if (m_frosted) {
--        const bool moving = std::abs(m_scroll - static_cast<float>(sel())) > 0.002f || m_dragging || m_pageIn < 1.f
--                         || m_bgFade < 1.f || m_intro < 1.f || m_leaving || m_moving || focusRoot() != nullptr;
--        if (moving || ++m_blurAge >= (m_settings.bgMotion ? 6 : 60)) {
--            r.captureToOffscreen(false);
--            r.applyBlur(2.5f, 2);
--            m_blurAge = 0;
--        }
--    } else {
--        m_blurAge = 1000; // made at once when it's back
--    }
--    drawStep("draw: the cards' extras");
--    drawCardExtras(r);
--    drawStep("draw: the bar and the panel");
--    // Launching: the bar and the panel go first.
--    const int leaveStyle = launchStyle();
--    const float ui = m_leaving && leaveStyle != kNoAnimation && leaveStyle != kFade ? 1.f - easeOut(m_leaveT / 0.3f) : 1.f;
--    drawTopBar(r, easeOut(m_intro * 2.2f) * ui);
--    drawStep("draw: the panel");
--    drawPanel(r, easeOut((m_intro - 0.25f) * 2.f) * ui);
--    drawStep("draw: the messages");
--    if (m_moving) { // what Move does
--        const std::string hint = "Move it with  < >      A  Done      B  Put it back";
--        const float w = measured(m_fBody, hint).x + 44.f;
--        const nxui::Rect pill{640.f - w * 0.5f, 452.f, w, 40.f};
--        frost(r, pill, 20.f, nxui::Color(0.06f, 0.07f, 0.10f, 0.7f));
--        r.drawRoundedRectOutline(pill, accent(0.6f), 20.f, 1.5f);
--        textMid(r, m_fBody, hint, pill.x + 22.f, pill.y + 20.f, kWhite);
--    }
-+    m_frosted = false;
-+    if (m_dashBoot > 0.f) { drawDashBoot(r); return; }
-+    drawDashboard(r);
-     drawStep("draw: the menus");
-     drawSheet(r);
-     drawPopup(r); // (over Settings)
-@@ -8621,8 +8641,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
- }
- 
- void CardsActivity::frost(nxui::Renderer& r, const nxui::Rect& rect, float radius, const nxui::Color& tint) {
--    if (m_frosted) r.drawOffscreenRounded(0, rect, radius, kWhite.withAlpha(std::min(1.f, tint.a * 3.f)));
--    r.drawRoundedRect(rect, tint, radius);
-+    (void)radius;
-+    r.drawRect(rect, nxui::Color(0.16f, 0.16f, 0.16f, tint.a));
- }
- 
- void CardsActivity::glassCircle(nxui::Renderer& r, float cx, float cy, float d, bool focused, const char* name,
-@@ -8783,6 +8803,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
- }
- 
- bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
-+    if (!m_moving) {
-+        if (dashLibrary() && index >= 0 && index < static_cast<int>(games().size())) {
-+            const auto t=nxe::panel(index-m_dashCard, dashSlide());
-+            card={t.x,t.y,t.w,t.h};
-+        } else if (m_dashTab==1 && index==sel()) {
-+            const auto t=nxe::panel(m_dashTile-m_dashCard,dashSlide());
-+            card={t.x,t.y,t.w,t.h};
-+        } else return false;
-+        chosen=index==sel()?1.f:0.f;
-+        return true;
-+    }
-     const float rel = static_cast<float>(index) - m_scroll;
-     // A page switch slides the row in from the side.
-     float slide = (1.f - easeOut(m_pageIn)) * 160.f * static_cast<float>(m_pageDir);
-@@ -9310,7 +9341,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
-     // The control on the right, and the room it leaves for the label.
-     const float right = row.x + row.width - 18.f;
-     float control = 0.f;
--    const nxui::Color blue = nxui::Color(0.55f, 0.75f, 1.f, a);
-+    const nxui::Color blue = nxui::Color(0.62f, 0.89f, 0.38f, a);
-     switch (item.kind) {
-         case MenuItem::Toggle: {
-             const float on = item.level ? item.level() : 0.f;
-@@ -10037,4 +10068,7 @@ void CardsActivity::updateStorage() {
-     }
- }
- 
-+#include "Dashboard360.inc"
-+#include "Guide360.inc"
-+
- } // namespace cards
-diff --git a/projects/cards/src/CardsActivity.hpp b/projects/cards/src/CardsActivity.hpp
-index 0fed0fa..d18972d 100644
---- a/projects/cards/src/CardsActivity.hpp
-+++ b/projects/cards/src/CardsActivity.hpp
-@@ -1,5 +1,6 @@
- #pragma once
- #include "Audio.hpp"
-+#include "BootClip.hpp"
- #include "Library.hpp"
- #include "Mtp.hpp"
- #include "Settings.hpp"
-@@ -63,6 +64,48 @@ public:
-     nxui::Widget* focusRoot() override; // HomeNX's screens when one is open; else it reads the buttons itself
- 
- private:
-+    // Xbox 360 dashboard shell. Existing launchers, workers and modal screens
-+    // remain owned by CardsActivity.
-+    nxui::Font m_fDashNav;
-+    int m_dashTab = 1, m_dashTile = 0;
-+    int m_dashPrevTab = 1, m_dashDir = 1;
-+    bool m_dashNav = false;
-+    float m_dashRepeat = 0.f, m_dashIn = 1.f;
-+    float m_dashCard = 0.f, m_dashPrevCard = 0.f, m_dashBoot = 1.f;
-+    int m_dashPrevTile = 0, m_dashPrevPage = 0, m_dashGuideRow = 0;
-+    bool m_dashGuide = false;
-+    int m_guideTab=2,m_guideView=0;
-+    std::array<int,5> m_guideSels{};
-+    float m_guideIn=0.f,m_guideTabIn=1.f,m_guideRowAt=0.f,m_guidePos=2.f,m_guideFrom=2.f;
-+    bool m_guideClosing=false;
-+    std::string m_guideName="Player",m_guideNote;
-+    nxui::Font m_fGuide;
-+    TTF_Font* m_guideTtf=nullptr;
-+    std::unordered_map<std::string,std::unique_ptr<nxui::Texture>> m_guideLabels;
-+    std::vector<std::string> guideRows();
-+    void openGuide();
-+    void closeGuide(bool animate);
-+    void guideTab(int delta);
-+    void guideBack();
-+    void guideLabel(nxui::Renderer& r,const std::string& label,float cx,float cy,nxui::Color tint);
-+    void drawGuide(nxui::Renderer& r);
-+    void dashMove(int delta);
-+    void dashGuideActivate();
-+    BootClip m_bootClip;
-+    boot360::SkipGate m_bootSkip;
-+    bool m_bootPreview=false;
-+    void drawDashBoot(nxui::Renderer& r);
-+    int dashCount() const;
-+    bool dashLibrary() const;
-+    void dashTab(int tab);
-+    void dashBeginTab(int tab);
-+    float dashSlide() const;
-+    void dashActivate();
-+    void dashSearch();
-+    void dashSettings(const std::string& section);
-+    bool dashInput(float dt);
-+    bool dashTouch();
-+    void drawDashboard(nxui::Renderer& r);
-     enum class Zone { Top, Cards, Bottom };
-     enum Page { kGames, kHomebrew, kNintendo, kMedia, kPageCount };
-     int pageCount() const { return kPageCount + static_cast<int>(m_settings.customPages.size()); }
-@@ -260,6 +303,7 @@ private:
-     struct Pixels {
-         std::vector<std::uint8_t> rgba;
-         int w = 0, h = 0;
-+        std::string label;
-     };
-     std::unique_ptr<nxui::Texture> m_wallTex;
-     std::future<Pixels> m_wallJob;
-diff --git a/projects/cards/src/Settings.hpp b/projects/cards/src/Settings.hpp
-index b7d5dff..a23c64c 100644
---- a/projects/cards/src/Settings.hpp
-+++ b/projects/cards/src/Settings.hpp
-@@ -39,6 +39,7 @@ struct Settings {
-     bool sounds = true;
-     int soundVolume = 80;     // 0..100
-     bool players = true;      // Nextendo's green dots
-+    bool startupClip = true; // recorded startup, independent of UI transitions
-     bool motion = true;       // animations (off: things move straight to place)
-     bool bgMotion = true;     // the background art drifts
-     int startPage = 0;        // (old: the page order's first is where it opens now)
-@@ -116,6 +117,7 @@ struct Settings {
-             soundVolume = j.value("soundVolume", soundVolume);
-             players = j.value("players", players);
-             motion = j.value("motion", motion);
-+            startupClip = j.value("startupClip",startupClip);
-             bgMotion = j.value("bgMotion", bgMotion);
-             startPage = j.value("startPage", startPage);
-             pageOrder = j.value("pageOrder", pageOrder);
-@@ -186,7 +188,7 @@ struct Settings {
-     void save() const {
-         nlohmann::json j = {{"music", music}, {"musicVolume", musicVolume}, {"shuffle", shuffle}, {"repeat", repeat},
-                             {"sounds", sounds}, {"soundVolume", soundVolume}, {"players", players},
--                            {"motion", motion}, {"bgMotion", bgMotion}, {"startPage", startPage}, {"pageOrder", pageOrder},
-+                            {"motion", motion}, {"startupClip", startupClip}, {"bgMotion", bgMotion}, {"startPage", startPage}, {"pageOrder", pageOrder},
-                             {"sortOrder", sort}, {"haze", haze}, {"boxArt", boxArt}, {"accent", accent},
-                             {"glass", glass}, {"launchStyle", launchStyle}, {"clock24", clock24}, {"showFree", showFree}, {"showTemp", showTemp}, {"titlePics", titlePics}, {"mediaIn", mediaIn}, {"mediaOut", mediaOut}, {"gamesIn", gamesIn}, {"gamesOut", gamesOut}, {"fullCards", fullCards}, {"nroHash", nroHash}, {"titles", titles}, {"askUser", askUser}, {"panelApp", panelApp},
-                             {"lockScreen", lockScreen}, {"lockMusic", lockMusic}, {"keepHomebrew", keepHomebrew}, {"hbPath", hbPath}, {"hbHost", hbHost}, {"hiddenCards", hiddenCards}, {"sheetBack", sheetBack}, {"sheetBackRow", sheetBackRow}, {"hiddenPages", hiddenPages}, {"spotify", spotify}, {"picturesAt", picturesAt}, {"achSeenAt", achSeenAt},{"introDone", introDone}, {"wallpaper", wallpaper}, {"names", names},
-diff --git a/xmake.lua b/xmake.lua
-index d9ca0a5..d8987fb 100644
---- a/xmake.lua
-+++ b/xmake.lua
-@@ -187,7 +187,7 @@ target("SwitchU")
-     add_includedirs("projects/manager/src", {public = false})
-     -- CardsNX as HOME (NXToggle > Home screen): its screen, built in; its files
-     -- (fonts, icons, the GameTDB index) ship in switch/SwitchU/cards/.
--    add_files("projects/cards/src/Audio.cpp", "projects/cards/src/CardsActivity.cpp", "projects/cards/src/Library.cpp",
-+    add_files("projects/cards/src/BootClip.cpp", "projects/cards/src/Audio.cpp", "projects/cards/src/CardsActivity.cpp", "projects/cards/src/Library.cpp",
-               "projects/cards/src/Mtp.cpp", "projects/cards/src/Spotify.cpp")
-     add_files("projects/updater/src/Catalog.cpp") -- homebrew updates, as the Homebrew Manager finds them
-     add_includedirs("projects/cards/src", {public = false})
-@@ -417,7 +417,9 @@ target("CardsNX")
-         local romfs_dir = path.join(os.projectdir(), "build/cards-romfs")
-         os.mkdir(path.join(romfs_dir, "fonts"))
-         os.mkdir(path.join(romfs_dir, "icons"))
-+        os.cp(path.join(os.projectdir(), "projects/cards/romfs/boot"), romfs_dir)
-         os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/*.ttf"), path.join(romfs_dir, "fonts"))
-+        os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/Selawik-OFL.txt"), path.join(romfs_dir, "fonts"))
-         os.cp(path.join(os.projectdir(), "projects/cards/romfs/icons/*.png"), path.join(romfs_dir, "icons"))
-         os.mkdir(path.join(romfs_dir, "certs"))
-         os.cp(path.join(os.projectdir(), "projects/cards/romfs/certs/*.pem"), path.join(romfs_dir, "certs"))
 diff --git a/GUIDE-REFERENCES.md b/GUIDE-REFERENCES.md
 new file mode 100644
-index 0000000..6eb66eb
+index 0000000000000000000000000000000000000000..6eb66eb75abb3a5a8ca9dd8526dad01656d1b05e
 --- /dev/null
 +++ b/GUIDE-REFERENCES.md
 @@ -0,0 +1,62 @@
@@ -616,7 +68,7 @@ index 0000000..6eb66eb
 +comparison with Xbox hardware have not been performed.
 diff --git a/NXE-REFERENCES.md b/NXE-REFERENCES.md
 new file mode 100644
-index 0000000..dcc2837
+index 0000000000000000000000000000000000000000..dcc2837a822c9f13990733d1e23cd86e2f7d4de2
 --- /dev/null
 +++ b/NXE-REFERENCES.md
 @@ -0,0 +1,59 @@
@@ -681,10 +133,10 @@ index 0000000..dcc2837
 +frame verification and remaining hardware limits.
 diff --git a/README-360.md b/README-360.md
 new file mode 100644
-index 0000000..7d3028c
+index 0000000000000000000000000000000000000000..169a91f96b26d1c0a1415161fa5d913ba2de44e5
 --- /dev/null
 +++ b/README-360.md
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,100 @@
 +# HomeNX 360 — experimental dashboard fork
 +
 +Based on `ad3333m/homenx` commit `94f2bd56698fed40f2897131ea09463775840767`.
@@ -692,7 +144,7 @@ index 0000000..7d3028c
 +
 +This changes CardsNX, including CardsNX running as the HomeNX HOME screen, into
 +an experimental 2008 NXE-inspired dashboard: vertical channels, overlapping
-+cards, reflections, a Guide and a skippable recorded Xbox 360 startup. Game artwork and
++cards, reflections, a Guide, full-screen NXE settings and a skippable recorded Xbox 360 startup. Game artwork and
 +names come from the Switch's library. Existing HomeNX dialogs remain available.
 +The startup runs inside HomeNX; it does not replace the console bootloader.
 +See [the reference log](NXE-REFERENCES.md) for the evidence and remaining gaps.
@@ -751,6 +203,22 @@ index 0000000..7d3028c
 +one continuous carousel. During the startup, A/B skips the animation. The
 +**Startup animation** setting in Look controls the clip. **Animations** controls
 +channel/card/Guide transitions separately. **Preview startup** replays the clip.
++Startup controls also appear in **System Settings → Console Settings → Startup
++and Shutdown**.
++
++## Settings controls
++
++System Settings opens the NXE screen. Up/Down and either stick select rows;
++A opens or changes a setting, Left/Right adjusts values, B returns to the
++previous page and row, and Plus closes settings. Touch a category to open it.
++A first touch on a different value only focuses it; touch it again or use
++the right-hand minus/plus controls to change it. The A/B footer is touchable.
++
++HomeNX Preferences is the added eighth root entry for dashboard, games/apps,
++lock screen, notifications, pictures and update tools. Console Settings uses
++the eight NXE category names. Xbox camera, disc auto-play and LIVE features are
++explicitly unavailable. Console date/time and Nintendo network configuration
++require the HOME frontend. See `SETTINGS-REFERENCES.md` for the complete mapping.
 +
 +## Undo
 +
@@ -769,9 +237,104 @@ index 0000000..7d3028c
 +Inside the Guide, Left/Right or L/R changes blades; Up/Down moves between rows.
 +A selects, B returns/closes, X opens profiles, Y returns to Dashboard, and Plus
 +also closes it. The Media blade controls the real HomeNX music player.
+diff --git a/SETTINGS-REFERENCES.md b/SETTINGS-REFERENCES.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..1e6c7a89b18bf82ea34abf23ab1b607f0ea3205c
+--- /dev/null
++++ b/SETTINGS-REFERENCES.md
+@@ -0,0 +1,89 @@
++# NXE settings references and functional scope
++
++## References inspected
++
++The target is the original 2008–2010 blue/slate NXE settings interface, not
++the white Kinect or Metro settings screen.
++
++- [Ainex reference page](https://ainex-project.github.io/wiki/faq/quickstart/dumping/)
++  and its [1280×720 NXE System Settings capture](https://ainex-project.github.io/wiki/faq/quickstart/images/NXESystemSettingsMenu.png):
++  inspected directly. Measured title at approximately x95/y67, main panel
++  x194/y110/w890/h484, list x209/y125/w423 with 46-pixel pitch, right-hand
++  explanation at x665, and A/B prompts at y650. The seven original categories
++  and the silver console, family, memory, network, computer, camera and setup
++  icon silhouettes were used as references.
++- [Plusnet's older dashboard network guide](https://community.plus.net/t5/Library/Xbox-360-How-to-set-up-a-wireless-connection-on-older-dashboard/ba-p/1322572),
++  [System Settings image](https://www.plus.net/images/support/broadband/gaming/nxe-02.jpg),
++  and [Configure Network image](https://www.plus.net/images/support/broadband/gaming/nxe-04.jpg):
++  inspected directly to cross-check the dark panel, green highlight, right-hand
++  explanation and original networking flow.
++- [NXE 2.0.8507.0 Console Settings photograph](https://i.ebayimg.com/images/g/chUAAOSwkwhlto23/s-l1200.jpg),
++  from [this console listing](https://www.ebay.com/itm/355419477497): inspected
++  directly. Confirms Display, Audio, Language and Locale, Clock, Startup and
++  Shutdown, Auto-Play, Remote Control and System Info, in that order.
++- [August 2009 update notes](https://digiex.net/threads/nxe-update-2-0-8495-0-exclusive-early-download.1968/)
++  confirm Console Settings was reorganized during NXE. Different NXE builds
++  therefore have different submenu arrangements.
++
++## Video research and access limits
++
++Located [MrMario2011's NXE Dashboard Overview](https://www.youtube.com/watch?v=aUibGJebJv0)
++and [Xbox 360 NXE Dashboard walkthrough](https://www.youtube.com/watch?v=SwZ-df9oUwk).
++YouTube playback/download access returned 403 in this workspace, and the web
++reader could not fetch the latter video's playback page. These videos were
++located but their frames were **not watched or analyzed**. No claim is made
++to have watched every NXE settings video. The visual measurements above come
++from the accessible original-interface screenshots, not video thumbnails.
++The 0.22-second page movement, 0.24-second entrance and 0.18-second exit are
++chosen approximations rather than measured Xbox animation timings.
++
++## Functional mapping
++
++Every category opens a page. Existing HomeNX setting getters, actions, change
++callbacks and persistence remain responsible for the underlying functions.
++
++| NXE category | Switch / HomeNX behavior |
++|---|---|
++| Console Settings | Eight original category names and order, each opening its submenu |
++| Display | TV output, HOME resolution where available, auto-brightness and handheld brightness |
++| Audio | Real music and effects volume, shuffle/repeat, Bluetooth headphones and speaker controls |
++| Language and Locale | HomeNX language; console/account region is explicitly managed by Nintendo |
++| Clock | Dashboard clock format; HOME build also offers automatic/manual console time |
++| Startup and Shutdown | Recorded original startup on/off and preview, handheld/TV sleep timers, real power controls |
++| Auto-Play | Software launch animation and HOME launch preferences; Xbox disc auto-play explicitly unavailable |
++| Remote Control | Bluetooth, pairing, button mapping, vibration, wired controller controls and available HomeNX tests |
++| System Info | Actual Switch firmware, Atmosphere, software counts, storage and HomeNX build information |
++| Family Settings | Real profile selection and HomeNX lock-screen controls; Nintendo parental restrictions are not simulated |
++| Memory | Console/microSD free space and existing installed-software transfer workflow |
++| Network Settings | Actual Wi-Fi switch, network/IP information and connection test; HOME can open Nintendo's connection applet |
++| Computers | Real USB MTP file transfer, rather than Xbox Windows Media Center pairing |
++| Xbox LIVE Vision | Opens an explicit compatibility information page; no fake camera or Xbox LIVE connection |
++| Initial Setup | Profile, language, clock, network and startup shortcuts; does not reset the console |
++| HomeNX Preferences | Added eighth root entry preserving dashboard, games/apps, notifications, pictures, lock and update tools |
++
++Up/Down and either stick select rows. A selects/changes, Left/Right adjusts
++values, B returns to the previous page and row, and Plus closes settings.
++Controller repeat, animated focus, scroll and opening/closing are supported.
++Touching a category opens it. Touching a different value only focuses it;
++touch it again or use the explicit left/right controls to change it. A/B
++footer targets work. Read-only information remains read-only.
++
++Only controls that apply to this NXE shell are included; old CardsNX-only bar,
++glass/background and tab-order controls are omitted. The upstream HomeNX
++updater still installs upstream HomeNX and can replace this customization.
++
++## Fidelity and validation limits
++
++Selawik substitutes the original Xbox font. The circular background, silver
++icons and Xbox-style orb are new vector adaptations, not extracted Xbox system
++resources. The host preview tool shares native scene primitives, but its SVG
++text rasterization is not a Switch framebuffer capture. Nintendo applets and
++existing HomeNX tool dialogs retain their own interfaces. The Switch has no
++Xbox 360 disc drive, Vision camera service or Xbox LIVE stack.
++
++Host tests compile the **production page builder and input handlers** against
++callback fixtures. They cover all 23 pages, both preview/HOME availability,
++every category link, saved callback ownership, shared setting values, back
++history, actual controller and touch handlers, and long-list scrolling bounds.
++These tests do not exercise real console services or establish physical Switch
++compatibility. No pixel-perfect hardware comparison has been performed.
 diff --git a/STARTUP-REFERENCES.md b/STARTUP-REFERENCES.md
 new file mode 100644
-index 0000000..8693ff9
+index 0000000000000000000000000000000000000000..8693ff9efb1f81f6088ce88f2271a26fa9866533
 --- /dev/null
 +++ b/STARTUP-REFERENCES.md
 @@ -0,0 +1,63 @@
@@ -838,9 +401,28 @@ index 0000000..8693ff9
 +bytes with the bank. Album/applet mode has limited memory; full-memory homebrew
 +launch remains recommended. Playback errors are reported rather than silently
 +skipping. Settings > Look > Preview startup allows an immediate playback check.
+diff --git a/THIRD_PARTY_NOTICES.md b/THIRD_PARTY_NOTICES.md
+index 67af324719cf48a2bcf20f6211eeebe6f84be449..653b30c6d3de6cf92ca82b28bdc240566e08713e 100644
+--- a/THIRD_PARTY_NOTICES.md
++++ b/THIRD_PARTY_NOTICES.md
+@@ -62,3 +62,14 @@ Wii U sounds and music are Nintendo's.
+ 
+ - **PowerCmptr**: the HomeNX lock screen and Discord token sign-in
+   ([ad3333m/homenx#5](https://github.com/ad3333m/homenx/pull/5)).
++
++
++## HomeNX 360 navigation typeface
++
++Selawik Light, Copyright 2015 Microsoft Corporation. Licensed under the SIL
++Open Font License 1.1. The unmodified font is from Microsoft/Selawik release
++1.01. The complete license accompanies it in
++`projects/cards/romfs/fonts/Selawik-OFL.txt` and the packaged font assets.
++
++Xbox 360 startup footage and sound are Microsoft material, separate from the
++GPL code. See media/STARTUP-MEDIA-NOTICE.md for the source recording and hashes.
 diff --git a/media/STARTUP-MEDIA-NOTICE.md b/media/STARTUP-MEDIA-NOTICE.md
 new file mode 100644
-index 0000000..5049317
+index 0000000000000000000000000000000000000000..5049317808f81c5c4544be04ca6b551305d282a9
 --- /dev/null
 +++ b/media/STARTUP-MEDIA-NOTICE.md
 @@ -0,0 +1,15 @@
@@ -861,7 +443,7 @@ index 0000000..5049317
 +are included. Nintendo and Microsoft do not endorse this project.
 diff --git a/packages/s/switch-pkg/xmake.lua b/packages/s/switch-pkg/xmake.lua
 new file mode 100644
-index 0000000..72a4895
+index 0000000000000000000000000000000000000000..72a4895a814fda2c8e6b37075626d8c250e8d3d6
 --- /dev/null
 +++ b/packages/s/switch-pkg/xmake.lua
 @@ -0,0 +1,50 @@
@@ -917,7 +499,7 @@ index 0000000..72a4895
 +package_end()
 diff --git a/projects/cards/romfs/boot/STARTUP-MEDIA-NOTICE.md b/projects/cards/romfs/boot/STARTUP-MEDIA-NOTICE.md
 new file mode 100644
-index 0000000..5049317
+index 0000000000000000000000000000000000000000..5049317808f81c5c4544be04ca6b551305d282a9
 --- /dev/null
 +++ b/projects/cards/romfs/boot/STARTUP-MEDIA-NOTICE.md
 @@ -0,0 +1,15 @@
@@ -938,7 +520,7 @@ index 0000000..5049317
 +are included. Nintendo and Microsoft do not endorse this project.
 diff --git a/projects/cards/romfs/boot/nxe360.json b/projects/cards/romfs/boot/nxe360.json
 new file mode 100644
-index 0000000..ece7f44
+index 0000000000000000000000000000000000000000..ece7f44d2981dbb5a2c811e7d8938d063f435d42
 --- /dev/null
 +++ b/projects/cards/romfs/boot/nxe360.json
 @@ -0,0 +1,311 @@
@@ -1255,7 +837,7 @@ index 0000000..ece7f44
 +}
 diff --git a/projects/cards/romfs/fonts/Selawik-OFL.txt b/projects/cards/romfs/fonts/Selawik-OFL.txt
 new file mode 100644
-index 0000000..ac8fdb9
+index 0000000000000000000000000000000000000000..ac8fdb956049621af2aecd3a8253c38789748c4a
 --- /dev/null
 +++ b/projects/cards/romfs/fonts/Selawik-OFL.txt
 @@ -0,0 +1,91 @@
@@ -2836,9 +2418,33 @@ XNW;VIpK^;^3QYQX?pdM-b7B7j$H*n$
 literal 0
 HcmV?d00001
 
+diff --git a/projects/cards/src/Audio.cpp b/projects/cards/src/Audio.cpp
+index 3e32dd89eb045de08376617ddd93af28d838f2ee..9698a73f41a9c0889588265d96e500ffdfaffa03 100644
+--- a/projects/cards/src/Audio.cpp
++++ b/projects/cards/src/Audio.cpp
+@@ -243,6 +243,7 @@ bool Audio::start() {
+ 
+ void Audio::opened() {
+     Mix_AllocateChannels(8);
++    Mix_ReserveChannels(1); // channel 0 belongs to the startup clip
+     m_open = true;
+     Mix_Volume(-1, MIX_MAX_VOLUME * m_soundVolume / 100);
+     Mix_HookMusicFinished(onTrackEnded);
+diff --git a/projects/cards/src/Audio.hpp b/projects/cards/src/Audio.hpp
+index cd6ec695a7d2303eb5d01e962a200b270d82b18e..ea90cbfb8838c28f55880b6c22ada41b767c558f 100644
+--- a/projects/cards/src/Audio.hpp
++++ b/projects/cards/src/Audio.hpp
+@@ -15,6 +15,7 @@ namespace cards {
+ class Audio {
+ public:
+     bool start();
++    bool ready() const { return m_open; }
+     void stop();
+     void update();                      // the next track once one ends
+     void setMusic(bool on, int volume); // volume 0..100
 diff --git a/projects/cards/src/BootClip.cpp b/projects/cards/src/BootClip.cpp
 new file mode 100644
-index 0000000..ed1aab6
+index 0000000000000000000000000000000000000000..ed1aab60243d5a47b585993d2e7b1f8e807f6649
 --- /dev/null
 +++ b/projects/cards/src/BootClip.cpp
 @@ -0,0 +1,95 @@
@@ -2939,7 +2545,7 @@ index 0000000..ed1aab6
 +} // namespace cards
 diff --git a/projects/cards/src/BootClip.hpp b/projects/cards/src/BootClip.hpp
 new file mode 100644
-index 0000000..be50fdd
+index 0000000000000000000000000000000000000000..be50fdd9a43be9285be7976c2331b1f3d5b62b93
 --- /dev/null
 +++ b/projects/cards/src/BootClip.hpp
 @@ -0,0 +1,37 @@
@@ -2982,7 +2588,7 @@ index 0000000..be50fdd
 +} // namespace cards
 diff --git a/projects/cards/src/BootFormat.hpp b/projects/cards/src/BootFormat.hpp
 new file mode 100644
-index 0000000..713b448
+index 0000000000000000000000000000000000000000..713b4483c53815ee618fc5dc445c9e2984c4e87c
 --- /dev/null
 +++ b/projects/cards/src/BootFormat.hpp
 @@ -0,0 +1,75 @@
@@ -3061,9 +2667,749 @@ index 0000000..713b448
 +    }
 +};
 +} // namespace cards::boot360
+diff --git a/projects/cards/src/CardsActivity.cpp b/projects/cards/src/CardsActivity.cpp
+index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d565c2a4036 100644
+--- a/projects/cards/src/CardsActivity.cpp
++++ b/projects/cards/src/CardsActivity.cpp
+@@ -1,4 +1,7 @@
+ #include "CardsActivity.hpp"
++#include "Dashboard360.hpp"
++#include "GuideLayout.hpp"
++#include "SettingsScene.hpp"
+ 
+ #include "social/NotificationLog.hpp"
+ 
+@@ -499,6 +502,7 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
+     m_startSuspended = suspendedId;
+     m_startRunning = appRunning;
+     m_atBoot = atBoot;
++    if (!atBoot) m_dashBoot = 0.f;
+     m_fromApplet = fromApplet;
+ #else
+     (void)suspendedId;
+@@ -535,6 +539,8 @@ bool CardsActivity::onCreate() {
+     nxui::GpuDevice::setImageBudget(std::clamp<u64>(total / 4, 64ull << 20, 160ull << 20));
+ 
+     m_settings.load();
++    m_settings.introDone = true;
++    m_settings.launchStyle = 0;
+     setLanguage(m_settings.language);
+     m_boxArt = m_settings.boxArt;
+     m_titleArt = m_settings.titlePics;
+@@ -582,7 +588,9 @@ bool CardsActivity::onCreate() {
+     const std::string f5 = fonts + "Inter-500.ttf", f6 = fonts + "Inter-600.ttf", f7 = fonts + "Inter-700.ttf";
+     if (!m_fTitle.load(gpu, ren, f7, 30) || !m_fPlay.load(gpu, ren, f7, 24) || !m_fLabel.load(gpu, ren, f6, 22)
+         || !m_fPill.load(gpu, ren, f6, 19) || !m_fBody.load(gpu, ren, f5, 17) || !m_fBadge.load(gpu, ren, f7, 15)
+-        || !m_fCount.load(gpu, ren, f7, 21))
++        || !m_fCount.load(gpu, ren, f7, 21)
++        || !(m_fDashNav.load(gpu, ren, fonts + "selawkl.ttf", 30) || m_fDashNav.load(gpu, ren, f5, 30))
++        || !(m_fGuide.load(gpu,ren,fonts+"selawk.ttf",26) || m_fGuide.load(gpu,ren,f5,26)))
+         return false;
+     const std::uint64_t tIcons = armGetSystemTick();
+     // The buttons' icons: read and decoded off the screen's thread (a first-draw read
+@@ -694,7 +702,7 @@ bool CardsActivity::onCreate() {
+ 
+     // Always the first card on the list, in the sort you chose (it was put back to Title here
+     // at every start, so Last Played never stuck).
+-    m_page = firstShownPage(); // the first page in your order (that isn't hidden)
++    m_page = kGames; // the 360 Home hub opens on the game library
+     sortGames(m_settings.sort, false);
+     for (int& s : m_sels) s = 0;
+     m_scroll = 0.f;
+@@ -749,6 +757,8 @@ bool CardsActivity::onCreate() {
+         return out;
+     });
+     m_retryIn = 1.2f; // the shelf is covered by degrees, starting right away
++    if (m_dashBoot>0.f && m_settings.startupClip) m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
++    else m_dashBoot=0.f;
+     m_intro = m_settings.motion ? 0.f : 1.f; // the cards rise in (the game's picture lets go first: see onUpdate)
+ #ifdef SWITCHU_MENU
+     if (m_atBoot && m_settings.lockScreen) lock();
+@@ -823,6 +833,9 @@ void CardsActivity::perfLine(const std::string& line) {
+ }
+ 
+ void CardsActivity::onDestroy() {
++    m_bootClip.stop();
++    m_guideLabels.clear();
++    if (m_guideTtf) { TTF_CloseFont(m_guideTtf);m_guideTtf=nullptr; }
+     m_jobsStop = true; // the network jobs stop early: closing must not wait them out
+     {
+         std::lock_guard<std::mutex> lk(m_mu);
+@@ -904,7 +917,7 @@ const Game* CardsActivity::current() {
+ 
+ void CardsActivity::applyTheme() {
+     m_theme = nxui::Theme::dark();
+-    m_theme.panelBase = nxui::Color(0.08f, 0.09f, 0.13f, 0.86f);
++    m_theme.panelBase = nxui::Color(0.16f, 0.16f, 0.16f, 0.98f);
+     m_theme.panelBorder = nxui::Color(1.f, 1.f, 1.f, 0.16f);
+     m_theme.panelHighlight = nxui::Color(1.f, 1.f, 1.f, 0.05f);
+     m_theme.iconDefault = nxui::Color(1.f, 1.f, 1.f, 0.06f);
+@@ -915,7 +928,7 @@ void CardsActivity::applyTheme() {
+ }
+ 
+ nxui::Color CardsActivity::accent(float a) const {
+-    return kAccents[std::clamp(m_settings.accent, 0, kAccentCount - 1)].color.withAlpha(a);
++    return nxui::Color(0.35f, 0.85f, 0.06f, a);
+ }
+ 
+ nxui::Color CardsActivity::glassTint(float a) const {
+@@ -955,6 +968,10 @@ void CardsActivity::loadAvatar() {
+         Pixels out;
+         AccountProfile profile{};
+         if (accountUidIsValid(&uid) && R_SUCCEEDED(accountGetProfile(&profile, uid))) {
++            AccountProfileBase base{};
++            AccountUserData userData{};
++            if (R_SUCCEEDED(accountProfileGet(&profile,&userData,&base)))
++                out.label.assign(base.nickname,std::find(base.nickname,base.nickname+sizeof(base.nickname),'\0'));
+             u32 size = 0;
+             if (R_SUCCEEDED(accountProfileGetImageSize(&profile, &size)) && size > 0) {
+                 std::vector<std::uint8_t> jpeg(size);
+@@ -1288,6 +1305,8 @@ void CardsActivity::wantArt() {
+         jobs.push_back({page[(size_t)i], what, m_artGen});
+     };
+     const int s = sel();
++    if (dashLibrary())
++        for (int i = (s/10)*10; i < std::min((s/10)*10+10, static_cast<int>(page.size())); ++i) add(i, kCard);
+     add(s, kCard);
+     add(s, kBackground);
+     add(s, kIcon); // (a title picture can mean a search online: after the pictures you see)
+@@ -1631,6 +1650,9 @@ void CardsActivity::goToPage(int page, int dir) {
+     if (m_moving) finishMove(true);
+     if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
+     m_page = page;
++    dashBeginTab(page == kHomebrew ? 6 : page == kMedia ? 4 : 3);
++    m_dashTile = sel();
++    m_dashCard = static_cast<float>(m_dashTile);
+     m_pageDir = dir > 0 ? 1 : -1;
+     m_pageIn = m_settings.motion ? 0.f : 1.f;
+     m_detailIn = m_pageIn;
+@@ -2042,7 +2064,7 @@ void CardsActivity::comeBack() {
+     m_leaveT = 0.f;
+     m_leaveThen = nullptr;
+     m_intro = std::min(m_intro, 0.6f); // the cards rise back in
+-    m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++    m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+ }
+ 
+ void CardsActivity::play() {
+@@ -4674,7 +4696,7 @@ void CardsActivity::quickChange(int row, int delta) {
+     takeFacts(true);
+     if (row == kQMusic) {
+         m_settings.musicVolume = std::clamp(m_settings.musicVolume + delta * 10, 0, 100);
+-        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+     } else if (row == kQSounds) {
+         m_settings.soundVolume = std::clamp(m_settings.soundVolume + delta * 10, 0, 100);
+         m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
+@@ -4877,7 +4899,7 @@ void CardsActivity::updateMusic() {
+             spotifyDo(Spotify::Cmd::Volume, std::clamp(std::max(0, m_sp.volume) + (right ? 5 : -5), 0, 100));
+         } else if (left || right) {
+             m_settings.musicVolume = std::clamp(m_settings.musicVolume + (right ? 5 : -5), 0, 100);
+-            m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++            m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+             m_settings.save();
+         }
+     } else {
+@@ -5061,7 +5083,7 @@ void CardsActivity::updateSpotifyQr() {
+     if (state == Spotify::Login::Done) {
+         m_spQrOpen = false;
+         m_settings.spotify = true; // signed in: the music player shows it
+-        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+         m_settings.save();
+         m_audio.play("activation");
+         say("Signed in: Spotify is in the music player now");
+@@ -5567,6 +5589,13 @@ void CardsActivity::buildSettings() {
+         [this, save]() { m_settings.players = !m_settings.players; save(); }, "Green dots on games played online now"));
+     look.rows.push_back(toggle("Animations", [this]() { return m_settings.motion; },
+         [this, save]() { m_settings.motion = !m_settings.motion; save(); }));
++    look.rows.push_back(toggle("Startup animation", [this]() { return m_settings.startupClip; },
++        [this, save]() { m_settings.startupClip=!m_settings.startupClip;save(); },
++        "Play the original Xbox 360 startup when the app starts"));
++    look.rows.push_back(action("Preview startup", [this]() {
++        m_bootClip.stop();m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
++        m_dashBoot=1.f;m_bootSkip={};m_bootPreview=true;m_audio.setMusic(false,m_settings.musicVolume);
++    }));
+     m_sheet.push_back(std::move(look));
+ 
+     // The lock screen: its own tab (HomeNX's lock screen shares the password and the picture).
+@@ -5639,7 +5668,7 @@ void CardsActivity::buildSettings() {
+     Section sound{"Sound", "music", {}};
+     sound.rows.push_back(toggle("Music", [this]() { return m_settings.music; }, [this, save]() {
+         m_settings.music = !m_settings.music;
+-        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+         save();
+     }, "HomeNX's HOME music"));
+     sound.rows.push_back(slider("Music volume", [this]() { return m_settings.musicVolume; }, [this, save](int v) {
+@@ -6024,28 +6053,7 @@ void CardsActivity::buildSettings() {
+     }));
+ #endif
+     m_sheet.push_back(std::move(about));
+-    // Fewer tabs: these go at the end of another's rows.
+-    auto fold = [this](const char* from, const char* into) {
+-        const auto named = [this](const char* name) {
+-            return std::find_if(m_sheet.begin(), m_sheet.end(), [name](const Section& s) { return s.name == name; });
+-        };
+-        const auto source = named(from);
+-        const auto target = named(into);
+-        if (source == m_sheet.end() || target == m_sheet.end()) return;
+-        for (MenuItem& row : source->rows) target->rows.push_back(std::move(row));
+-        m_sheet.erase(source);
+-    };
+-    fold("Notifications", "Home");
+-    fold("Pictures", "Look");
+-    fold("Storage", "Console");
+-    fold("About", "Updates");
+-    // His order (Settings > Home > Settings tab order); tabs new since go after.
+-    const auto& wanted = m_settings.sheetOrder;
+-    auto rank = [&wanted](const Section& sec) {
+-        const auto it = std::find(wanted.begin(), wanted.end(), sec.name);
+-        return it == wanted.end() ? 1000 : static_cast<int>(it - wanted.begin());
+-    };
+-    std::stable_sort(m_sheet.begin(), m_sheet.end(), [&rank](const Section& x, const Section& y) { return rank(x) < rank(y); });
++    buildNxeSettings();
+ }
+ 
+ void CardsActivity::saveAllPictures(bool quiet) {
+@@ -6620,7 +6628,9 @@ void CardsActivity::openSettings(int section) {
+     m_sheetOpen = true;
+     m_sheetSec = std::clamp(section, 0, static_cast<int>(m_sheet.size()) - 1);
+     m_sheetRow = 0;
+-    m_sheetOnRows = false;
++    m_sheetOnRows = true;
++    settings360::seedHistory(m_sheetSec,m_sheetHistory);
++    m_sheetClosing=false;m_sheetFocus=0;m_sheetDirection=1;m_sheetRepeat=0;
+     m_sheetScroll = 0.f;
+     m_sheetIn = m_settings.motion ? 0.f : 1.f;
+     m_sheetRowsIn = 1.f;
+@@ -7242,7 +7252,7 @@ void CardsActivity::keepTextCachesSmall() {
+         s_lastTrim = now;
+         f.trimCache(124, 3u << 20); // (trimCache scales its byte limit too)
+     };
+-    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount}) keep(*f);
++    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount, &m_fDashNav, &m_fGuide}) keep(*f);
+ #ifdef SWITCHU_MENU
+     // Discord, Social and the keyboard draw with HomeNX's font: nothing trimmed
+     // its cache, and once full no new channel names or messages showed.
+@@ -7304,83 +7314,6 @@ void CardsActivity::listInput(std::vector<MenuItem>& items, int& sel, const std:
+     }
+ }
+ 
+-bool CardsActivity::updateSheet(float) {
+-    auto& in = app().input();
+-    using B = nxui::Button;
+-    if (m_sheet.empty()) return false;
+-    const int sections = static_cast<int>(m_sheet.size());
+-    auto rows = [this]() -> std::vector<MenuItem>& { return m_sheet[(size_t)m_sheetSec].rows; };
+-    auto goSection = [&](int s) {
+-        s = (s + sections) % sections;
+-        if (s == m_sheetSec) return;
+-        m_sheetSec = s;
+-        m_sheetRow = 0;
+-        m_sheetScroll = 0.f;
+-        m_sheetRowsIn = m_settings.motion ? 0.f : 1.f;
+-        m_audio.play("tab_transition");
+-    };
+-    const bool up = in.isDown(B::DUp) || in.isDown(B::LStickU);
+-    const bool down = in.isDown(B::DDown) || in.isDown(B::LStickD);
+-    const bool left = in.isDown(B::DLeft) || in.isDown(B::LStickL);
+-    const bool right = in.isDown(B::DRight) || in.isDown(B::LStickR);
+-    if (in.isDown(B::L) || in.isDown(B::ZL)) goSection(m_sheetSec - 1);
+-    if (in.isDown(B::R) || in.isDown(B::ZR)) goSection(m_sheetSec + 1);
+-    if (in.isDown(B::B)) {
+-        if (m_sheetOnRows) {
+-            m_sheetOnRows = false;
+-            m_audio.play("navigation");
+-        } else {
+-            m_sheetOpen = false;
+-            m_audio.play("hide_modal");
+-        }
+-        return true;
+-    }
+-    if (!m_sheetOnRows) {
+-        if (up) goSection(m_sheetSec - 1);
+-        if (down) goSection(m_sheetSec + 1);
+-        if ((right || in.isDown(B::A)) && !rows().empty()) {
+-            m_sheetOnRows = true;
+-            m_audio.play("navigation");
+-        }
+-        return true;
+-    }
+-    const int n = static_cast<int>(rows().size());
+-    if (up && m_sheetRow > 0) {
+-        --m_sheetRow;
+-        m_audio.play("navigation");
+-    }
+-    if (down && m_sheetRow < n - 1) {
+-        ++m_sheetRow;
+-        m_audio.play("navigation");
+-    }
+-    if (left || right || in.isDown(B::A)) takeFacts(true); // (a row changes what the console has: that first)
+-    MenuItem& item = rows()[(size_t)std::clamp(m_sheetRow, 0, n - 1)];
+-    const bool steps = item.kind == MenuItem::Choice || item.kind == MenuItem::Slider;
+-    if (left) {
+-        if (steps && item.change) {
+-            item.change(-1);
+-            m_audio.play("navigation");
+-        } else {
+-            m_sheetOnRows = false;
+-            m_audio.play("navigation");
+-        }
+-    }
+-    if (right && steps && item.change) {
+-        item.change(1);
+-        m_audio.play("navigation");
+-    }
+-    if (in.isDown(B::A)) {
+-        if (item.kind == MenuItem::Action && item.run) {
+-            m_audio.play("activation");
+-            auto run = item.run;
+-            run();
+-        } else if (item.change && item.kind != MenuItem::Info) {
+-            item.change(1);
+-            m_audio.play(item.kind == MenuItem::Toggle && item.level && item.level() < 0.5f ? "toggle_off" : "toggle_on");
+-        }
+-    }
+-    return true;
+-}
+ 
+ // ---------------------------------------------------------------- touch
+ 
+@@ -7431,35 +7364,7 @@ bool CardsActivity::handleTouch() {
+     }
+     if (m_sheetOpen) {
+         if (!in.touchUp()) return in.isTouching();
+-        if (!kSheet.contains(x, y)) {
+-            m_sheetOpen = false;
+-            m_audio.play("hide_modal");
+-            return true;
+-        }
+-        if (x < kRowsX - 10.f) { // a section
+-            const int s = static_cast<int>((y - kSheetTop) / secH(m_sheet.size()));
+-            if (y >= kSheetTop && s >= 0 && s < static_cast<int>(m_sheet.size()) && s != m_sheetSec) {
+-                m_sheetSec = s;
+-                m_sheetRow = 0;
+-                m_sheetScroll = 0.f;
+-                m_sheetRowsIn = m_settings.motion ? 0.f : 1.f;
+-                m_audio.play("tab_transition");
+-            }
+-            m_sheetOnRows = false;
+-            return true;
+-        }
+-        auto& rows = m_sheet[(size_t)m_sheetSec].rows;
+-        const int r = static_cast<int>((y - kSheetTop + m_sheetScroll) / kRowH);
+-        if (y < kSheetTop || y > kRowsBottom || r < 0 || r >= static_cast<int>(rows.size())) return true;
+-        m_sheetOnRows = true;
+-        m_sheetRow = r;
+-        const nxui::Rect row{kRowsX, kSheetTop + kRowH * static_cast<float>(r) - m_sheetScroll, kRowsW, kRowH - 8.f};
+-        if (tapRow(rows[(size_t)r], row, row.x + row.width - 18.f - 220.f, 220.f) && rows[(size_t)r].run) {
+-            m_audio.play("activation");
+-            auto run = rows[(size_t)r].run;
+-            run();
+-        }
+-        return true;
++        return touchNxeSettings(x,y);
+     }
+     if (m_quickOpen) return quickTouch();
+     if (m_powerOpen) return powerTouch();
+@@ -7644,6 +7549,8 @@ void CardsActivity::onUpdate(float dt) {
+         m_reopenSec = -1;
+         openSettings(sec);
+         m_sheetRow = std::clamp(m_reopenRow, 0, std::max(0, static_cast<int>(m_sheet[(size_t)m_sheetSec].rows.size()) - 1));
++        m_sheetFocus=float(m_sheetRow);
++        m_sheetScroll=settings360::topRow(m_sheetRow,int(m_sheet[m_sheetSec].rows.size()))*settings360::pitch;
+         m_sheetOnRows = true;
+         m_sheetIn = 1.f;
+     }
+@@ -7744,13 +7651,13 @@ void CardsActivity::onUpdate(float dt) {
+     // song were a stall on frames 2-3) at 1.5 s, the avatar at 3 s, and the
+     // icons decoded on a thread meanwhile.
+     if (m_startStage < 3) {
+-        if (m_startStage < 2 && m_time > 1.5f) {
++        if (m_startStage < 2 && (m_time > 1.5f || m_dashBoot>0.f)) {
+             m_startStage = 2;
+             m_audio.start();
+             m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
+             m_audio.setShuffle(m_settings.shuffle);
+             m_audio.setRepeat(m_settings.repeat);
+-            m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++            m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+         } else if (m_startStage == 2 && m_time > 3.f) {
+             m_startStage = 3;
+             loadAvatar();
+@@ -7758,6 +7665,7 @@ void CardsActivity::onUpdate(float dt) {
+     }
+     if (m_avatarJob.valid() && m_avatarJob.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+         const Pixels px = m_avatarJob.get();
++        m_guideName=px.label.empty()?"Player":px.label;
+         auto tex = std::make_unique<nxui::Texture>();
+         if (!px.rgba.empty() && tex->loadFromPixels(app().gpu(), app().renderer(), px.rgba.data(), px.w, px.h))
+             m_avatar = std::move(tex);
+@@ -7794,6 +7702,7 @@ void CardsActivity::onUpdate(float dt) {
+         app().gpu().endTextureUploadBatch();
+     }
+     m_time += dt;
++
+     updateNotices(dt);
+     updateStorage();
+     perfMark("start-up");
+@@ -7813,6 +7722,16 @@ void CardsActivity::onUpdate(float dt) {
+     }
+     perfMark("pictures");
+     m_audio.update();
++    if (m_dashBoot>0.f && !m_settings.startupClip && !m_bootPreview) m_bootClip.stop();
++    const bool bootActive=m_bootClip.update(app().gpu(),app().renderer(),m_audio.ready(),m_settings.sounds,m_settings.soundVolume);
++    if (m_dashBoot>0.f && (!bootActive || (!m_settings.startupClip && !m_bootPreview))) {
++        if (!m_bootClip.error().empty()) {
++            perfLine("startup: "+std::string(m_bootClip.error()));
++            say(std::string(m_bootClip.error())+". Try the full-memory homebrew launcher.");
++        }
++        m_dashBoot=0.f;m_bootPreview=false;
++        m_audio.setMusic(homeMusic(),m_settings.musicVolume);
++    }
+     perfMark("music");
+     const bool motion = m_settings.motion;
+     // A lagged frame doesn't skip through the animations: they take real time
+@@ -7823,6 +7742,18 @@ void CardsActivity::onUpdate(float dt) {
+     // rise hidden behind a still frame.
+     if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
+     step(m_pageIn, 0.38f);
++    step(m_dashIn, 0.30f);
++    if (m_dashGuide) {
++        const float stepGuide=motion?std::min(dt,1.f/30.f)/0.18f:1.f;
++        m_guideIn=std::clamp(m_guideIn+(m_guideClosing?-stepGuide:stepGuide),0.f,1.f);
++        if (m_guideClosing && m_guideIn<=0.f) { m_dashGuide=false;m_guideClosing=false; }
++        step(m_guideTabIn,0.16f);
++        m_guidePos=m_guideFrom+(m_guideTab-m_guideFrom)*nxe::ease(m_guideTabIn);
++        m_guideRowAt+=(m_dashGuideRow-m_guideRowAt)*(motion?std::min(1.f,dt*24.f):1.f);
++    }
++    if (dashLibrary()) m_dashTile = sel();
++    m_dashCard += (static_cast<float>(m_dashTile)-m_dashCard) * (motion ? std::min(1.f,dt*15.f) : 1.f);
++    if (std::abs(m_dashCard-m_dashTile)<0.002f) m_dashCard=static_cast<float>(m_dashTile);
+     step(m_detailIn, 0.25f);
+     step(m_sheen, 0.8f);
+     step(m_menuIn, 0.2f);
+@@ -7830,8 +7761,17 @@ void CardsActivity::onUpdate(float dt) {
+     step(m_logIn, 0.2f);
+     step(m_pressT, 0.22f);
+     step(m_bgFade, 0.45f);
+-    step(m_sheetIn, 0.24f);
++    if(m_sheetClosing) {
++        m_sheetIn=std::max(0.f,m_sheetIn-(motion?std::min(dt,1.f/30.f)/0.18f:1.f));
++        if(m_sheetIn<=0) {m_sheetOpen=false;m_sheetClosing=false;}
++    } else step(m_sheetIn, 0.24f);
+     step(m_sheetRowsIn, 0.22f);
++    if(m_sheetOpen && m_sheetSec>=0 && m_sheetSec<int(m_sheet.size())) {
++        const float blend=motion?std::min(1.f,dt*24.f):1.f;
++        m_sheetFocus+=(m_sheetRow-m_sheetFocus)*blend;
++        const float want=settings360::topRow(m_sheetRow,int(m_sheet[m_sheetSec].rows.size()))*settings360::pitch;
++        m_sheetScroll+=(want-m_sheetScroll)*blend;
++    }
+     step(m_quickIn, 0.22f);
+     step(m_powerIn, 0.28f);
+     step(m_dotsIn, 0.26f);
+@@ -8341,6 +8281,14 @@ void CardsActivity::onUpdate(float dt) {
+     }
+ 
+     perfMark("HomeNX's screens, leaving");
++    if (m_dashBoot > 0.f) {
++        auto& bootInput=app().input();
++        if (m_bootSkip.consume(bootInput.isHeld(nxui::Button::A)||bootInput.isHeld(nxui::Button::B),
++                              bootInput.isDown(nxui::Button::A)||bootInput.isDown(nxui::Button::B))) {
++            m_bootClip.stop();m_dashBoot=0.f;m_bootPreview=false;m_audio.setMusic(homeMusic(),m_settings.musicVolume);
++        }
++        return;
++    }
+     if (updateLock(dt)) return;
+     perfMark("lock screen");
+     if (!m_settings.introDone && !m_introOpen && m_time > 0.8f && !m_leaving) { // the first time
+@@ -8370,7 +8318,7 @@ void CardsActivity::onUpdate(float dt) {
+         updateTask();
+         return;
+     }
+-    if (handleTouch()) return;
++    if (dashTouch()) return;
+ 
+     if (m_pickOpen) { // (over Settings too)
+         updatePicker();
+@@ -8425,6 +8373,8 @@ void CardsActivity::onUpdate(float dt) {
+         return;
+     }
+ 
++    if (dashInput(dt)) return;
++
+     // Left / right: repeating while held.
+     const bool left = in.isHeld(B::DLeft) || in.isHeld(B::LStickL) || in.isHeld(B::RStickL);
+     const bool right = in.isHeld(B::DRight) || in.isHeld(B::LStickR) || in.isHeld(B::RStickR);
+@@ -8527,51 +8477,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
+     m_drawMarkTick = armGetSystemTick();
+     m_drawMarkMs = 0.f;
+     m_drawMarkName = "";
+-    drawStep("draw: the background");
+-    drawBackground(r);
+-    drawStep("draw: the cards");
+-    drawCards(r);
+-    drawStep("draw: the glass");
+-    // One blurred copy of the frame for every glass shape on top of it, made
+-    // again when what's behind changed: at once while things move, every 6th
+-    // frame while only the background drifts, else kept (HomeNX's screens blur
+-    // into the same copy: it's made each frame while one is open).
+-    // While HOME is still settling in — the way back from a game, exactly when
+-    // every cover uploads and the pop-up animates — the glass is drawn plain:
+-    // re-rendering the blurred copy every frame on top of all that is what
+-    // made the first seconds GPU-bound (the menu's own slow-GPU fallback used
+-    // to catch it a moment later and stay plain for the whole session). Here
+-    // the fancy glass only comes back once HOME is running steady.
+-    m_frosted = r.gpu().offscreenReady() && !m_gpuSlow && m_time > 1.5f;
+-    if (m_frosted) {
+-        const bool moving = std::abs(m_scroll - static_cast<float>(sel())) > 0.002f || m_dragging || m_pageIn < 1.f
+-                         || m_bgFade < 1.f || m_intro < 1.f || m_leaving || m_moving || focusRoot() != nullptr;
+-        if (moving || ++m_blurAge >= (m_settings.bgMotion ? 6 : 60)) {
+-            r.captureToOffscreen(false);
+-            r.applyBlur(2.5f, 2);
+-            m_blurAge = 0;
+-        }
+-    } else {
+-        m_blurAge = 1000; // made at once when it's back
+-    }
+-    drawStep("draw: the cards' extras");
+-    drawCardExtras(r);
+-    drawStep("draw: the bar and the panel");
+-    // Launching: the bar and the panel go first.
+-    const int leaveStyle = launchStyle();
+-    const float ui = m_leaving && leaveStyle != kNoAnimation && leaveStyle != kFade ? 1.f - easeOut(m_leaveT / 0.3f) : 1.f;
+-    drawTopBar(r, easeOut(m_intro * 2.2f) * ui);
+-    drawStep("draw: the panel");
+-    drawPanel(r, easeOut((m_intro - 0.25f) * 2.f) * ui);
+-    drawStep("draw: the messages");
+-    if (m_moving) { // what Move does
+-        const std::string hint = "Move it with  < >      A  Done      B  Put it back";
+-        const float w = measured(m_fBody, hint).x + 44.f;
+-        const nxui::Rect pill{640.f - w * 0.5f, 452.f, w, 40.f};
+-        frost(r, pill, 20.f, nxui::Color(0.06f, 0.07f, 0.10f, 0.7f));
+-        r.drawRoundedRectOutline(pill, accent(0.6f), 20.f, 1.5f);
+-        textMid(r, m_fBody, hint, pill.x + 22.f, pill.y + 20.f, kWhite);
+-    }
++    m_frosted = false;
++    if (m_dashBoot > 0.f) { drawDashBoot(r); return; }
++    drawDashboard(r);
+     drawStep("draw: the menus");
+     drawSheet(r);
+     drawPopup(r); // (over Settings)
+@@ -8621,8 +8529,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
+ }
+ 
+ void CardsActivity::frost(nxui::Renderer& r, const nxui::Rect& rect, float radius, const nxui::Color& tint) {
+-    if (m_frosted) r.drawOffscreenRounded(0, rect, radius, kWhite.withAlpha(std::min(1.f, tint.a * 3.f)));
+-    r.drawRoundedRect(rect, tint, radius);
++    (void)radius;
++    r.drawRect(rect, nxui::Color(0.16f, 0.16f, 0.16f, tint.a));
+ }
+ 
+ void CardsActivity::glassCircle(nxui::Renderer& r, float cx, float cy, float d, bool focused, const char* name,
+@@ -8783,6 +8691,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
+ }
+ 
+ bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
++    if (!m_moving) {
++        if (dashLibrary() && index >= 0 && index < static_cast<int>(games().size())) {
++            const auto t=nxe::panel(index-m_dashCard, dashSlide());
++            card={t.x,t.y,t.w,t.h};
++        } else if (m_dashTab==1 && index==sel()) {
++            const auto t=nxe::panel(m_dashTile-m_dashCard,dashSlide());
++            card={t.x,t.y,t.w,t.h};
++        } else return false;
++        chosen=index==sel()?1.f:0.f;
++        return true;
++    }
+     const float rel = static_cast<float>(index) - m_scroll;
+     // A page switch slides the row in from the side.
+     float slide = (1.f - easeOut(m_pageIn)) * 160.f * static_cast<float>(m_pageDir);
+@@ -9310,7 +9229,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
+     // The control on the right, and the room it leaves for the label.
+     const float right = row.x + row.width - 18.f;
+     float control = 0.f;
+-    const nxui::Color blue = nxui::Color(0.55f, 0.75f, 1.f, a);
++    const nxui::Color blue = nxui::Color(0.62f, 0.89f, 0.38f, a);
+     switch (item.kind) {
+         case MenuItem::Toggle: {
+             const float on = item.level ? item.level() : 0.f;
+@@ -9603,75 +9522,6 @@ void CardsActivity::drawQuick(nxui::Renderer& r) {
+ }
+ 
+ // Settings: a glass sheet, its sections on the left and their rows on the right.
+-void CardsActivity::drawSheet(nxui::Renderer& r) {
+-    if (!m_sheetOpen || m_sheet.empty()) return;
+-    const float a = easeOut(m_sheetIn);
+-    r.drawRect({0.f, 0.f, 1280.f, 720.f}, nxui::Color(0.f, 0.f, 0.f, 0.45f * a));
+-    const nxui::Rect sheet = scaled(kSheet, 0.95f + 0.05f * a);
+-    r.drawRoundedRect({sheet.x - 4.f, sheet.y + 12.f, sheet.width + 8.f, sheet.height + 6.f}, nxui::Color(0.f, 0.f, 0.f, 0.28f * a),
+-                      38.f); // its shadow
+-    frost(r, sheet, 34.f, nxui::Color(0.08f, 0.09f, 0.13f, 0.86f * a));
+-    r.drawRoundedRectOutline(sheet, nxui::Color(1.f, 1.f, 1.f, 0.16f * a), 34.f, 1.5f);
+-    r.drawGradientRect({sheet.x + 2.f, sheet.y + 2.f, sheet.width - 4.f, 80.f}, nxui::Color(1.f, 1.f, 1.f, 0.05f * a),
+-                       nxui::Color(1.f, 1.f, 1.f, 0.f));
+-    const float dy = sheet.y - kSheet.y, hy = kSheet.y + 46.f + dy;
+-    icon(r, "gear", kSecX + 20.f, hy, 32.f, kWhite.withAlpha(a));
+-    textMid(r, m_fTitle, "Settings", kSecX + 46.f, hy, kWhite.withAlpha(a));
+-    // Where you are: the section's tile and name over its rows.
+-    const Section& here = m_sheet[(size_t)m_sheetSec];
+-    const nxui::Rect hereTile{kRowsX, hy - 19.f, 38.f, 38.f};
+-    r.drawRoundedRect(hereTile, sectionTint(here.icon).withAlpha(a), 11.f);
+-    icon(r, here.icon, hereTile.x + 19.f, hy, 22.f, kWhite.withAlpha(a));
+-    textMid(r, m_fLabel, here.name, hereTile.x + 52.f, hy, kWhite.withAlpha(a));
+-
+-    // Sections: a darker column, each one's icon on a tile of its colour.
+-    const float ring = 0.8f + 0.2f * std::sin(m_time * 5.f);
+-    const float colTop = kSheetTop - 10.f + dy;
+-    r.drawRoundedRect({kSecX - 10.f, colTop, kSecW + 20.f, sheet.y + sheet.height - 12.f - colTop},
+-                      nxui::Color(0.f, 0.f, 0.f, 0.14f * a), 22.f);
+-    const float h = secH(m_sheet.size());
+-    for (size_t i = 0; i < m_sheet.size(); ++i) {
+-        const nxui::Rect row{kSecX, kSheetTop + h * static_cast<float>(i) + dy, kSecW, h - 8.f};
+-        const bool on = static_cast<int>(i) == m_sheetSec;
+-        if (on) {
+-            r.drawRoundedRect(row, nxui::Color(1.f, 1.f, 1.f, (m_sheetOnRows ? 0.10f : 0.16f) * a), 14.f);
+-            if (!m_sheetOnRows) r.drawRoundedRectOutline(row, accent(ring * a), 14.f, 2.f);
+-        }
+-        const float cy = row.y + row.height * 0.5f, ts = std::min(32.f, row.height - 8.f);
+-        const nxui::Rect tile{row.x + 10.f, cy - ts * 0.5f, ts, ts};
+-        r.drawRoundedRect(tile, sectionTint(m_sheet[i].icon).withAlpha((on ? 1.f : 0.8f) * a), ts * 0.28f);
+-        icon(r, m_sheet[i].icon, tile.x + ts * 0.5f, cy, ts * 0.6f, kWhite.withAlpha(a));
+-        textMid(r, m_fPill, m_sheet[i].name, tile.x + ts + 12.f, cy, kWhite.withAlpha((on ? 1.f : 0.78f) * a));
+-    }
+-
+-    // Rows (scrolled to keep the chosen one in view; they slide in on a new section).
+-    auto& rows = m_sheet[(size_t)m_sheetSec].rows;
+-    const float visible = kRowsBottom - kSheetTop;
+-    const float want = std::clamp(kRowH * static_cast<float>(m_sheetRow) - visible * 0.5f + kRowH * 0.5f, 0.f,
+-                                  std::max(0.f, kRowH * static_cast<float>(rows.size()) - visible));
+-    m_sheetScroll += (want - m_sheetScroll) * (m_settings.motion ? 0.25f : 1.f);
+-    const float ra = a * easeOut(m_sheetRowsIn), slide = 24.f * (1.f - easeOut(m_sheetRowsIn));
+-    r.pushClipRect({kRowsX - 8.f, kSheetTop + dy - 4.f, kRowsW + 16.f, visible + 8.f});
+-    // One grouped list: a glass block behind the rows, hairlines between them.
+-    if (!rows.empty()) {
+-        const nxui::Rect group{kRowsX + slide, kSheetTop - m_sheetScroll + dy, kRowsW,
+-                               kRowH * static_cast<float>(rows.size()) - 8.f};
+-        r.drawRoundedRect(group, nxui::Color(1.f, 1.f, 1.f, 0.05f * ra), 18.f);
+-        r.drawRoundedRectOutline(group, nxui::Color(1.f, 1.f, 1.f, 0.07f * ra), 18.f, 1.f);
+-    }
+-    for (size_t i = 0; i < rows.size(); ++i) {
+-        const nxui::Rect row{kRowsX + slide, kSheetTop + kRowH * static_cast<float>(i) - m_sheetScroll + dy, kRowsW, kRowH - 8.f};
+-        if (row.y > kRowsBottom + dy || row.y + row.height < kSheetTop + dy) continue;
+-        const int at = static_cast<int>(i);
+-        const bool chosen = m_sheetOnRows && at == m_sheetRow;
+-        if (i + 1 < rows.size() && !chosen && !(m_sheetOnRows && at + 1 == m_sheetRow))
+-            r.drawRect({row.x + 18.f, row.y + row.height + 3.5f, row.width - 36.f, 1.f}, nxui::Color(1.f, 1.f, 1.f, 0.08f * ra));
+-        drawRow(r, rows[i], row, chosen, ra, true);
+-    }
+-    r.popClipRect();
+-    drawHints(r, kRowsX + kRowsW, (kRowsBottom + kSheet.y + kSheet.height) * 0.5f + dy,
+-              {{"A", "Choose"}, {"< >", "Change"}, {"L R", "Section"}, {"B", "Back"}}, a);
+-}
+ 
+ void CardsActivity::openPagePicker() {
+     std::vector<MenuItem> items;
+@@ -10037,4 +9887,8 @@ void CardsActivity::updateStorage() {
+     }
+ }
+ 
++#include "Dashboard360.inc"
++#include "Guide360.inc"
++#include "Settings360.inc"
++
+ } // namespace cards
+diff --git a/projects/cards/src/CardsActivity.hpp b/projects/cards/src/CardsActivity.hpp
+index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..74c8c10e9d9724f29130bd5fbe4f5230efac04dc 100644
+--- a/projects/cards/src/CardsActivity.hpp
++++ b/projects/cards/src/CardsActivity.hpp
+@@ -1,8 +1,10 @@
+ #pragma once
+ #include "Audio.hpp"
++#include "BootClip.hpp"
+ #include "Library.hpp"
+ #include "Mtp.hpp"
+ #include "Settings.hpp"
++#include "SettingsLayout.hpp"
+ #include "Spotify.hpp"
+ 
+ #include <nxui/Activity.hpp>
+@@ -63,6 +65,53 @@ public:
+     nxui::Widget* focusRoot() override; // HomeNX's screens when one is open; else it reads the buttons itself
+ 
+ private:
++    // Xbox 360 dashboard shell. Existing launchers, workers and modal screens
++    // remain owned by CardsActivity.
++    nxui::Font m_fDashNav;
++    int m_dashTab = 1, m_dashTile = 0;
++    int m_dashPrevTab = 1, m_dashDir = 1;
++    bool m_dashNav = false;
++    float m_dashRepeat = 0.f, m_dashIn = 1.f;
++    float m_dashCard = 0.f, m_dashPrevCard = 0.f, m_dashBoot = 1.f;
++    int m_dashPrevTile = 0, m_dashPrevPage = 0, m_dashGuideRow = 0;
++    bool m_dashGuide = false;
++    int m_guideTab=2,m_guideView=0;
++    std::array<int,5> m_guideSels{};
++    float m_guideIn=0.f,m_guideTabIn=1.f,m_guideRowAt=0.f,m_guidePos=2.f,m_guideFrom=2.f;
++    bool m_guideClosing=false;
++    std::string m_guideName="Player",m_guideNote;
++    nxui::Font m_fGuide;
++    TTF_Font* m_guideTtf=nullptr;
++    std::unordered_map<std::string,std::unique_ptr<nxui::Texture>> m_guideLabels;
++    std::vector<std::string> guideRows();
++    void openGuide();
++    void closeGuide(bool animate);
++    void guideTab(int delta);
++    void guideBack();
++    void guideLabel(nxui::Renderer& r,const std::string& label,float cx,float cy,nxui::Color tint);
++    void drawGuide(nxui::Renderer& r);
++    void dashMove(int delta);
++    void dashGuideActivate();
++    BootClip m_bootClip;
++    boot360::SkipGate m_bootSkip;
++    bool m_bootPreview=false;
++    void drawDashBoot(nxui::Renderer& r);
++    int dashCount() const;
++    bool dashLibrary() const;
++    void dashTab(int tab);
++    void dashBeginTab(int tab);
++    float dashSlide() const;
++    void dashActivate();
++    void dashSearch();
++    void dashSettings(const std::string& section);
++    void buildNxeSettings();
++    void openNxePage(int page);
++    void backNxeSettings();
++    void activateNxeSetting(int delta=1,bool stepsOnly=false);
++    bool touchNxeSettings(float x,float y);
++    bool dashInput(float dt);
++    bool dashTouch();
++    void drawDashboard(nxui::Renderer& r);
+     enum class Zone { Top, Cards, Bottom };
+     enum Page { kGames, kHomebrew, kNintendo, kMedia, kPageCount };
+     int pageCount() const { return kPageCount + static_cast<int>(m_settings.customPages.size()); }
+@@ -260,6 +309,7 @@ private:
+     struct Pixels {
+         std::vector<std::uint8_t> rgba;
+         int w = 0, h = 0;
++        std::string label;
+     };
+     std::unique_ptr<nxui::Texture> m_wallTex;
+     std::future<Pixels> m_wallJob;
+@@ -752,6 +802,9 @@ private:
+     bool m_sheetOpen = false, m_sheetOnRows = false;
+     int m_sheetSec = 0, m_sheetRow = 0;
+     float m_sheetIn = 0.f, m_sheetRowsIn = 1.f, m_sheetScroll = 0.f;
++    std::vector<settings360::Visit> m_sheetHistory;
++    float m_sheetFocus=0.f,m_sheetDirection=1.f,m_sheetRepeat=0.f;
++    bool m_sheetClosing=false;
+ 
+     // The workers: pictures (three at a time), Nextendo's counts, the status bar.
+     std::vector<std::thread> m_threads;
 diff --git a/projects/cards/src/Dashboard360.hpp b/projects/cards/src/Dashboard360.hpp
 new file mode 100644
-index 0000000..4c5e392
+index 0000000000000000000000000000000000000000..4c5e39208cb7bba0aafc9b6b894e0c07c4aed6cc
 --- /dev/null
 +++ b/projects/cards/src/Dashboard360.hpp
 @@ -0,0 +1,48 @@
@@ -3117,10 +3463,10 @@ index 0000000..4c5e392
 +} // namespace cards::dash360
 diff --git a/projects/cards/src/Dashboard360.inc b/projects/cards/src/Dashboard360.inc
 new file mode 100644
-index 0000000..171ce28
+index 0000000000000000000000000000000000000000..29d0c867a0ed3d7553bbe226e0f0acd2b42fc2c4
 --- /dev/null
 +++ b/projects/cards/src/Dashboard360.inc
-@@ -0,0 +1,362 @@
+@@ -0,0 +1,364 @@
 +// Included inside namespace cards, after CardsActivity's drawing helpers.
 +bool CardsActivity::dashLibrary() const {
 +    return m_dashTab == 3 || m_dashTab == 4 || m_dashTab == 6;
@@ -3174,9 +3520,11 @@ index 0000000..171ce28
 +}
 +
 +void CardsActivity::dashSettings(const std::string& section) {
-+    openSettings();
-+    for (int i = 0; i < static_cast<int>(m_sheet.size()); ++i)
-+        if (m_sheet[i].name == section) { m_sheetSec = i; m_sheetRow = 0; break; }
++    using namespace settings360;
++    const std::map<std::string,int> pages={{"Console",System},{"Look",Look},{"Sound",settings360::Audio},{"Internet",Network},
++        {"Bluetooth",Remote},{"Storage",Memory},{"Home",Home},{"Notifications",Notifications},{"About",SystemInfo},
++        {"Updates",Updates},{"Lock screen",Lock},{"Pictures",Pictures}};
++    const auto found=pages.find(section);openSettings(found==pages.end()?System:found->second);
 +}
 +
 +void CardsActivity::dashSearch() {
@@ -3215,7 +3563,7 @@ index 0000000..171ce28
 +            case 4: openMusic(); break;
 +            case 5: openGallery(); break;
 +            case 6: dashTab(6); break;
-+            case 7: dashTab(7); break;
++            case 7: openSettings(); break;
 +        }
 +    } else if (m_dashTab == 2) {
 +        switch (m_dashTile) {
@@ -3485,7 +3833,7 @@ index 0000000..171ce28
 +}
 diff --git a/projects/cards/src/Guide360.inc b/projects/cards/src/Guide360.inc
 new file mode 100644
-index 0000000..564a384
+index 0000000000000000000000000000000000000000..250135b31c01d32b7d6db1295dc8f21c84344d21
 --- /dev/null
 +++ b/projects/cards/src/Guide360.inc
 @@ -0,0 +1,182 @@
@@ -3571,7 +3919,7 @@ index 0000000..564a384
 +            case 0:openUsers();break;
 +            case 1:dashSettings("Look");break;
 +            case 2:dashSettings("Console");break;
-+            case 3:openStorage();break;
++            case 3:dashSettings("Storage");break;
 +            case 4:dashSettings("Sound");break;
 +            case 5:dashSettings("Internet");break;
 +            case 6:openPower();break;
@@ -3673,7 +4021,7 @@ index 0000000..564a384
 +}
 diff --git a/projects/cards/src/GuideLayout.hpp b/projects/cards/src/GuideLayout.hpp
 new file mode 100644
-index 0000000..d042a3c
+index 0000000000000000000000000000000000000000..d042a3cb91f9531772c0104a6f846d206f50d769
 --- /dev/null
 +++ b/projects/cards/src/GuideLayout.hpp
 @@ -0,0 +1,26 @@
@@ -3705,7 +4053,7 @@ index 0000000..d042a3c
 +} // namespace cards::guide360
 diff --git a/projects/cards/src/NxeLayout.hpp b/projects/cards/src/NxeLayout.hpp
 new file mode 100644
-index 0000000..0b3028e
+index 0000000000000000000000000000000000000000..0b3028ee9fa89f0616bb9a8c118a4c89a18c2fa0
 --- /dev/null
 +++ b/projects/cards/src/NxeLayout.hpp
 @@ -0,0 +1,33 @@
@@ -3742,9 +4090,495 @@ index 0000000..0b3028e
 +    return {x,260.f+(334.f-h)/2.f+rowOffset,w,h,relative>0.f ? 20.f*(1.f-focus):0.f};
 +}
 +} // namespace cards::nxe
+diff --git a/projects/cards/src/Settings.hpp b/projects/cards/src/Settings.hpp
+index b7d5dffad992f7f17eabad6b5e8ce5be9b8d4833..a23c64c12139ebb43de983c41e9069d2acb989e4 100644
+--- a/projects/cards/src/Settings.hpp
++++ b/projects/cards/src/Settings.hpp
+@@ -39,6 +39,7 @@ struct Settings {
+     bool sounds = true;
+     int soundVolume = 80;     // 0..100
+     bool players = true;      // Nextendo's green dots
++    bool startupClip = true; // recorded startup, independent of UI transitions
+     bool motion = true;       // animations (off: things move straight to place)
+     bool bgMotion = true;     // the background art drifts
+     int startPage = 0;        // (old: the page order's first is where it opens now)
+@@ -116,6 +117,7 @@ struct Settings {
+             soundVolume = j.value("soundVolume", soundVolume);
+             players = j.value("players", players);
+             motion = j.value("motion", motion);
++            startupClip = j.value("startupClip",startupClip);
+             bgMotion = j.value("bgMotion", bgMotion);
+             startPage = j.value("startPage", startPage);
+             pageOrder = j.value("pageOrder", pageOrder);
+@@ -186,7 +188,7 @@ struct Settings {
+     void save() const {
+         nlohmann::json j = {{"music", music}, {"musicVolume", musicVolume}, {"shuffle", shuffle}, {"repeat", repeat},
+                             {"sounds", sounds}, {"soundVolume", soundVolume}, {"players", players},
+-                            {"motion", motion}, {"bgMotion", bgMotion}, {"startPage", startPage}, {"pageOrder", pageOrder},
++                            {"motion", motion}, {"startupClip", startupClip}, {"bgMotion", bgMotion}, {"startPage", startPage}, {"pageOrder", pageOrder},
+                             {"sortOrder", sort}, {"haze", haze}, {"boxArt", boxArt}, {"accent", accent},
+                             {"glass", glass}, {"launchStyle", launchStyle}, {"clock24", clock24}, {"showFree", showFree}, {"showTemp", showTemp}, {"titlePics", titlePics}, {"mediaIn", mediaIn}, {"mediaOut", mediaOut}, {"gamesIn", gamesIn}, {"gamesOut", gamesOut}, {"fullCards", fullCards}, {"nroHash", nroHash}, {"titles", titles}, {"askUser", askUser}, {"panelApp", panelApp},
+                             {"lockScreen", lockScreen}, {"lockMusic", lockMusic}, {"keepHomebrew", keepHomebrew}, {"hbPath", hbPath}, {"hbHost", hbHost}, {"hiddenCards", hiddenCards}, {"sheetBack", sheetBack}, {"sheetBackRow", sheetBackRow}, {"hiddenPages", hiddenPages}, {"spotify", spotify}, {"picturesAt", picturesAt}, {"achSeenAt", achSeenAt},{"introDone", introDone}, {"wallpaper", wallpaper}, {"names", names},
+diff --git a/projects/cards/src/Settings360.inc b/projects/cards/src/Settings360.inc
+new file mode 100644
+index 0000000000000000000000000000000000000000..3e170219f940f2c9870d878f704a46cf79d15d17
+--- /dev/null
++++ b/projects/cards/src/Settings360.inc
+@@ -0,0 +1,90 @@
++// Native settings navigation and rendering.
++#include "SettingsBindings.inc"
++
++#include "SettingsNavigation.inc"
++
++void CardsActivity::drawSheet(nxui::Renderer& r) {
++    if(!m_sheetOpen || m_sheet.empty()) return;
++    using namespace settings360;
++    struct Paint {
++        nxui::Renderer& r;
++        static nxui::Color color(Color c){return {c.r,c.g,c.b,c.a};}
++        static nxui::Rect box(Rect b){return {b.x,b.y,b.w,b.h};}
++        void rect(Rect b,Color c){r.drawRect(box(b),color(c));}
++        void rounded(Rect b,Color c,float radius){r.drawRoundedRect(box(b),color(c),radius);}
++        void gradient(Rect b,Color t,Color d){r.drawGradientRect(box(b),color(t),color(d));}
++        void line(float x,float y,float xx,float yy,Color c,float w){r.drawLine({x,y},{xx,yy},color(c),w);}
++        void circle(float x,float y,float radius,Color c){r.drawCircle({x,y},radius,color(c),40);}
++    } paint{r};
++    const float a=nxe::ease(m_sheetIn),transition=nxe::ease(m_sheetRowsIn);
++    const float slide=24*m_sheetDirection*(1-transition);
++    const auto white=nxui::Color(0.93f,0.95f,0.96f,a);
++    const auto muted=nxui::Color(0.70f,0.74f,0.76f,a);
++    background(paint,a);frame(paint,a);orb(paint,a);
++    textMid(r,m_fGuide,titles[m_sheetSec],96,68,{0.1f,0.14f,0.10f,0.35f*a},1.3f);
++    textMid(r,m_fGuide,titles[m_sheetSec],95,67,{0.88f,0.92f,0.80f,a},1.3f);
++    auto& rows=m_sheet[m_sheetSec].rows;
++    const int count=int(rows.size());
++    m_sheetRow=std::clamp(m_sheetRow,0,std::max(0,count-1));
++    r.pushClipRect({rowX-1,rowY,rowW+2,listBottom-rowY});
++    if(count) selection(paint,row(0,m_sheetScroll-m_sheetFocus*pitch,slide),a*transition);
++    for(int i=0;i<count;++i) {
++        const auto b=row(i,m_sheetScroll,slide);
++        if(b.y+b.h<=rowY || b.y>=listBottom) continue;
++        const bool selected=i==m_sheetRow;
++        if(i+1<count && !selected && i+1!=m_sheetRow)
++            r.drawRect({b.x+4,b.y+b.h-1,b.w-8,1.5f},{0.65f,0.72f,0.75f,0.25f*a*transition});
++        float textX=b.x+13;
++        if(m_sheetSec==System) {
++            systemIcon(paint,i,b.x+26,b.y+24,a*transition);textX=b.x+54;
++        } else if(rows[i].glyph) {
++            icon(r,rows[i].glyph,b.x+26,b.y+24,29,white.withAlpha(a*transition));textX=b.x+54;
++        }
++        textMid(r,m_fGuide,fit(m_fGuide,rows[i].label,b.x+b.w-textX-10,1),textX,b.y+24,
++                (selected?white:muted).withAlpha(a*transition),1);
++    }
++    r.popClipRect();
++    if(count) {
++        const auto& item=rows[m_sheetRow];
++        float y=147;
++        auto paragraph=[&](const std::string& text,nxui::Color color,float spacing=30.f) {
++            for(const auto& line:wrap(m_fGuide,text,380)) {
++                if(y>556) break;
++                textMid(r,m_fGuide,line,665,y,color,1);y+=spacing;
++            }
++        };
++        const std::string value=item.kind==MenuItem::Toggle?(item.level && item.level()>0.5f?"On":"Off"):
++            item.value?item.value():std::string();
++        if(!value.empty()) {paragraph("Current Setting",white);paragraph(value,white);y+=35;}
++        if(item.kind==MenuItem::Toggle || item.kind==MenuItem::Choice || item.kind==MenuItem::Slider) {
++            // Fixed positions are shared with the touch controls above.
++            y=255;textMid(r,m_fGuide,"<",678,y,white);textMid(r,m_fGuide,">",1025,y,white);
++            if(item.kind==MenuItem::Slider) {
++                const float level=item.level?clamp01(item.level()):0.f;
++                r.drawRect({720,252,260,6},{0.75f,0.80f,0.79f,0.35f*a});
++                r.drawRect({720,252,260*level,6},{0.61f,0.80f,0.18f,a});
++                r.drawRect({715+260*level,244,10,22},white);
++            } else textMid(r,m_fBody,"Left / Right to change",738,y,muted,0.9f);
++            y=310;
++        }
++        if(!item.detail.empty()) paragraph(item.detail,white);
++        else if(item.kind==MenuItem::Info) paragraph("Information reported by this Switch and HomeNX.",muted);
++        if(item.kind==MenuItem::Toggle || item.kind==MenuItem::Choice || item.kind==MenuItem::Slider) {
++            y=542;paragraph("Changes are applied immediately.",muted);
++        }
++    }
++    if(count>visibleRows) {
++        const float h=460.f*visibleRows/count;
++        r.drawRect({639,125,3,460},{0.4f,0.47f,0.48f,0.4f*a});
++        r.drawRect({639,125+(460-h)*m_sheetRow/std::max(1,count-1),3,h},{0.76f,0.82f,0.76f,0.8f*a});
++    }
++    const char* letters[]={"A","B"};const char* labels[]={"Select","Back"};
++    for(int i=0;i<2;++i) {
++        const float x=111+i*110.f,y=650;
++        paint.circle(x,y+2,12,{0.14f,0.16f,0.13f,0.35f*a});
++        paint.circle(x,y,11,i==0?Color{0.39f,0.63f,0.08f,a}:Color{0.65f,0.12f,0.13f,a});
++        paint.circle(x-2,y-3,7,{0.94f,0.96f,0.78f,0.13f*a});
++        textMid(r,m_fBadge,letters[i],x-5,y,{0.12f,0.16f,0.10f,a},1);
++        textMid(r,m_fBody,labels[i],x+20,y,{0.97f,0.97f,0.94f,a},0.95f);
++    }
++}
+diff --git a/projects/cards/src/SettingsBindings.inc b/projects/cards/src/SettingsBindings.inc
+new file mode 100644
+index 0000000000000000000000000000000000000000..c8cd3640399d919a52164c20a86d6a9034f92a14
+--- /dev/null
++++ b/projects/cards/src/SettingsBindings.inc
+@@ -0,0 +1,81 @@
++// Included inside namespace cards. Original settings callbacks stay authoritative.
++void CardsActivity::buildNxeSettings() {
++    using namespace settings360;
++    auto original=std::move(m_sheet);
++    m_sheet.clear();m_sheet.reserve(Count);
++    for(const auto* title:titles) m_sheet.push_back({title,"gear",{}});
++    auto append=[&](settings360::Page page,const char* section,std::initializer_list<const char*> labels={}) {
++        const auto found=std::find_if(original.begin(),original.end(),[&](const Section& s){return s.name==section;});
++        if(found==original.end()) return;
++        for(const auto& item:found->rows) {
++            if(labels.size() && std::none_of(labels.begin(),labels.end(),[&](const char* name){return item.label==name;})) continue;
++            m_sheet[page].rows.push_back(item);
++        }
++    };
++    auto link=[&](settings360::Page page,const char* label,settings360::Page target,const char* detail,const char* glyph=nullptr) {
++        auto item=action(label,[this,target](){openNxePage(target);});
++        item.detail=detail;item.glyph=glyph;m_sheet[page].rows.push_back(std::move(item));
++    };
++    auto note=[&](settings360::Page page,const char* label,const char* value,const char* detail) {
++        auto item=info(label,[value](){return std::string(value);});item.detail=detail;
++        m_sheet[page].rows.push_back(std::move(item));
++    };
++    for(const auto& entry:systemLinks) link(System,entry.label,entry.target,entry.detail,entry.glyph);
++    for(const auto& entry:consoleLinks) link(Console,entry.label,entry.target,entry.detail);
++
++    append(Display,"Console",{"Console's TV output","Auto-brightness"});
++    append(Display,"Look",{"TV resolution"});
++    m_sheet[Display].rows.push_back(slider("Brightness",[this](){return int(std::max(0.f,m_quick.brightness)*100+0.5f);},
++        [this](int value){m_quick.brightness=value/100.f;setBrightness(m_quick.brightness);},"Handheld screen brightness. TV brightness is controlled by your television."));
++    append(settings360::Audio,"Sound");
++    append(settings360::Audio,"Bluetooth",{"Headphones and speakers","Pair headphones or a speaker"});
++    link(settings360::Audio,"Bluetooth Devices",Remote,"Connect headphones, speakers, and controllers using the Switch's Bluetooth controls.","bluetooth");
++    append(Language,"Console",{"Language"});
++    note(Language,"Console region","Nintendo Switch","HomeNX language changes here. Manage console region and Nintendo Account country using Nintendo's own settings.");
++    append(Clock,"Look",{"Clock"});
++    append(Clock,"Console",{"Set the time automatically","Date","Hour","Minute"});
++#ifndef SWITCHU_MENU
++    note(Clock,"Console date and time","HOME frontend required","The standalone preview can change the dashboard's clock format. Console date and time editing is available when HomeNX360 runs as HOME.");
++#endif
++    append(Startup,"Look",{"Startup animation","Preview startup"});
++    append(Startup,"Console",{"Sleep in handheld","Sleep on the TV"});
++    m_sheet[Startup].rows.push_back(action("Turn Off Console",[this](){m_sheetOpen=false;openPower();}));
++    m_sheet[Startup].rows.back().detail="Open the Switch's sleep, shutdown, and restart controls.";
++    note(AutoPlay,"Disc auto-play","Unavailable on Nintendo Switch","This console has no Xbox 360 disc drive. Use A on a game card to launch installed software.");
++    append(AutoPlay,"Look",{"Launch animation"});
++    append(AutoPlay,"Home",{"Ask who's playing","Keep homebrew open"});
++    append(Remote,"Bluetooth");
++    append(SystemInfo,"About",{"CardsNX","System version","Atmosphere","Games","Homebrew","Free on the SD card","Terms, privacy, licenses","Performance log","Close CardsNX"});
++    append(Memory,"Storage");
++    append(Network,"Internet");
++    append(Computers,"Console",{"Connect to a computer"});
++    note(Computers,"Connection","USB file transfer (MTP)","Select Connect to a computer, then connect a USB data cable. This uses HomeNX MTP, not Xbox 360 Windows Media Center pairing.");
++    note(Vision,"Xbox LIVE Vision","Unavailable on Nintendo Switch","The Xbox 360 camera and Xbox LIVE video chat cannot operate on Nintendo Switch. This page reports that limitation; it does not pretend a camera is connected.");
++    note(Family,"Nintendo Parental Controls","Managed by Nintendo","Use Nintendo Switch Parental Controls for console restrictions. HomeNX's lock screen below is a separate feature and does not replace Nintendo parental protection.");
++    append(Family,"Home",{"Ask who's playing"});
++    link(Family,"Lock Screen",Lock,"Configure HomeNX's lock screen and password.","moon");
++    m_sheet[Family].rows.push_back(action("Profiles",[this](){openUsers();}));
++    m_sheet[Family].rows.back().detail="Choose the real Nintendo Switch profile used to launch games.";
++    m_sheet[Initial].rows.push_back(action("Choose Profile",[this](){openUsers();}));
++    for(const auto& entry:consoleLinks) if(entry.target==Language || entry.target==Clock || entry.target==Startup)
++        link(Initial,entry.label,entry.target,entry.detail);
++    link(Initial,"Network Settings",Network,"Review the current network and run a connection test.","wifi");
++    m_sheet[Initial].rows.push_back(action("Done",[this](){backNxeSettings();}));
++    m_sheet[Initial].rows.back().detail="Return to System Settings. Your console and saved data are not reset.";
++    link(Preferences,"Dashboard",Look,"Change dashboard transitions, startup playback, and launch animation.");
++    link(Preferences,"Games and Apps",Home,"Manage software, custom pages, sorting, and hidden cards.","pad");
++    link(Preferences,"Lock Screen",Lock,"Configure the wake screen, password, pictures, and music.","moon");
++    link(Preferences,"Notifications",Notifications,"Configure real HomeNX notifications and playtime milestones.","bell");
++    link(Preferences,"Pictures",Pictures,"Change game card artwork and manage downloaded pictures.","sys_album");
++    link(Preferences,"Updates",Updates,"Manage HomeNX and homebrew updates. The upstream HomeNX updater replaces this custom dashboard.","download");
++    link(Preferences,"System Info",SystemInfo,"View the real system and HomeNX versions.","dots");
++    append(Look,"Look",{"Highlight colour","Launch animation","Animations","Startup animation","Preview startup"});
++    append(Home,"Home",{"Custom pages","Sort games","Ask who's playing","Keep homebrew open","Look for new software","Hidden cards","Reset my order"});
++    append(Lock,"Lock screen");
++    append(Notifications,"Notifications");
++    append(Pictures,"Pictures");
++    append(Updates,"Updates");
++    // Each control preserves its original callback, getter and save behavior.
++    // Do not move or reorder this fixed page vector: sheetBack stores its index.
++}
++
+diff --git a/projects/cards/src/SettingsLayout.hpp b/projects/cards/src/SettingsLayout.hpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..116761630417cd9d5dc0e23a3c85267f13b18c80
+--- /dev/null
++++ b/projects/cards/src/SettingsLayout.hpp
+@@ -0,0 +1,77 @@
++#pragma once
++#include <algorithm>
++#include <array>
++#include <vector>
++
++namespace cards::settings360 {
++enum Page {
++    System, Console, Family, Memory, Network, Computers, Vision, Initial,
++    Display, Audio, Language, Clock, Startup, AutoPlay, Remote, SystemInfo,
++    Preferences, Look, Home, Lock, Notifications, Pictures, Updates, Count
++};
++inline constexpr std::array<const char*,Count> titles = {
++    "System Settings", "Console Settings", "Family Settings", "Memory",
++    "Network Settings", "Computers", "Xbox LIVE Vision", "Initial Setup",
++    "Display", "Audio", "Language and Locale", "Clock", "Startup and Shutdown",
++    "Auto-Play", "Remote Control", "System Info", "HomeNX Preferences",
++    "Dashboard", "Games and Apps", "Lock Screen", "Notifications", "Pictures", "Updates"
++};
++struct Link { const char* label; const char* glyph; const char* detail; Page target; };
++inline constexpr std::array<Link,8> systemLinks = {{
++    {"Console Settings","power","Change your console settings, including display, audio, language, and remote control.",Console},
++    {"Family Settings","friends","Choose profiles and configure HomeNX's lock screen. Nintendo parental restrictions are managed by Nintendo Switch Parental Controls.",Family},
++    {"Memory","copy","View console memory and microSD card space, and move installed software.",Memory},
++    {"Network Settings","wifi","Connect to your home network, view connection information, and test network settings.",Network},
++    {"Computers","monitor","Connect this Switch to your computer with a USB cable to transfer files.",Computers},
++    {"Xbox LIVE Vision","sys_mii","Xbox LIVE Vision requires an Xbox 360 camera. That peripheral and Xbox LIVE are unavailable on Nintendo Switch.",Vision},
++    {"Initial Setup","pad","Choose a profile and review language, clock, network, and startup settings without resetting your console.",Initial},
++    {"HomeNX Preferences","gear","Customize the dashboard, games, pictures, notifications, lock screen, and HomeNX tools.",Preferences}
++}};
++inline constexpr std::array<Link,8> consoleLinks = {{
++    {"Display","monitor","Change TV output, handheld brightness, and display settings.",Display},
++    {"Audio","speaker","Change dashboard music, menu sounds, volume, and Bluetooth audio devices.",Audio},
++    {"Language and Locale","globe","Choose the language used by HomeNX. Console region and Nintendo Account settings remain managed by Nintendo.",Language},
++    {"Clock","clock","Change clock display and, in the HOME frontend, console date and time.",Clock},
++    {"Startup and Shutdown","power","Configure the original Xbox 360 startup animation and the Switch's sleep timers.",Startup},
++    {"Auto-Play","play","Configure software launch preferences. Nintendo Switch does not support Xbox 360 disc auto-play.",AutoPlay},
++    {"Remote Control","pad","Pair controllers, change button mapping, and configure Bluetooth and vibration.",Remote},
++    {"System Info","dots","View this Switch's real firmware, Atmosphere version, storage, and HomeNX information.",SystemInfo}
++}};
++struct Rect {
++    float x,y,w,h;
++    bool contains(float px,float py) const { return px>=x && px<x+w && py>=y && py<y+h; }
++};
++inline constexpr Rect panel{194,110,890,484};
++inline constexpr float rowX=209, rowY=125, rowW=423, pitch=46, rowH=46, listBottom=585;
++inline constexpr int visibleRows=10;
++inline Rect row(int index,float scroll=0,float slide=0) { return {rowX+slide,rowY+pitch*index-scroll,rowW,rowH}; }
++inline int topRow(int selected,int count) {
++    return std::clamp(selected-visibleRows+1,0,std::max(0,count-visibleRows));
++}
++inline int hitRow(float x,float y,int count,float scroll=0,float slide=0) {
++    if (y<rowY || y>=listBottom || x<rowX+slide || x>=rowX+slide+rowW) return -1;
++    const int index=static_cast<int>((y-rowY+scroll)/pitch);
++    return index>=0 && index<count && row(index,scroll,slide).contains(x,y) ? index : -1;
++}
++struct Visit { int page,row; };
++inline bool enter(int target,int& page,int& selected,std::vector<Visit>& history) {
++    if(target<0 || target>=Count || target==page) return false;
++    history.push_back({page,selected});page=target;selected=0;return true;
++}
++inline bool back(int& page,int& selected,std::vector<Visit>& history) {
++    if(history.empty()) return false;
++    const auto visit=history.back();history.pop_back();page=visit.page;selected=visit.row;return true;
++}
++inline int parent(int page) {
++    if(page>=Display && page<=SystemInfo) return Console;
++    if(page>=Look && page<=Updates) return Preferences;
++    return System;
++}
++inline void seedHistory(int page,std::vector<Visit>& history) {
++    history.clear();
++    if(page==System) return;
++    const int above=parent(page);
++    history.push_back({System,above==Console?0:above==Preferences?7:std::clamp(page-1,0,7)});
++    if(above!=System) history.push_back({above,page>=Look?page-Look:page-Display});
++}
++} // namespace cards::settings360
+diff --git a/projects/cards/src/SettingsNavigation.inc b/projects/cards/src/SettingsNavigation.inc
+new file mode 100644
+index 0000000000000000000000000000000000000000..a4203e9958b3ab1e25131e81bc6df9694d17ece4
+--- /dev/null
++++ b/projects/cards/src/SettingsNavigation.inc
+@@ -0,0 +1,85 @@
++// Production settings controller and touch behavior, also exercised by host tests.
++void CardsActivity::openNxePage(int page) {
++    if(!settings360::enter(page,m_sheetSec,m_sheetRow,m_sheetHistory)) return;
++    m_sheetOnRows=true;m_sheetScroll=0;m_sheetFocus=0;m_sheetDirection=1;
++    m_sheetRowsIn=m_settings.motion?0.f:1.f;m_audio.play("tab_transition");
++}
++void CardsActivity::backNxeSettings() {
++    if(settings360::back(m_sheetSec,m_sheetRow,m_sheetHistory)) {
++        const int count=int(m_sheet[m_sheetSec].rows.size());
++        m_sheetRow=std::clamp(m_sheetRow,0,std::max(0,count-1));
++        m_sheetScroll=settings360::topRow(m_sheetRow,count)*settings360::pitch;
++        m_sheetFocus=float(m_sheetRow);m_sheetDirection=-1;
++        m_sheetRowsIn=m_settings.motion?0.f:1.f;m_audio.play("hide_modal");
++    } else {
++        m_sheetClosing=m_settings.motion;
++        if(!m_sheetClosing) m_sheetOpen=false;
++        m_audio.play("hide_modal");
++    }
++}
++void CardsActivity::activateNxeSetting(int delta,bool stepsOnly) {
++    if(m_sheetSec<0 || m_sheetSec>=int(m_sheet.size())) return;
++    auto& rows=m_sheet[m_sheetSec].rows;
++    if(rows.empty()) return;
++    m_sheetRow=std::clamp(m_sheetRow,0,int(rows.size())-1);
++    // Copy callbacks before invoking: a callback can replace the current page.
++    const auto item=rows[m_sheetRow];
++    if(item.kind==MenuItem::Action && !stepsOnly && item.run) {
++        auto run=item.run;m_audio.play("activation");run();
++    } else if(item.kind!=MenuItem::Info && item.change) {
++        takeFacts(true);auto change=item.change;change(delta);m_audio.play("navigation");
++    }
++}
++bool CardsActivity::touchNxeSettings(float x,float y) {
++    if(m_sheetClosing) return true;
++    if(y>=625 && y<680) {
++        if(x>=90 && x<200) activateNxeSetting();
++        else if(x>=200 && x<320) backNxeSettings();
++        return true;
++    }
++    const float slide=24.f*m_sheetDirection*(1.f-nxe::ease(m_sheetRowsIn));
++    auto& rows=m_sheet[m_sheetSec].rows;
++    const int hit=settings360::hitRow(x,y,int(rows.size()),m_sheetScroll,slide);
++    if(hit>=0) {
++        const bool wasSelected=hit==m_sheetRow;m_sheetRow=hit;
++        m_audio.play("navigation");
++        // A touch that only focuses a value must never change it accidentally.
++        if(rows[hit].kind==MenuItem::Action || wasSelected) activateNxeSetting();
++        return true;
++    }
++    // The current-setting area offers explicit minus/plus touch controls.
++    if(x>=665 && x<1050 && y>=225 && y<285 && !rows.empty()) {
++        const auto kind=rows[std::clamp(m_sheetRow,0,int(rows.size())-1)].kind;
++        if(kind==MenuItem::Slider || kind==MenuItem::Choice || kind==MenuItem::Toggle)
++            activateNxeSetting(x<855?-1:1,true);
++    }
++    return true;
++}
++
++bool CardsActivity::updateSheet(float dt) {
++    auto& in=app().input();using B=nxui::Button;
++    if(m_sheetClosing) return true;
++    if(m_sheet.empty() || m_sheetSec<0 || m_sheetSec>=int(m_sheet.size())) return false;
++    if(in.isDown(B::B)) {backNxeSettings();return true;}
++    if(in.isDown(B::Plus)) {
++        m_sheetHistory.clear();backNxeSettings();return true;
++    }
++    const int count=int(m_sheet[m_sheetSec].rows.size());
++    if(!count) return true;
++    const B buttons[][3]={{B::DUp,B::LStickU,B::RStickU},{B::DDown,B::LStickD,B::RStickD},
++        {B::DLeft,B::LStickL,B::RStickL},{B::DRight,B::LStickR,B::RStickR}};
++    int direction=-1;bool held=false,pressed=false;
++    for(int i=0;i<4;++i) for(const auto button:buttons[i]) {
++        if(in.isDown(button)) {pressed=true;direction=i;}
++        if(in.isHeld(button)) {held=true;if(direction<0) direction=i;}
++    }
++    if(pressed) m_sheetRepeat=0.32f;
++    else if(held && (m_sheetRepeat-=dt)<=0) {pressed=true;m_sheetRepeat=0.12f;}
++    if(pressed && direction<2) {
++        const int next=std::clamp(m_sheetRow+(direction==0?-1:1),0,count-1);
++        if(next!=m_sheetRow) {m_sheetRow=next;m_audio.play("navigation");}
++    } else if(pressed && direction>=2) activateNxeSetting(direction==2?-1:1,true);
++    if(in.isDown(B::A)) activateNxeSetting();
++    return true;
++}
++
+diff --git a/projects/cards/src/SettingsScene.hpp b/projects/cards/src/SettingsScene.hpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..adf9ae22285a2637cc7ffc98eeeb044784ad1af3
+--- /dev/null
++++ b/projects/cards/src/SettingsScene.hpp
+@@ -0,0 +1,94 @@
++#pragma once
++#include "SettingsLayout.hpp"
++#include <cmath>
++
++// Shared drawing primitives for the native renderer and the host visual preview.
++namespace cards::settings360 {
++struct Color { float r,g,b,a=1; };
++template<class Paint> void background(Paint& p,float opacity) {
++    for(int x=0;x<1280;x+=8) {
++        const float u=(x+4)/1280.f;
++        const float light=std::exp(-std::pow((u-0.40f)/0.32f,2.f));
++        const Color top{0.10f+0.23f*light,0.17f+0.32f*light,0.025f+0.15f*u,opacity};
++        const Color middle{0.35f+0.25f*light+0.02f*u,0.54f+0.18f*light-0.10f*u,0.10f+0.38f*u,opacity};
++        const Color horizon{0.79f+0.16f*u,0.86f-0.04f*u,0.88f-0.36f*u,opacity};
++        p.gradient({float(x),0,8,270},top,middle);
++        p.gradient({float(x),270,8,168},middle,horizon);
++        p.gradient({float(x),438,8,282},horizon,{0.59f,0.61f,0.60f,opacity});
++    }
++    // Low contrast concentric circles, as in the original NXE settings theme.
++    for(int i=0;i<42;++i) {
++        const float cx=float((i*317+13)%1320)-20,cy=float((i*193+23)%760)-20;
++        const float radius=9.f+(i*11)%38;
++        for(int ring=0;ring<3;++ring) for(int segment=0;segment<24;++segment) {
++            const float a=segment*6.2831853f/24,b=(segment+1)*6.2831853f/24;
++            const float size=radius+ring*5.f;
++            p.line(cx+std::cos(a)*size,cy+std::sin(a)*size,
++                   cx+std::cos(b)*size,cy+std::sin(b)*size,{0.95f,1,0.89f,0.032f*opacity},1.4f);
++        }
++    }
++}
++template<class Paint> void frame(Paint& p,float opacity) {
++    p.gradient({194,596,890,74},{0.24f,0.29f,0.30f,0.18f*opacity},{0.24f,0.29f,0.30f,0.f});
++    p.rounded({194,113,890,484},{0.1f,0.15f,0.17f,0.16f*opacity},4);
++    p.rounded(panel,{0.18f,0.24f,0.28f,opacity},4);
++    p.gradient({196,112,886,480},{0.30f,0.36f,0.39f,opacity},{0.18f,0.23f,0.27f,opacity});
++}
++template<class Paint> void selection(Paint& p,Rect r,float opacity) {
++    p.rounded(r,{0.46f,0.63f,0.11f,opacity},4);
++    p.gradient({r.x+1,r.y+1,r.w-2,r.h-2},{0.67f,0.80f,0.36f,opacity},{0.36f,0.62f,0.015f,opacity});
++    p.gradient({r.x+1,r.y+1,r.w-2,r.h*0.47f},{0.94f,0.97f,0.83f,0.62f*opacity},{0.7f,0.85f,0.38f,0.f});
++}
++template<class Paint> void orb(Paint& p,float opacity) {
++    constexpr float cx=1157,cy=635,radius=25;
++    for(int ring=0;ring<4;++ring) for(int segment=0;segment<40;++segment) {
++        const float a=segment*6.2831853f/40,b=(segment+1)*6.2831853f/40;
++        const float size=20.f+ring*15;
++        p.line(cx+std::cos(a)*size,674+std::sin(a)*size*0.23f,
++               cx+std::cos(b)*size,674+std::sin(b)*size*0.23f,{0.83f,0.85f,0.79f,0.18f*opacity},1);
++    }
++    p.circle(cx,cy+3,radius,{0.19f,0.23f,0.17f,0.4f*opacity});
++    p.circle(cx,cy,radius,{0.54f,0.57f,0.51f,opacity});
++    for(int y=-24;y<25;y+=2) {
++        const float width=std::sqrt(std::max(0.f,radius*radius-float(y*y)));
++        const float shade=0.51f+0.40f*std::exp(-std::pow((y+10)/20.f,2.f));
++        p.rect({cx-width,cy+y,width*2,2},{shade,shade+0.01f,shade-0.02f,opacity});
++    }
++    // Curved vector adaptation of the green X on the silver sphere.
++    for(int y=-21;y<21;y+=2) {
++        const float at=16.f*std::sqrt(std::abs(y)/21.f),width=3.5f+2*(1-std::abs(y)/21.f);
++        for(int side:{-1,1}) {
++            p.rect({cx+side*at-width/2,cy+y,width,2},{0.28f,0.55f,0.015f,opacity});
++            p.rect({cx+side*at-width/2,cy+y,1,2},{0.63f,0.85f,0.16f,opacity});
++        }
++    }
++}
++template<class Paint> void systemIcon(Paint& p,int index,float x,float y,float opacity) {
++    const Color silver{0.77f,0.83f,0.83f,opacity},light{0.89f,0.94f,0.92f,opacity},dark{0.42f,0.50f,0.52f,opacity};
++    if(index==0 || index==6) {
++        p.rect({x-7,y-16,13,31},silver);p.rect({x-7,y-16,4,31},light);
++        p.circle(x,y+2,2.5f,{0.39f,0.59f,0.16f,opacity});
++        p.line(x-6,y-13,x+5,y-14,light,2);
++        if(index==6){p.rounded({x+2,y+4,18,10},light,3);p.line(x+5,y+9,x+10,y+9,dark,2);}
++    } else if(index==1) {
++        p.circle(x-7,y-11,5,silver);p.line(x-7,y-3,x,y+8,silver,11);
++        p.circle(x+8,y-4,4,light);p.line(x+8,y+3,x+9,y+10,light,7);
++        p.rounded({x+7,y+7,10,10},dark,2);p.rect({x+9,y+9,6,6},light);
++    } else if(index==2) {
++        p.line(x-13,y+4,x+10,y-3,dark,15);p.line(x-13,y+1,x+10,y-6,silver,11);
++        p.line(x-9,y-6,x+4,y-10,light,4);
++    } else if(index==3) {
++        p.line(x-9,y+8,x+4,y-8,dark,4);p.line(x+4,y-8,x+13,y+8,dark,4);
++        p.circle(x-10,y+9,6,silver);p.circle(x+3,y-9,6,light);p.circle(x+14,y+5,6,silver);
++    } else if(index==4) {
++        p.rounded({x-15,y-13,29,22},silver,4);p.rounded({x-12,y-10,23,16},dark,2);
++        p.rect({x-4,y+9,8,4},silver);p.line(x-10,y+15,x+9,y+15,silver,3);
++    } else if(index==5) {
++        p.rounded({x-10,y-12,20,21},silver,5);p.circle(x,y-3,6,dark);p.circle(x,y-4,4,light);
++        p.rect({x-3,y+9,6,5},dark);p.line(x-11,y+16,x+11,y+16,silver,2);
++    } else {
++        for(int i=0;i<8;++i){float a=i*6.2831853f/8;p.line(x+std::cos(a)*8,y+std::sin(a)*8,x+std::cos(a)*14,y+std::sin(a)*14,silver,5);}
++        p.circle(x,y,10,silver);p.circle(x,y,4,dark);
++    }
++}
++} // namespace cards::settings360
 diff --git a/tests/dashboard360_test.cpp b/tests/dashboard360_test.cpp
 new file mode 100644
-index 0000000..0ef3056
+index 0000000000000000000000000000000000000000..0ef30566502b9d52c2cf7fb4c18e7f3e01d9e4f4
 --- /dev/null
 +++ b/tests/dashboard360_test.cpp
 @@ -0,0 +1,52 @@
@@ -3802,7 +4636,7 @@ index 0000000..0ef3056
 +}
 diff --git a/tests/guide360_test.cpp b/tests/guide360_test.cpp
 new file mode 100644
-index 0000000..6256a89
+index 0000000000000000000000000000000000000000..6256a8948dea2bae800b6d70f3105adfb50466f3
 --- /dev/null
 +++ b/tests/guide360_test.cpp
 @@ -0,0 +1,25 @@
@@ -3831,9 +4665,201 @@ index 0000000..6256a89
 +    }
 +    std::cout << "Guide blade bounds, seven-row layouts, touch targets and tab wrapping passed\n";
 +}
+diff --git a/tests/settings360_test.cpp b/tests/settings360_test.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..bf86cf80d3bb8a8fb02e9d8710da06fcdacd8263
+--- /dev/null
++++ b/tests/settings360_test.cpp
+@@ -0,0 +1,186 @@
++#include "../projects/cards/src/SettingsLayout.hpp"
++#include "../projects/cards/src/NxeLayout.hpp"
++#include <cassert>
++#include <functional>
++#include <iostream>
++#include <string>
++#include <vector>
++
++namespace nxui {
++enum class Button {DUp,DDown,DLeft,DRight,LStickU,LStickD,LStickL,LStickR,
++    RStickU,RStickD,RStickL,RStickR,A,B,Plus,Count};
++struct Input {
++    std::array<bool,int(Button::Count)> down{},held{};
++    bool isDown(Button b)const{return down[int(b)];}
++    bool isHeld(Button b)const{return held[int(b)];}
++    void press(Button b){down.fill(false);held.fill(false);down[int(b)]=true;}
++};
++}
++
++// Compile the production page builder with a host callback fixture. No console
++// services are mocked as successful: this checks routing and callback ownership.
++namespace cards {
++class Audio; // Production has this class; the page enum must stay qualified.
++inline float brightnessWritten=-1;
++inline void setBrightness(float value){brightnessWritten=value;}
++class CardsActivity {
++public:
++    enum Page { kGames,kHomebrew,kNintendo,kMedia,kPageCount };
++    struct MenuItem {
++        enum Kind {Action,Toggle,Choice,Slider,Info};
++        Kind kind=Action;std::string label,detail;const char* glyph=nullptr;
++        std::function<void()> run;
++        std::function<std::string()> value;
++        std::function<void(int)> change;
++        std::function<float()> level;
++    };
++    struct Section {std::string name;const char* icon;std::vector<MenuItem> rows;};
++    std::vector<Section> m_sheet;
++    struct {float brightness=.5f;} m_quick;
++    bool m_sheetOpen=true,m_sheetClosing=false,m_sheetOnRows=true;
++    int m_sheetSec=0,m_sheetRow=0;
++    float m_sheetFocus=0,m_sheetScroll=0,m_sheetDirection=1,m_sheetRowsIn=1,m_sheetRepeat=0;
++    std::vector<settings360::Visit> m_sheetHistory;
++    struct {bool motion=false;} m_settings;
++    struct {void play(const char*){}} m_audio;
++    struct App {nxui::Input inputState;nxui::Input& input(){return inputState;}} application;
++    App& app(){return application;}
++    void takeFacts(bool){}
++    int powerCalls=0,profileCalls=0;
++    void openNxePage(int page);
++    void openPower(){++powerCalls;}
++    void openUsers(){++profileCalls;}
++    void backNxeSettings();
++    void activateNxeSetting(int delta=1,bool stepsOnly=false);
++    bool touchNxeSettings(float,float);
++    bool updateSheet(float);
++    static MenuItem action(const char* label,std::function<void()> run){MenuItem i;i.label=label;i.run=std::move(run);return i;}
++    static MenuItem info(const char* label,std::function<std::string()> value){MenuItem i;i.kind=MenuItem::Info;i.label=label;i.value=std::move(value);return i;}
++    static MenuItem slider(const char* label,std::function<int()> get,std::function<void(int)> set,const char* detail){
++        MenuItem i;i.kind=MenuItem::Slider;i.label=label;i.detail=detail;
++        i.value=[get](){return std::to_string(get())+"%";};i.level=[get](){return get()/100.f;};
++        i.change=[get,set](int d){set(std::clamp(get()+d*10,0,100));};return i;
++    }
++    void buildNxeSettings();
++};
++#include "../projects/cards/src/SettingsBindings.inc"
++#include "../projects/cards/src/SettingsNavigation.inc"
++}
++int main(){
++    using namespace cards;using namespace cards::settings360;
++    CardsActivity app;int volume=60,saves=0,moves=0;bool startup=true;
++    auto callback=CardsActivity::action("Preview startup",[](){});
++    auto toggle=callback;toggle.label="Startup animation";toggle.kind=CardsActivity::MenuItem::Toggle;
++    toggle.run={};toggle.level=[&](){return startup?1.f:0.f;};toggle.change=[&](int){startup=!startup;++saves;};
++    auto inert=[](const char* name){return CardsActivity::info(name,[](){return "real getter fixture";});};
++    app.m_sheet={
++        {"Home","home",{inert("Custom pages"),inert("Sort games")}},
++        {"Look","gear",{inert("Clock"),inert("Animations"),toggle,callback,inert("Launch animation")}},
++        {"Lock screen","moon",{inert("Lock screen")}},
++        {"Sound","music",{CardsActivity::slider("Music volume",[&](){return volume;},[&](int v){volume=v;++saves;},"Volume")}},
++        {"Notifications","bell",{inert("Notification cards")}},
++        {"Storage","copy",{inert("Console memory"),inert("microSD card"),CardsActivity::action("Move software between console and microSD",[&](){++moves;})}},
++        {"Internet","wifi",{inert("Network"),inert("IP address"),CardsActivity::action("Connection test",[](){})}},
++        {"Bluetooth","bluetooth",{CardsActivity::action("Headphones and speakers",[](){}),CardsActivity::action("Pair headphones or a speaker",[](){})}},
++        {"Console","power",{CardsActivity::action("Connect to a computer",[](){}),inert("Language"),inert("Auto-brightness"),inert("Console's TV output")}},
++        {"Pictures","tag",{inert("Card pictures")}},
++        {"Updates","download",{CardsActivity::action("Homebrew updates",[](){})}},
++        {"About","dots",{inert("System version"),inert("Atmosphere")}}
++    };
++#ifdef SWITCHU_MENU
++    app.m_sheet[8].rows.push_back(inert("Set the time automatically"));
++    app.m_sheet[8].rows.push_back(inert("Date"));
++#endif
++    app.buildNxeSettings();
++    assert(app.m_sheet.size()==Count);
++    for(int page=0;page<Count;++page) {
++        assert(app.m_sheet[page].name==titles[page]);
++        assert(!app.m_sheet[page].rows.empty());
++    }
++    for(const auto page:{System,Console}) {
++        assert(app.m_sheet[page].rows.size()==8);
++        for(int row=0;row<8;++row) {
++            const auto target=page==System?systemLinks[row].target:consoleLinks[row].target;
++            assert(app.m_sheet[page].rows[row].label==(page==System?systemLinks[row].label:consoleLinks[row].label));
++            app.m_sheetSec=page;app.m_sheetRow=row;app.m_sheetHistory.clear();
++            app.m_sheet[page].rows[row].run();assert(app.m_sheetSec==target);
++            app.backNxeSettings();assert(app.m_sheetSec==page && app.m_sheetRow==row);
++        }
++    }
++    // Follow every production link, including Preferences, Family and Initial
++    // Setup, to ensure all settings pages are reachable from System Settings.
++    std::vector<int> pending{System};std::array<bool,Count> visited{};
++    while(!pending.empty()) {
++        const int page=pending.back();pending.pop_back();if(visited[page]) continue;visited[page]=true;
++        for(const auto& item:app.m_sheet[page].rows) if(item.run) {
++            app.m_sheetSec=page;app.m_sheetRow=0;app.m_sheetHistory.clear();item.run();
++            if(app.m_sheetSec!=page) pending.push_back(app.m_sheetSec);
++        }
++    }
++    for(const bool seen:visited) assert(seen);
++    auto find=[&](Page page,const char* label)->CardsActivity::MenuItem&{
++        auto& rows=app.m_sheet[page].rows;
++        const auto it=std::find_if(rows.begin(),rows.end(),[&](const auto& item){return item.label==label;});
++        assert(it!=rows.end());return *it;
++    };
++    auto& music=find(settings360::Audio,"Music volume");const int oldSaves=saves;
++    music.change(1);assert(volume==70 && saves==oldSaves+1 && music.value()=="70%");
++    volume=30;assert(music.value()=="30%");
++    find(Startup,"Startup animation").change(1);
++    assert(!startup && find(Look,"Startup animation").level()==0.f);
++    const int oldMoves=moves;find(Memory,"Move software between console and microSD").run();assert(moves==oldMoves+1);
++    find(Display,"Brightness").change(1);assert(brightnessWritten>.59f && brightnessWritten<.61f);
++    assert(find(settings360::Audio,"Pair headphones or a speaker").run);
++    assert(app.m_sheet[Vision].rows.front().kind==CardsActivity::MenuItem::Info);
++    assert(app.m_sheet[Vision].rows.front().detail.find("cannot operate")!=std::string::npos);
++    // Exercise actual production controller handlers, not a parallel model.
++    auto press=[&](nxui::Button button){app.application.inputState.press(button);assert(app.updateSheet(.016f));};
++    app.m_sheetSec=System;app.m_sheetRow=0;app.m_sheetHistory.clear();app.m_sheetOpen=true;
++    press(nxui::Button::A);assert(app.m_sheetSec==Console);
++    press(nxui::Button::DDown);assert(app.m_sheetRow==1);
++    press(nxui::Button::A);assert(app.m_sheetSec==settings360::Audio);
++    volume=30;press(nxui::Button::DRight);assert(volume==40);
++    press(nxui::Button::DLeft);assert(volume==30);
++    press(nxui::Button::B);assert(app.m_sheetSec==Console && app.m_sheetRow==1);
++    press(nxui::Button::B);assert(app.m_sheetSec==System && app.m_sheetRow==0);
++    // Touch navigation enters a category immediately, but focusing a value
++    // changes nothing. Only a second tap or an explicit +/- applies a change.
++    app.m_sheetScroll=0;app.m_sheetRowsIn=1;
++    app.touchNxeSettings(250,145);assert(app.m_sheetSec==Console);
++    app.m_sheetRowsIn=1;app.touchNxeSettings(250,193);assert(app.m_sheetSec==settings360::Audio);
++    app.m_sheetRow=1;app.m_sheetScroll=0;app.m_sheetRowsIn=1;
++    const int beforeTouch=saves;app.touchNxeSettings(250,145);assert(volume==30 && saves==beforeTouch);
++    app.touchNxeSettings(250,145);assert(volume==40 && saves==beforeTouch+1);
++    app.touchNxeSettings(700,255);assert(volume==30);
++    app.touchNxeSettings(1000,255);assert(volume==40);
++    app.touchNxeSettings(220,650);assert(app.m_sheetSec==Console && app.m_sheetRow==1);
++    app.m_sheetClosing=true;const int stoppedRow=app.m_sheetRow;
++    press(nxui::Button::DDown);assert(app.m_sheetRow==stoppedRow);app.m_sheetClosing=false;
++    press(nxui::Button::Plus);assert(!app.m_sheetOpen && app.m_sheetHistory.empty());
++#ifndef SWITCHU_MENU
++    assert(find(Clock,"Console date and time").value()=="HOME frontend required");
++#else
++    assert(find(Clock,"Date").value()=="real getter fixture");
++#endif
++    for(int target=1;target<Count;++target) {
++        int page=System,selected=5;std::vector<Visit> history;
++        assert(enter(target,page,selected,history));assert(page==target && selected==0);
++        assert(back(page,selected,history));assert(page==System && selected==5);
++        assert(!back(page,selected,history));
++        assert(!enter(Count,page,selected,history));
++    }
++    for(int count:{1,8,10,11,27}) for(int selected=0;selected<count;++selected) {
++        const float scroll=topRow(selected,count)*pitch;
++        const auto chosen=row(selected,scroll);
++        assert(chosen.y>=rowY && chosen.y+chosen.h<=listBottom);
++        assert(hitRow(chosen.x+10,chosen.y+10,count,scroll)==selected);
++        assert(hitRow(665,chosen.y+10,count,scroll)==-1);
++        assert(hitRow(chosen.x+10,listBottom,count,scroll)==-1);
++    }
++    for(int page=0;page<Count;++page) {
++        std::vector<Visit> history;seedHistory(page,history);int selected=0,where=page;
++        int depth=0;while(back(where,selected,history)) assert(++depth<=2);
++        assert(where==System);
++    }
++    std::cout<<"All 23 settings pages reachable; real callback ownership, shared saved values, app/HOME availability, history and scrolling touch bounds passed\n";
++}
 diff --git a/tests/startup360_test.cpp b/tests/startup360_test.cpp
 new file mode 100644
-index 0000000..a48d19b
+index 0000000000000000000000000000000000000000..a48d19b31856d64b7d43f54ab8d2d81e7212ca54
 --- /dev/null
 +++ b/tests/startup360_test.cpp
 @@ -0,0 +1,43 @@
@@ -3882,7 +4908,7 @@ index 0000000..a48d19b
 +}
 diff --git a/tools/package_dashboard360.py b/tools/package_dashboard360.py
 new file mode 100644
-index 0000000..c088b5a
+index 0000000000000000000000000000000000000000..c088b5ab5871a1ee5951feb0017f147a4161c6b8
 --- /dev/null
 +++ b/tools/package_dashboard360.py
 @@ -0,0 +1,76 @@
@@ -3964,7 +4990,7 @@ index 0000000..c088b5a
 +print('Packaged preview NRO and HomeNX update:', output)
 diff --git a/tools/prepare_startup360.py b/tools/prepare_startup360.py
 new file mode 100644
-index 0000000..086c445
+index 0000000000000000000000000000000000000000..086c4459c26db91cb6a0518dc77878a00907ad76
 --- /dev/null
 +++ b/tools/prepare_startup360.py
 @@ -0,0 +1,44 @@
@@ -4012,3 +5038,77 @@ index 0000000..086c445
 + report={'source_sha256':hashlib.sha256(a.input.read_bytes()).hexdigest(),'source_size':[v['width'],v['height']],'playback_size':[width,height],'frame_rate':[num,den],'frames':len(frames),'duration_us':duration,'resampling':'Lanczos to Switch logical 1280x720; no cropping or overlays','frame_encoding':'lossless WebP; every decoded frame compared with resized source RGB','audio':'PCM 16-bit stereo 44100 Hz','bank_sha256':hashlib.sha256(a.output.read_bytes()).hexdigest(),'frame_rgb_sha256':hashes}
 + a.output.with_suffix('.json').write_text(json.dumps(report,indent=2)+'\n')
 + print('Verified',len(frames),'lossless frames;',a.output.stat().st_size,'bytes')
+diff --git a/tools/preview_settings360.cpp b/tools/preview_settings360.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..9641233b795ba1ee5cec97480181ee43b5624c2c
+--- /dev/null
++++ b/tools/preview_settings360.cpp
+@@ -0,0 +1,45 @@
++// Host layout preview, using the native settings scene primitives. This is not
++// a Switch framebuffer capture; native icons/font rasterization may differ.
++#include "../projects/cards/src/SettingsScene.hpp"
++#include <iostream>
++#include <string>
++#include <sstream>
++using namespace cards::settings360;
++struct Svg {
++    int next=0;
++    static std::string color(Color c){return "rgb("+std::to_string(int(c.r*255))+","+std::to_string(int(c.g*255))+","+std::to_string(int(c.b*255))+")";}
++    static std::string escape(std::string s){
++        std::string out;for(char c:s){if(c=='&')out+="&amp;";else if(c=='<')out+="&lt;";else if(c=='>')out+="&gt;";else out+=c;}return out;
++    }
++    void rect(Rect b,Color c){rounded(b,c,0);}
++    void rounded(Rect b,Color c,float radius){std::cout<<"<rect x='"<<b.x<<"' y='"<<b.y<<"' width='"<<b.w<<"' height='"<<b.h<<"' rx='"<<radius<<"' fill='"<<color(c)<<"' opacity='"<<c.a<<"'/>\n";}
++    void gradient(Rect b,Color a,Color d){
++        int id=next++;std::cout<<"<defs><linearGradient id='g"<<id<<"' x1='0' y1='0' x2='0' y2='1'><stop stop-color='"<<color(a)<<"' stop-opacity='"<<a.a<<"'/><stop offset='1' stop-color='"<<color(d)<<"' stop-opacity='"<<d.a<<"'/></linearGradient></defs>\n";
++        std::cout<<"<rect x='"<<b.x<<"' y='"<<b.y<<"' width='"<<b.w<<"' height='"<<b.h<<"' fill='url(#g"<<id<<")'/>\n";
++    }
++    void line(float x,float y,float xx,float yy,Color c,float width){std::cout<<"<path d='M"<<x<<","<<y<<" L"<<xx<<","<<yy<<"' stroke='"<<color(c)<<"' stroke-width='"<<width<<"' opacity='"<<c.a<<"'/>\n";}
++    void circle(float x,float y,float radius,Color c){std::cout<<"<circle cx='"<<x<<"' cy='"<<y<<"' r='"<<radius<<"' fill='"<<color(c)<<"' opacity='"<<c.a<<"'/>\n";}
++    void text(std::string s,float x,float y,int size,Color c){std::cout<<"<text x='"<<x<<"' y='"<<y<<"' font-family='Selawik' font-size='"<<size<<"' fill='"<<color(c)<<"'>"<<escape(s)<<"</text>\n";}
++};
++int main(int argc,char** argv){
++    const bool console=argc>1 && std::string(argv[1])=="console";
++    Svg p;std::cout<<"<svg xmlns='http://www.w3.org/2000/svg' width='1280' height='720' viewBox='0 0 1280 720'>\n";
++    background(p,1);frame(p,1);orb(p,1);selection(p,row(0),1);
++    p.text(console?"Console Settings":"System Settings",95,79,34,{.88f,.92f,.80f});
++    const auto& links=console?consoleLinks:systemLinks;
++    for(int i=0;i<8;++i) {
++        const auto b=row(i);
++        if(i>=1)p.rect({b.x+4,b.y+b.h-1,b.w-8,1.5f},{.65f,.72f,.75f,.25f});
++        if(!console) {
++            systemIcon(p,i,b.x+26,b.y+24,1);
++        }
++        p.text(links[i].label,b.x+(console?13:54),b.y+32,26,i==0?Color{.93f,.95f,.96f}:Color{.70f,.74f,.76f});
++    }
++    std::istringstream words(links[0].detail);std::string word,line;int y=156;
++    while(words>>word){if(line.size()+word.size()>30){p.text(line,665,y,26,{.93f,.95f,.96f});line.clear();y+=30;}line+=(line.empty()?"":" ")+word;}
++    if(!line.empty())p.text(line,665,y,26,{.93f,.95f,.96f});
++    p.circle(111,650,11,{.39f,.63f,.08f});p.circle(221,650,11,{.65f,.12f,.13f});
++    p.text("A",105,656,17,{.12f,.16f,.10f});p.text("B",215,656,17,{.12f,.16f,.10f});
++    p.text("Select",131,657,21,{.97f,.97f,.94f});p.text("Back",241,657,21,{.97f,.97f,.94f});
++    std::cout<<"</svg>\n";
++}
+diff --git a/xmake.lua b/xmake.lua
+index d9ca0a55b4c48baee56d9fccb98a3a283a46750a..d8987fbf2eafeb7895103e823d9770023f9ee4ad 100644
+--- a/xmake.lua
++++ b/xmake.lua
+@@ -187,7 +187,7 @@ target("SwitchU")
+     add_includedirs("projects/manager/src", {public = false})
+     -- CardsNX as HOME (NXToggle > Home screen): its screen, built in; its files
+     -- (fonts, icons, the GameTDB index) ship in switch/SwitchU/cards/.
+-    add_files("projects/cards/src/Audio.cpp", "projects/cards/src/CardsActivity.cpp", "projects/cards/src/Library.cpp",
++    add_files("projects/cards/src/BootClip.cpp", "projects/cards/src/Audio.cpp", "projects/cards/src/CardsActivity.cpp", "projects/cards/src/Library.cpp",
+               "projects/cards/src/Mtp.cpp", "projects/cards/src/Spotify.cpp")
+     add_files("projects/updater/src/Catalog.cpp") -- homebrew updates, as the Homebrew Manager finds them
+     add_includedirs("projects/cards/src", {public = false})
+@@ -417,7 +417,9 @@ target("CardsNX")
+         local romfs_dir = path.join(os.projectdir(), "build/cards-romfs")
+         os.mkdir(path.join(romfs_dir, "fonts"))
+         os.mkdir(path.join(romfs_dir, "icons"))
++        os.cp(path.join(os.projectdir(), "projects/cards/romfs/boot"), romfs_dir)
+         os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/*.ttf"), path.join(romfs_dir, "fonts"))
++        os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/Selawik-OFL.txt"), path.join(romfs_dir, "fonts"))
+         os.cp(path.join(os.projectdir(), "projects/cards/romfs/icons/*.png"), path.join(romfs_dir, "icons"))
+         os.mkdir(path.join(romfs_dir, "certs"))
+         os.cp(path.join(os.projectdir(), "projects/cards/romfs/certs/*.pem"), path.join(romfs_dir, "certs"))

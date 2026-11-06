@@ -80,7 +80,7 @@ void CardsActivity::dashGuideActivate() {
             case 0:openUsers();break;
             case 1:dashSettings("Look");break;
             case 2:dashSettings("Console");break;
-            case 3:openStorage();break;
+            case 3:dashSettings("Storage");break;
             case 4:dashSettings("Sound");break;
             case 5:dashSettings("Internet");break;
             case 6:openPower();break;

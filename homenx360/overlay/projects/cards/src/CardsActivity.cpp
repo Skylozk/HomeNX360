@@ -1,6 +1,7 @@
 #include "CardsActivity.hpp"
 #include "Dashboard360.hpp"
 #include "GuideLayout.hpp"
+#include "SettingsScene.hpp"
 
 #include "social/NotificationLog.hpp"
 
@@ -6052,28 +6053,7 @@ void CardsActivity::buildSettings() {
     }));
 #endif
     m_sheet.push_back(std::move(about));
-    // Fewer tabs: these go at the end of another's rows.
-    auto fold = [this](const char* from, const char* into) {
-        const auto named = [this](const char* name) {
-            return std::find_if(m_sheet.begin(), m_sheet.end(), [name](const Section& s) { return s.name == name; });
-        };
-        const auto source = named(from);
-        const auto target = named(into);
-        if (source == m_sheet.end() || target == m_sheet.end()) return;
-        for (MenuItem& row : source->rows) target->rows.push_back(std::move(row));
-        m_sheet.erase(source);
-    };
-    fold("Notifications", "Home");
-    fold("Pictures", "Look");
-    fold("Storage", "Console");
-    fold("About", "Updates");
-    // His order (Settings > Home > Settings tab order); tabs new since go after.
-    const auto& wanted = m_settings.sheetOrder;
-    auto rank = [&wanted](const Section& sec) {
-        const auto it = std::find(wanted.begin(), wanted.end(), sec.name);
-        return it == wanted.end() ? 1000 : static_cast<int>(it - wanted.begin());
-    };
-    std::stable_sort(m_sheet.begin(), m_sheet.end(), [&rank](const Section& x, const Section& y) { return rank(x) < rank(y); });
+    buildNxeSettings();
 }
 
 void CardsActivity::saveAllPictures(bool quiet) {
@@ -6648,7 +6628,9 @@ void CardsActivity::openSettings(int section) {
     m_sheetOpen = true;
     m_sheetSec = std::clamp(section, 0, static_cast<int>(m_sheet.size()) - 1);
     m_sheetRow = 0;
-    m_sheetOnRows = false;
+    m_sheetOnRows = true;
+    settings360::seedHistory(m_sheetSec,m_sheetHistory);
+    m_sheetClosing=false;m_sheetFocus=0;m_sheetDirection=1;m_sheetRepeat=0;
     m_sheetScroll = 0.f;
     m_sheetIn = m_settings.motion ? 0.f : 1.f;
     m_sheetRowsIn = 1.f;
@@ -7332,83 +7314,6 @@ void CardsActivity::listInput(std::vector<MenuItem>& items, int& sel, const std:
     }
 }
 
-bool CardsActivity::updateSheet(float) {
-    auto& in = app().input();
-    using B = nxui::Button;
-    if (m_sheet.empty()) return false;
-    const int sections = static_cast<int>(m_sheet.size());
-    auto rows = [this]() -> std::vector<MenuItem>& { return m_sheet[(size_t)m_sheetSec].rows; };
-    auto goSection = [&](int s) {
-        s = (s + sections) % sections;
-        if (s == m_sheetSec) return;
-        m_sheetSec = s;
-        m_sheetRow = 0;
-        m_sheetScroll = 0.f;
-        m_sheetRowsIn = m_settings.motion ? 0.f : 1.f;
-        m_audio.play("tab_transition");
-    };
-    const bool up = in.isDown(B::DUp) || in.isDown(B::LStickU);
-    const bool down = in.isDown(B::DDown) || in.isDown(B::LStickD);
-    const bool left = in.isDown(B::DLeft) || in.isDown(B::LStickL);
-    const bool right = in.isDown(B::DRight) || in.isDown(B::LStickR);
-    if (in.isDown(B::L) || in.isDown(B::ZL)) goSection(m_sheetSec - 1);
-    if (in.isDown(B::R) || in.isDown(B::ZR)) goSection(m_sheetSec + 1);
-    if (in.isDown(B::B)) {
-        if (m_sheetOnRows) {
-            m_sheetOnRows = false;
-            m_audio.play("navigation");
-        } else {
-            m_sheetOpen = false;
-            m_audio.play("hide_modal");
-        }
-        return true;
-    }
-    if (!m_sheetOnRows) {
-        if (up) goSection(m_sheetSec - 1);
-        if (down) goSection(m_sheetSec + 1);
-        if ((right || in.isDown(B::A)) && !rows().empty()) {
-            m_sheetOnRows = true;
-            m_audio.play("navigation");
-        }
-        return true;
-    }
-    const int n = static_cast<int>(rows().size());
-    if (up && m_sheetRow > 0) {
-        --m_sheetRow;
-        m_audio.play("navigation");
-    }
-    if (down && m_sheetRow < n - 1) {
-        ++m_sheetRow;
-        m_audio.play("navigation");
-    }
-    if (left || right || in.isDown(B::A)) takeFacts(true); // (a row changes what the console has: that first)
-    MenuItem& item = rows()[(size_t)std::clamp(m_sheetRow, 0, n - 1)];
-    const bool steps = item.kind == MenuItem::Choice || item.kind == MenuItem::Slider;
-    if (left) {
-        if (steps && item.change) {
-            item.change(-1);
-            m_audio.play("navigation");
-        } else {
-            m_sheetOnRows = false;
-            m_audio.play("navigation");
-        }
-    }
-    if (right && steps && item.change) {
-        item.change(1);
-        m_audio.play("navigation");
-    }
-    if (in.isDown(B::A)) {
-        if (item.kind == MenuItem::Action && item.run) {
-            m_audio.play("activation");
-            auto run = item.run;
-            run();
-        } else if (item.change && item.kind != MenuItem::Info) {
-            item.change(1);
-            m_audio.play(item.kind == MenuItem::Toggle && item.level && item.level() < 0.5f ? "toggle_off" : "toggle_on");
-        }
-    }
-    return true;
-}
 
 // ---------------------------------------------------------------- touch
 
@@ -7459,35 +7364,7 @@ bool CardsActivity::handleTouch() {
     }
     if (m_sheetOpen) {
         if (!in.touchUp()) return in.isTouching();
-        if (!kSheet.contains(x, y)) {
-            m_sheetOpen = false;
-            m_audio.play("hide_modal");
-            return true;
-        }
-        if (x < kRowsX - 10.f) { // a section
-            const int s = static_cast<int>((y - kSheetTop) / secH(m_sheet.size()));
-            if (y >= kSheetTop && s >= 0 && s < static_cast<int>(m_sheet.size()) && s != m_sheetSec) {
-                m_sheetSec = s;
-                m_sheetRow = 0;
-                m_sheetScroll = 0.f;
-                m_sheetRowsIn = m_settings.motion ? 0.f : 1.f;
-                m_audio.play("tab_transition");
-            }
-            m_sheetOnRows = false;
-            return true;
-        }
-        auto& rows = m_sheet[(size_t)m_sheetSec].rows;
-        const int r = static_cast<int>((y - kSheetTop + m_sheetScroll) / kRowH);
-        if (y < kSheetTop || y > kRowsBottom || r < 0 || r >= static_cast<int>(rows.size())) return true;
-        m_sheetOnRows = true;
-        m_sheetRow = r;
-        const nxui::Rect row{kRowsX, kSheetTop + kRowH * static_cast<float>(r) - m_sheetScroll, kRowsW, kRowH - 8.f};
-        if (tapRow(rows[(size_t)r], row, row.x + row.width - 18.f - 220.f, 220.f) && rows[(size_t)r].run) {
-            m_audio.play("activation");
-            auto run = rows[(size_t)r].run;
-            run();
-        }
-        return true;
+        return touchNxeSettings(x,y);
     }
     if (m_quickOpen) return quickTouch();
     if (m_powerOpen) return powerTouch();
@@ -7672,6 +7549,8 @@ void CardsActivity::onUpdate(float dt) {
         m_reopenSec = -1;
         openSettings(sec);
         m_sheetRow = std::clamp(m_reopenRow, 0, std::max(0, static_cast<int>(m_sheet[(size_t)m_sheetSec].rows.size()) - 1));
+        m_sheetFocus=float(m_sheetRow);
+        m_sheetScroll=settings360::topRow(m_sheetRow,int(m_sheet[m_sheetSec].rows.size()))*settings360::pitch;
         m_sheetOnRows = true;
         m_sheetIn = 1.f;
     }
@@ -7882,8 +7761,17 @@ void CardsActivity::onUpdate(float dt) {
     step(m_logIn, 0.2f);
     step(m_pressT, 0.22f);
     step(m_bgFade, 0.45f);
-    step(m_sheetIn, 0.24f);
+    if(m_sheetClosing) {
+        m_sheetIn=std::max(0.f,m_sheetIn-(motion?std::min(dt,1.f/30.f)/0.18f:1.f));
+        if(m_sheetIn<=0) {m_sheetOpen=false;m_sheetClosing=false;}
+    } else step(m_sheetIn, 0.24f);
     step(m_sheetRowsIn, 0.22f);
+    if(m_sheetOpen && m_sheetSec>=0 && m_sheetSec<int(m_sheet.size())) {
+        const float blend=motion?std::min(1.f,dt*24.f):1.f;
+        m_sheetFocus+=(m_sheetRow-m_sheetFocus)*blend;
+        const float want=settings360::topRow(m_sheetRow,int(m_sheet[m_sheetSec].rows.size()))*settings360::pitch;
+        m_sheetScroll+=(want-m_sheetScroll)*blend;
+    }
     step(m_quickIn, 0.22f);
     step(m_powerIn, 0.28f);
     step(m_dotsIn, 0.26f);
@@ -9634,75 +9522,6 @@ void CardsActivity::drawQuick(nxui::Renderer& r) {
 }
 
 // Settings: a glass sheet, its sections on the left and their rows on the right.
-void CardsActivity::drawSheet(nxui::Renderer& r) {
-    if (!m_sheetOpen || m_sheet.empty()) return;
-    const float a = easeOut(m_sheetIn);
-    r.drawRect({0.f, 0.f, 1280.f, 720.f}, nxui::Color(0.f, 0.f, 0.f, 0.45f * a));
-    const nxui::Rect sheet = scaled(kSheet, 0.95f + 0.05f * a);
-    r.drawRoundedRect({sheet.x - 4.f, sheet.y + 12.f, sheet.width + 8.f, sheet.height + 6.f}, nxui::Color(0.f, 0.f, 0.f, 0.28f * a),
-                      38.f); // its shadow
-    frost(r, sheet, 34.f, nxui::Color(0.08f, 0.09f, 0.13f, 0.86f * a));
-    r.drawRoundedRectOutline(sheet, nxui::Color(1.f, 1.f, 1.f, 0.16f * a), 34.f, 1.5f);
-    r.drawGradientRect({sheet.x + 2.f, sheet.y + 2.f, sheet.width - 4.f, 80.f}, nxui::Color(1.f, 1.f, 1.f, 0.05f * a),
-                       nxui::Color(1.f, 1.f, 1.f, 0.f));
-    const float dy = sheet.y - kSheet.y, hy = kSheet.y + 46.f + dy;
-    icon(r, "gear", kSecX + 20.f, hy, 32.f, kWhite.withAlpha(a));
-    textMid(r, m_fTitle, "Settings", kSecX + 46.f, hy, kWhite.withAlpha(a));
-    // Where you are: the section's tile and name over its rows.
-    const Section& here = m_sheet[(size_t)m_sheetSec];
-    const nxui::Rect hereTile{kRowsX, hy - 19.f, 38.f, 38.f};
-    r.drawRoundedRect(hereTile, sectionTint(here.icon).withAlpha(a), 11.f);
-    icon(r, here.icon, hereTile.x + 19.f, hy, 22.f, kWhite.withAlpha(a));
-    textMid(r, m_fLabel, here.name, hereTile.x + 52.f, hy, kWhite.withAlpha(a));
-
-    // Sections: a darker column, each one's icon on a tile of its colour.
-    const float ring = 0.8f + 0.2f * std::sin(m_time * 5.f);
-    const float colTop = kSheetTop - 10.f + dy;
-    r.drawRoundedRect({kSecX - 10.f, colTop, kSecW + 20.f, sheet.y + sheet.height - 12.f - colTop},
-                      nxui::Color(0.f, 0.f, 0.f, 0.14f * a), 22.f);
-    const float h = secH(m_sheet.size());
-    for (size_t i = 0; i < m_sheet.size(); ++i) {
-        const nxui::Rect row{kSecX, kSheetTop + h * static_cast<float>(i) + dy, kSecW, h - 8.f};
-        const bool on = static_cast<int>(i) == m_sheetSec;
-        if (on) {
-            r.drawRoundedRect(row, nxui::Color(1.f, 1.f, 1.f, (m_sheetOnRows ? 0.10f : 0.16f) * a), 14.f);
-            if (!m_sheetOnRows) r.drawRoundedRectOutline(row, accent(ring * a), 14.f, 2.f);
-        }
-        const float cy = row.y + row.height * 0.5f, ts = std::min(32.f, row.height - 8.f);
-        const nxui::Rect tile{row.x + 10.f, cy - ts * 0.5f, ts, ts};
-        r.drawRoundedRect(tile, sectionTint(m_sheet[i].icon).withAlpha((on ? 1.f : 0.8f) * a), ts * 0.28f);
-        icon(r, m_sheet[i].icon, tile.x + ts * 0.5f, cy, ts * 0.6f, kWhite.withAlpha(a));
-        textMid(r, m_fPill, m_sheet[i].name, tile.x + ts + 12.f, cy, kWhite.withAlpha((on ? 1.f : 0.78f) * a));
-    }
-
-    // Rows (scrolled to keep the chosen one in view; they slide in on a new section).
-    auto& rows = m_sheet[(size_t)m_sheetSec].rows;
-    const float visible = kRowsBottom - kSheetTop;
-    const float want = std::clamp(kRowH * static_cast<float>(m_sheetRow) - visible * 0.5f + kRowH * 0.5f, 0.f,
-                                  std::max(0.f, kRowH * static_cast<float>(rows.size()) - visible));
-    m_sheetScroll += (want - m_sheetScroll) * (m_settings.motion ? 0.25f : 1.f);
-    const float ra = a * easeOut(m_sheetRowsIn), slide = 24.f * (1.f - easeOut(m_sheetRowsIn));
-    r.pushClipRect({kRowsX - 8.f, kSheetTop + dy - 4.f, kRowsW + 16.f, visible + 8.f});
-    // One grouped list: a glass block behind the rows, hairlines between them.
-    if (!rows.empty()) {
-        const nxui::Rect group{kRowsX + slide, kSheetTop - m_sheetScroll + dy, kRowsW,
-                               kRowH * static_cast<float>(rows.size()) - 8.f};
-        r.drawRoundedRect(group, nxui::Color(1.f, 1.f, 1.f, 0.05f * ra), 18.f);
-        r.drawRoundedRectOutline(group, nxui::Color(1.f, 1.f, 1.f, 0.07f * ra), 18.f, 1.f);
-    }
-    for (size_t i = 0; i < rows.size(); ++i) {
-        const nxui::Rect row{kRowsX + slide, kSheetTop + kRowH * static_cast<float>(i) - m_sheetScroll + dy, kRowsW, kRowH - 8.f};
-        if (row.y > kRowsBottom + dy || row.y + row.height < kSheetTop + dy) continue;
-        const int at = static_cast<int>(i);
-        const bool chosen = m_sheetOnRows && at == m_sheetRow;
-        if (i + 1 < rows.size() && !chosen && !(m_sheetOnRows && at + 1 == m_sheetRow))
-            r.drawRect({row.x + 18.f, row.y + row.height + 3.5f, row.width - 36.f, 1.f}, nxui::Color(1.f, 1.f, 1.f, 0.08f * ra));
-        drawRow(r, rows[i], row, chosen, ra, true);
-    }
-    r.popClipRect();
-    drawHints(r, kRowsX + kRowsW, (kRowsBottom + kSheet.y + kSheet.height) * 0.5f + dy,
-              {{"A", "Choose"}, {"< >", "Change"}, {"L R", "Section"}, {"B", "Back"}}, a);
-}
 
 void CardsActivity::openPagePicker() {
     std::vector<MenuItem> items;
@@ -10070,5 +9889,6 @@ void CardsActivity::updateStorage() {
 
 #include "Dashboard360.inc"
 #include "Guide360.inc"
+#include "Settings360.inc"
 
 } // namespace cards

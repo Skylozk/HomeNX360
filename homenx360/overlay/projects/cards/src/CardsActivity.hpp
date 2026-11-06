@@ -4,6 +4,7 @@
 #include "Library.hpp"
 #include "Mtp.hpp"
 #include "Settings.hpp"
+#include "SettingsLayout.hpp"
 #include "Spotify.hpp"
 
 #include <nxui/Activity.hpp>
@@ -103,6 +104,11 @@ private:
     void dashActivate();
     void dashSearch();
     void dashSettings(const std::string& section);
+    void buildNxeSettings();
+    void openNxePage(int page);
+    void backNxeSettings();
+    void activateNxeSetting(int delta=1,bool stepsOnly=false);
+    bool touchNxeSettings(float x,float y);
     bool dashInput(float dt);
     bool dashTouch();
     void drawDashboard(nxui::Renderer& r);
@@ -796,6 +802,9 @@ private:
     bool m_sheetOpen = false, m_sheetOnRows = false;
     int m_sheetSec = 0, m_sheetRow = 0;
     float m_sheetIn = 0.f, m_sheetRowsIn = 1.f, m_sheetScroll = 0.f;
+    std::vector<settings360::Visit> m_sheetHistory;
+    float m_sheetFocus=0.f,m_sheetDirection=1.f,m_sheetRepeat=0.f;
+    bool m_sheetClosing=false;
 
     // The workers: pictures (three at a time), Nextendo's counts, the status bar.
     std::vector<std::thread> m_threads;

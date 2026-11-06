@@ -1,3 +1,11 @@
+NXE settings validation (v0.5.0-preview.1):
+- Original blue/slate System Settings and Console Settings screenshots inspected; video references located but blocked streams were not claimed as viewed. Layout measurements and function mappings are recorded in SETTINGS-REFERENCES.md.
+- All 23 settings pages are reachable through production callbacks in preview and HOME configurations. Every original root/console category route and return selection passed.
+- Tests compile the production SettingsBindings.inc and SettingsNavigation.inc. Controller A/B/arrows/Plus, touch category links, focus-before-change, explicit minus/plus touch targets, closing input suppression, saved callback ownership, shared values and long-list scrolling bounds passed.
+- Both native targets compiled locally. All native UI overlay bytes matched the built source. Both executables contain the new settings categories, current-setting display and value controls.
+- A host layout preview using the shared native scene primitives was rendered and inspected. This is not a Switch framebuffer capture.
+- Existing startup, Guide and dashboard regression checks are retained in CI.
+
 NXE Guide and streaming startup validation:
 - Actual original NXE Guide reference screenshot inspected; panel dimensions and sampled colors recorded in GUIDE-REFERENCES.md. Video references were searched but unavailable streams were not claimed as viewed.
 - Five-blade bounds, up-to-seven-row layouts, all blade/row touch targets and wrap navigation checks passed.
@@ -8,4 +16,4 @@ NXE Guide and streaming startup validation:
 - Final standalone NRO and HOME frontend compiled locally. Both executables contain the new Guide and streaming player code.
 - Corresponding code patch reverse check and workflow YAML parse passed.
 
-Hardware: the user reported the v0.3.0 preview startup working. This new Guide/streaming build has not been physically tested. Exact pixel matching, font equivalence, frame pacing and audiovisual latency remain unverified. Selawik is a font substitute; Guide animation timings are approximations.
+Hardware: the user reported the v0.3.0 preview startup working. This new settings build has not been physically tested. Host callback fixtures do not test real console services. Exact pixel matching, font equivalence, frame pacing and audiovisual latency remain unverified. Selawik is a font substitute; settings/Guide animation timings and vector graphics are approximations. Xbox LIVE Vision and Xbox disc auto-play are explicitly unavailable on Switch.
