@@ -1,0 +1,62 @@
+name: Build HomeNX 360
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/homenx360.yml'
+      - 'homenx360/**'
+      - 'tools/prepare_homenx360.py'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install build tools
+        run: |
+          apt-get update
+          apt-get install -y curl gcc g++ zip unzip zstd cmake ninja-build python3
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: 3.1.2
+      - name: Prepare pinned upstream source and dashboard overlay
+        run: |
+          git config --global --add safe.directory '*'
+          python3 tools/prepare_homenx360.py
+      - name: Check controller navigation
+        working-directory: build/homenx360-source
+        run: |
+          g++ -std=c++20 tests/dashboard360_test.cpp -o /tmp/dashboard360-test
+          /tmp/dashboard360-test
+      - name: Configure
+        working-directory: build/homenx360-source
+        run: xmake f --yes -p cross -m release -a aarch64 --toolchain=devkita64 --homebrew=n --root
+      - name: Build and embed the loader
+        working-directory: build/homenx360-source
+        run: |
+          xmake build --root HomeNX-Loader
+          mkdir -p projects/menu/src/generated
+          python3 tools/embed_loader.py build/cross/aarch64/release/HomeNX-Loader.nro projects/menu/src/generated/loader_nro.inc
+      - name: Build the app and HOME frontend with its daemon
+        working-directory: build/homenx360-source
+        run: |
+          xmake build --root -j2 CardsNX
+          xmake build --root -j2 SwitchU
+      - name: Package the existing-install update
+        working-directory: build/homenx360-source
+        run: python3 tools/package_dashboard360.py --output ../artifacts
+      - name: Add the layout preview
+        run: cp homenx360/preview.png build/artifacts/dashboard-preview.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HomeNX360-experimental
+          path: build/artifacts/*
+          retention-days: 30

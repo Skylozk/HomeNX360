@@ -1,0 +1,1532 @@
+diff --git a/THIRD_PARTY_NOTICES.md b/THIRD_PARTY_NOTICES.md
+index 67af324..5f256bd 100644
+--- a/THIRD_PARTY_NOTICES.md
++++ b/THIRD_PARTY_NOTICES.md
+@@ -62,3 +62,11 @@ Wii U sounds and music are Nintendo's.
+ 
+ - **PowerCmptr**: the HomeNX lock screen and Discord token sign-in
+   ([ad3333m/homenx#5](https://github.com/ad3333m/homenx/pull/5)).
++
++
++## HomeNX 360 navigation typeface
++
++Selawik Light, Copyright 2015 Microsoft Corporation. Licensed under the SIL
++Open Font License 1.1. The unmodified font is from Microsoft/Selawik release
++1.01. The complete license accompanies it in
++`projects/cards/romfs/fonts/Selawik-OFL.txt` and the packaged font assets.
+diff --git a/projects/cards/src/CardsActivity.cpp b/projects/cards/src/CardsActivity.cpp
+index 6aa39c4..4900c13 100644
+--- a/projects/cards/src/CardsActivity.cpp
++++ b/projects/cards/src/CardsActivity.cpp
+@@ -1,4 +1,5 @@
+ #include "CardsActivity.hpp"
++#include "Dashboard360.hpp"
+ 
+ #include "social/NotificationLog.hpp"
+ 
+@@ -535,6 +536,8 @@ bool CardsActivity::onCreate() {
+     nxui::GpuDevice::setImageBudget(std::clamp<u64>(total / 4, 64ull << 20, 160ull << 20));
+ 
+     m_settings.load();
++    m_settings.introDone = true;
++    m_settings.launchStyle = 0;
+     setLanguage(m_settings.language);
+     m_boxArt = m_settings.boxArt;
+     m_titleArt = m_settings.titlePics;
+@@ -582,7 +585,8 @@ bool CardsActivity::onCreate() {
+     const std::string f5 = fonts + "Inter-500.ttf", f6 = fonts + "Inter-600.ttf", f7 = fonts + "Inter-700.ttf";
+     if (!m_fTitle.load(gpu, ren, f7, 30) || !m_fPlay.load(gpu, ren, f7, 24) || !m_fLabel.load(gpu, ren, f6, 22)
+         || !m_fPill.load(gpu, ren, f6, 19) || !m_fBody.load(gpu, ren, f5, 17) || !m_fBadge.load(gpu, ren, f7, 15)
+-        || !m_fCount.load(gpu, ren, f7, 21))
++        || !m_fCount.load(gpu, ren, f7, 21)
++        || !(m_fDashNav.load(gpu, ren, fonts + "selawkl.ttf", 30) || m_fDashNav.load(gpu, ren, f5, 30)))
+         return false;
+     const std::uint64_t tIcons = armGetSystemTick();
+     // The buttons' icons: read and decoded off the screen's thread (a first-draw read
+@@ -694,7 +698,7 @@ bool CardsActivity::onCreate() {
+ 
+     // Always the first card on the list, in the sort you chose (it was put back to Title here
+     // at every start, so Last Played never stuck).
+-    m_page = firstShownPage(); // the first page in your order (that isn't hidden)
++    m_page = kGames; // the 360 Home hub opens on the game library
+     sortGames(m_settings.sort, false);
+     for (int& s : m_sels) s = 0;
+     m_scroll = 0.f;
+@@ -904,7 +908,7 @@ const Game* CardsActivity::current() {
+ 
+ void CardsActivity::applyTheme() {
+     m_theme = nxui::Theme::dark();
+-    m_theme.panelBase = nxui::Color(0.08f, 0.09f, 0.13f, 0.86f);
++    m_theme.panelBase = nxui::Color(0.16f, 0.16f, 0.16f, 0.98f);
+     m_theme.panelBorder = nxui::Color(1.f, 1.f, 1.f, 0.16f);
+     m_theme.panelHighlight = nxui::Color(1.f, 1.f, 1.f, 0.05f);
+     m_theme.iconDefault = nxui::Color(1.f, 1.f, 1.f, 0.06f);
+@@ -915,7 +919,7 @@ void CardsActivity::applyTheme() {
+ }
+ 
+ nxui::Color CardsActivity::accent(float a) const {
+-    return kAccents[std::clamp(m_settings.accent, 0, kAccentCount - 1)].color.withAlpha(a);
++    return nxui::Color(0.35f, 0.85f, 0.06f, a);
+ }
+ 
+ nxui::Color CardsActivity::glassTint(float a) const {
+@@ -1288,6 +1292,8 @@ void CardsActivity::wantArt() {
+         jobs.push_back({page[(size_t)i], what, m_artGen});
+     };
+     const int s = sel();
++    if (dashLibrary())
++        for (int i = (s/10)*10; i < std::min((s/10)*10+10, static_cast<int>(page.size())); ++i) add(i, kCard);
+     add(s, kCard);
+     add(s, kBackground);
+     add(s, kIcon); // (a title picture can mean a search online: after the pictures you see)
+@@ -1631,6 +1637,8 @@ void CardsActivity::goToPage(int page, int dir) {
+     if (m_moving) finishMove(true);
+     if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
+     m_page = page;
++    m_dashTab = page == kHomebrew ? 6 : page == kMedia ? 4 : 3;
++    m_dashTile = sel() % 10;
+     m_pageDir = dir > 0 ? 1 : -1;
+     m_pageIn = m_settings.motion ? 0.f : 1.f;
+     m_detailIn = m_pageIn;
+@@ -7242,7 +7250,7 @@ void CardsActivity::keepTextCachesSmall() {
+         s_lastTrim = now;
+         f.trimCache(124, 3u << 20); // (trimCache scales its byte limit too)
+     };
+-    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount}) keep(*f);
++    for (nxui::Font* f : {&m_fTitle, &m_fPlay, &m_fLabel, &m_fPill, &m_fBody, &m_fBadge, &m_fCount, &m_fDashNav}) keep(*f);
+ #ifdef SWITCHU_MENU
+     // Discord, Social and the keyboard draw with HomeNX's font: nothing trimmed
+     // its cache, and once full no new channel names or messages showed.
+@@ -8370,7 +8378,7 @@ void CardsActivity::onUpdate(float dt) {
+         updateTask();
+         return;
+     }
+-    if (handleTouch()) return;
++    if (dashTouch()) return;
+ 
+     if (m_pickOpen) { // (over Settings too)
+         updatePicker();
+@@ -8425,6 +8433,8 @@ void CardsActivity::onUpdate(float dt) {
+         return;
+     }
+ 
++    if (dashInput(dt)) return;
++
+     // Left / right: repeating while held.
+     const bool left = in.isHeld(B::DLeft) || in.isHeld(B::LStickL) || in.isHeld(B::RStickL);
+     const bool right = in.isHeld(B::DRight) || in.isHeld(B::LStickR) || in.isHeld(B::RStickR);
+@@ -8527,51 +8537,8 @@ void CardsActivity::draw(nxui::Renderer& r) {
+     m_drawMarkTick = armGetSystemTick();
+     m_drawMarkMs = 0.f;
+     m_drawMarkName = "";
+-    drawStep("draw: the background");
+-    drawBackground(r);
+-    drawStep("draw: the cards");
+-    drawCards(r);
+-    drawStep("draw: the glass");
+-    // One blurred copy of the frame for every glass shape on top of it, made
+-    // again when what's behind changed: at once while things move, every 6th
+-    // frame while only the background drifts, else kept (HomeNX's screens blur
+-    // into the same copy: it's made each frame while one is open).
+-    // While HOME is still settling in — the way back from a game, exactly when
+-    // every cover uploads and the pop-up animates — the glass is drawn plain:
+-    // re-rendering the blurred copy every frame on top of all that is what
+-    // made the first seconds GPU-bound (the menu's own slow-GPU fallback used
+-    // to catch it a moment later and stay plain for the whole session). Here
+-    // the fancy glass only comes back once HOME is running steady.
+-    m_frosted = r.gpu().offscreenReady() && !m_gpuSlow && m_time > 1.5f;
+-    if (m_frosted) {
+-        const bool moving = std::abs(m_scroll - static_cast<float>(sel())) > 0.002f || m_dragging || m_pageIn < 1.f
+-                         || m_bgFade < 1.f || m_intro < 1.f || m_leaving || m_moving || focusRoot() != nullptr;
+-        if (moving || ++m_blurAge >= (m_settings.bgMotion ? 6 : 60)) {
+-            r.captureToOffscreen(false);
+-            r.applyBlur(2.5f, 2);
+-            m_blurAge = 0;
+-        }
+-    } else {
+-        m_blurAge = 1000; // made at once when it's back
+-    }
+-    drawStep("draw: the cards' extras");
+-    drawCardExtras(r);
+-    drawStep("draw: the bar and the panel");
+-    // Launching: the bar and the panel go first.
+-    const int leaveStyle = launchStyle();
+-    const float ui = m_leaving && leaveStyle != kNoAnimation && leaveStyle != kFade ? 1.f - easeOut(m_leaveT / 0.3f) : 1.f;
+-    drawTopBar(r, easeOut(m_intro * 2.2f) * ui);
+-    drawStep("draw: the panel");
+-    drawPanel(r, easeOut((m_intro - 0.25f) * 2.f) * ui);
+-    drawStep("draw: the messages");
+-    if (m_moving) { // what Move does
+-        const std::string hint = "Move it with  < >      A  Done      B  Put it back";
+-        const float w = measured(m_fBody, hint).x + 44.f;
+-        const nxui::Rect pill{640.f - w * 0.5f, 452.f, w, 40.f};
+-        frost(r, pill, 20.f, nxui::Color(0.06f, 0.07f, 0.10f, 0.7f));
+-        r.drawRoundedRectOutline(pill, accent(0.6f), 20.f, 1.5f);
+-        textMid(r, m_fBody, hint, pill.x + 22.f, pill.y + 20.f, kWhite);
+-    }
++    m_frosted = false;
++    drawDashboard(r);
+     drawStep("draw: the menus");
+     drawSheet(r);
+     drawPopup(r); // (over Settings)
+@@ -8621,8 +8588,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
+ }
+ 
+ void CardsActivity::frost(nxui::Renderer& r, const nxui::Rect& rect, float radius, const nxui::Color& tint) {
+-    if (m_frosted) r.drawOffscreenRounded(0, rect, radius, kWhite.withAlpha(std::min(1.f, tint.a * 3.f)));
+-    r.drawRoundedRect(rect, tint, radius);
++    (void)radius;
++    r.drawRect(rect, nxui::Color(0.16f, 0.16f, 0.16f, tint.a));
+ }
+ 
+ void CardsActivity::glassCircle(nxui::Renderer& r, float cx, float cy, float d, bool focused, const char* name,
+@@ -8783,6 +8750,18 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
+ }
+ 
+ bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
++    if (!m_moving) {
++        const int start = (sel() / 10) * 10;
++        if (dashLibrary() && index >= start && index < start + 10) {
++            const auto t = dash360::grid(index - start);
++            card = {t.x, t.y, t.w, t.h};
++        } else if (index == sel()) {
++            const auto t = dash360::home[3];
++            card = {t.x, t.y, t.w, t.h};
++        } else return false;
++        chosen = index == sel() ? 1.f : 0.f;
++        return true;
++    }
+     const float rel = static_cast<float>(index) - m_scroll;
+     // A page switch slides the row in from the side.
+     float slide = (1.f - easeOut(m_pageIn)) * 160.f * static_cast<float>(m_pageDir);
+@@ -9310,7 +9289,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
+     // The control on the right, and the room it leaves for the label.
+     const float right = row.x + row.width - 18.f;
+     float control = 0.f;
+-    const nxui::Color blue = nxui::Color(0.55f, 0.75f, 1.f, a);
++    const nxui::Color blue = nxui::Color(0.62f, 0.89f, 0.38f, a);
+     switch (item.kind) {
+         case MenuItem::Toggle: {
+             const float on = item.level ? item.level() : 0.f;
+@@ -10037,4 +10016,6 @@ void CardsActivity::updateStorage() {
+     }
+ }
+ 
++#include "Dashboard360.inc"
++
+ } // namespace cards
+diff --git a/projects/cards/src/CardsActivity.hpp b/projects/cards/src/CardsActivity.hpp
+index 0fed0fa..69f0d5a 100644
+--- a/projects/cards/src/CardsActivity.hpp
++++ b/projects/cards/src/CardsActivity.hpp
+@@ -63,6 +63,21 @@ public:
+     nxui::Widget* focusRoot() override; // HomeNX's screens when one is open; else it reads the buttons itself
+ 
+ private:
++    // Xbox 360 dashboard shell. Existing launchers, workers and modal screens
++    // remain owned by CardsActivity.
++    nxui::Font m_fDashNav;
++    int m_dashTab = 1, m_dashTile = 0;
++    bool m_dashNav = false;
++    float m_dashRepeat = 0.f;
++    int dashCount() const;
++    bool dashLibrary() const;
++    void dashTab(int tab);
++    void dashActivate();
++    void dashSearch();
++    void dashSettings(const std::string& section);
++    bool dashInput(float dt);
++    bool dashTouch();
++    void drawDashboard(nxui::Renderer& r);
+     enum class Zone { Top, Cards, Bottom };
+     enum Page { kGames, kHomebrew, kNintendo, kMedia, kPageCount };
+     int pageCount() const { return kPageCount + static_cast<int>(m_settings.customPages.size()); }
+diff --git a/xmake.lua b/xmake.lua
+index d9ca0a5..b37f132 100644
+--- a/xmake.lua
++++ b/xmake.lua
+@@ -418,6 +418,7 @@ target("CardsNX")
+         os.mkdir(path.join(romfs_dir, "fonts"))
+         os.mkdir(path.join(romfs_dir, "icons"))
+         os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/*.ttf"), path.join(romfs_dir, "fonts"))
++        os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/Selawik-OFL.txt"), path.join(romfs_dir, "fonts"))
+         os.cp(path.join(os.projectdir(), "projects/cards/romfs/icons/*.png"), path.join(romfs_dir, "icons"))
+         os.mkdir(path.join(romfs_dir, "certs"))
+         os.cp(path.join(os.projectdir(), "projects/cards/romfs/certs/*.pem"), path.join(romfs_dir, "certs"))
+diff --git a/.github/workflows/dashboard360.yml b/.github/workflows/dashboard360.yml
+new file mode 100644
+index 0000000..127fa68
+--- /dev/null
++++ b/.github/workflows/dashboard360.yml
+@@ -0,0 +1,44 @@
++name: Build HomeNX 360
++
++on:
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++jobs:
++  build:
++    runs-on: ubuntu-latest
++    container: devkitpro/devkita64
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          submodules: recursive
++      - name: Install build tools
++        run: |
++          apt-get update
++          apt-get install -y curl gcc g++ zip unzip zstd cmake ninja-build python3
++      - uses: xmake-io/github-action-setup-xmake@v1
++        with:
++          xmake-version: 3.1.2
++      - name: Check controller navigation
++        run: |
++          g++ -std=c++20 tests/dashboard360_test.cpp -o /tmp/dashboard360-test
++          /tmp/dashboard360-test
++      - name: Configure
++        run: xmake f --yes -p cross -m release -a aarch64 --toolchain=devkita64 --homebrew=n --root
++      - name: Build and embed the loader
++        run: |
++          xmake build --root HomeNX-Loader
++          mkdir -p projects/menu/src/generated
++          python3 tools/embed_loader.py build/cross/aarch64/release/HomeNX-Loader.nro projects/menu/src/generated/loader_nro.inc
++      - name: Build the dashboard and HOME frontend
++        run: |
++          xmake build --root -j2 CardsNX
++          xmake build --root -j2 SwitchU
++      - name: Package existing-install update
++        run: python3 tools/package_dashboard360.py --output build/dashboard360
++      - uses: actions/upload-artifact@v4
++        with:
++          name: HomeNX360-experimental
++          path: build/dashboard360/*
+diff --git a/README-360.md b/README-360.md
+new file mode 100644
+index 0000000..918c879
+--- /dev/null
++++ b/README-360.md
+@@ -0,0 +1,101 @@
++# HomeNX 360 — experimental dashboard fork
++
++Based on `ad3333m/homenx` commit `94f2bd56698fed40f2897131ea09463775840767`.
++License: GPL-3.0, with the upstream credits and third-party notices retained.
++
++This changes CardsNX, including CardsNX running as the HomeNX HOME screen. It
++recreates the gray background, green tile groups, large featured panel, navigation
++tabs and selection outline in the supplied Xbox 360 dashboard reference. Game
++artwork and names come from the Switch's library. It does not install Xbox
++firmware, provide Xbox services, or change Nintendo's separate system applets.
++HomeNX's existing dialogs remain available with gray panels and green accents.
++
++## Your console
++
++Reported configuration: Atmosphere 1.12.1, system 22.5.0, HomeNX already installed.
++These versions have not been tested on hardware here. Compilation and the host
++navigation checks do not establish console compatibility. This is an experimental
++build for testing, not a verified firmware-specific release.
++
++## Try the standalone app
++
++Copy `HomeNX360-preview.nro` into `sdmc:/switch/HomeNX360/` and run it through
++your existing homebrew launcher with full application memory. This app does not
++replace HOME. It shares CardsNX's existing configuration and artwork cache;
++back up `config/CardsNX/` first. HOME-only functions such as HomeNX News are
++available in the menu replacement build. Press HOME to leave the standalone app.
++
++## Update your installed HomeNX
++
++1. Power off and back up the SD card's `atmosphere/contents/0100000000001000/`,
++   `switch/SwitchU/`, `config/SwitchU/frontend.txt`, and `config/CardsNX/`.
++2. Extract `HomeNX360-update.zip` to the SD card root, merging folders. The
++   archive contains the rebuilt HOME frontend, its matching daemon, its assets,
++   and a `frontend.txt` containing `cards` to select this dashboard.
++3. Reinsert the SD card and restart. In NXToggle, the look is still named
++   **CardsNX**. In this fork that choice opens the 360 dashboard.
++4. HomeNX/NXToggle's normal online updater downloads upstream HomeNX and will
++   replace this customization. Reapply this custom build after an upstream update.
++
++The update archive is for an existing, functioning HomeNX installation; it does
++not bundle a fresh Atmosphere installation or change your firmware.
++
++The supplied package uses the unmodified official daemon from upstream workflow
++198, for the same source revision as this fork. `BUILD-MANIFEST.json` records its
++origin and hashes alongside the custom frontend and assets. Building the commands
++below locally rebuilds the daemon from source instead.
++
++## Controls
++
++| Control | Action |
++|---|---|
++| D-pad / either stick | Move between tiles; Up from the top row enters the tab bar |
++| L / R | Previous / next hub |
++| A | Select or launch |
++| B | Return to Home |
++| Y | Guide: Search, pages/pins, quick settings, settings, power |
++| ZR | Quick settings |
++| + on a game tile | Game options, artwork, collections and achievements |
++| X | Ask to close the running software |
++| − | Notifications |
++| Touch | Select a tab or activate a tile; Prev/Next below the library changes pages |
++
++The library shows ten items at a time. Continue right past the last tile to
++reach the next page. The **bing** tab searches installed games and homebrew;
++its browser tile uses HomeNX's existing BrowseNX integration. **My Pins** opens
++HomeNX's page/collection picker. **tv & movies** shows the existing media apps;
++**music** opens HomeNX's player and sound settings. The preview image uses Zelda
++art only as a sample and is not a screenshot from Switch hardware.
++
++## Undo
++
++Restore the backed-up folders and `frontend.txt` to return to your previous
++HomeNX. If HOME stops at a black screen, power off, put the SD card in a computer,
++and remove `atmosphere/contents/0100000000001000/` as documented by upstream.
++The normal Nintendo HOME menu returns. Keep your backup to reinstall HomeNX.
++
++## Build from this source
++
++Use the upstream devkitPro devkitA64 environment, xmake and Python 3. Initialize
++the upstream submodules when working from Git. The supplied source archive
++includes their source trees.
++
++Alternatively, run the manual **Build HomeNX 360** GitHub Actions workflow in
++your own copy of the repository. It builds and uploads the package as an artifact
++without publishing a release. That workflow has not been run in this session.
++
++```sh
++g++ -std=c++20 tests/dashboard360_test.cpp -o /tmp/dashboard360-test
++/tmp/dashboard360-test
++xmake f --yes -p cross -m release -a aarch64 --toolchain=devkita64 --homebrew=n
++xmake build HomeNX-Loader
++mkdir -p projects/menu/src/generated
++python3 tools/embed_loader.py build/cross/aarch64/release/HomeNX-Loader.nro projects/menu/src/generated/loader_nro.inc
++xmake build CardsNX
++xmake build SwitchU
++python3 tools/package_dashboard360.py --output build/dashboard360
++```
++
++The package script fails if required binaries or assets are missing. Native
++hardware checks still needed: cold boot, sleep/wake, launching/resuming/closing
++games, HOME from a game, multiple controllers, docked mode, and rollback.
+diff --git a/packages/s/switch-pkg/xmake.lua b/packages/s/switch-pkg/xmake.lua
+new file mode 100644
+index 0000000..ec637f4
+--- /dev/null
++++ b/packages/s/switch-pkg/xmake.lua
+@@ -0,0 +1,43 @@
++-- Fetch installed devkitPro libraries without sharing mutable variables across
++-- concurrent package lookups. Also respect a relocated DEVKITPRO SDK.
++package("switch-pkg")
++    set_kind("template")
++    set_description("Installed devkitPro Switch package metadata")
++
++    on_fetch(function(package)
++        local name = assert(package:data("pkgname"))
++        local sdk = os.getenv("DEVKITPRO") or "/opt/devkitpro"
++        import("lib.detect.find_tool")
++        local pacman = find_tool("dkp-pacman") or find_tool("pacman")
++        if not pacman then return end
++        local listing = os.iorunv(pacman.program, {"-Ql", name})
++        local includes, linkdirs, links, pcfiles = {}, {}, {}, {}
++        for _, line in ipairs(listing:split('\n', {plain = true})) do
++            local file = line:match("^%S+%s+(.+)$")
++            if file then
++                file = file:gsub("/opt/devkitpro", sdk):trim()
++                if file:endswith("/include/") then table.insert(includes, file) end
++                if file:endswith(".a") then
++                    table.insert(linkdirs, path.directory(file))
++                    table.insert(links, path.basename(file):gsub("^lib", ""))
++                end
++                if file:endswith(".pc") then table.insert(pcfiles, file) end
++            end
++        end
++        import("package.manager.pkgconfig.find_package", {alias = "findpc"})
++        for _, file in ipairs(pcfiles) do
++            local found = findpc(path.basename(file), {configdirs = path.directory(file)})
++            if found then
++                table.join2(includes, found.includedirs or {})
++                table.join2(linkdirs, found.linkdirs or {})
++                table.join2(links, found.links or {})
++            end
++        end
++        return {includedirs = table.unique(includes), linkdirs = table.unique(linkdirs),
++                links = table.reverse_unique(links)}
++    end)
++
++    on_install(function(package)
++        raise("Install devkitPro package '%s' in your SDK before building", package:data("pkgname"))
++    end)
++package_end()
+diff --git a/projects/cards/romfs/fonts/Selawik-OFL.txt b/projects/cards/romfs/fonts/Selawik-OFL.txt
+new file mode 100644
+index 0000000..ac8fdb9
+--- /dev/null
++++ b/projects/cards/romfs/fonts/Selawik-OFL.txt
+@@ -0,0 +1,91 @@
++Copyright 2015, Microsoft Corporation (www.microsoft.com), with Reserved Font Name Selawik.  All Rights Reserved.  Selawik is a trademark of Microsoft Corporation in the United States and/or other countries.
++
++This Font Software is licensed under the SIL Open Font License, Version 1.1.
++This license is copied below, and is also available with a FAQ at:
++http://scripts.sil.org/OFL
++
++-----------------------------------------------------------
++SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
++-----------------------------------------------------------
++PREAMBLE
++The goals of the Open Font License (OFL) are to stimulate worldwide
++development of collaborative font projects, to support the font creation
++efforts of academic and linguistic communities, and to provide a free and
++open framework in which fonts may be shared and improved in partnership
++with others.
++
++The OFL allows the licensed fonts to be used, studied, modified and
++redistributed freely as long as they are not sold by themselves. The
++fonts, including any derivative works, can be bundled, embedded, 
++redistributed and/or sold with any software provided that any reserved
++names are not used by derivative works. The fonts and derivatives,
++however, cannot be released under any other type of license. The
++requirement for fonts to remain under this license does not apply
++to any document created using the fonts or their derivatives.
++
++DEFINITIONS
++"Font Software" refers to the set of files released by the Copyright
++Holder(s) under this license and clearly marked as such. This may
++include source files, build scripts and documentation.
++
++"Reserved Font Name" refers to any names specified as such after the
++copyright statement(s).
++
++"Original Version" refers to the collection of Font Software components as
++distributed by the Copyright Holder(s).
++
++"Modified Version" refers to any derivative made by adding to, deleting,
++or substituting -- in part or in whole -- any of the components of the
++Original Version, by changing formats or by porting the Font Software to a
++new environment.
++
++"Author" refers to any designer, engineer, programmer, technical
++writer or other person who contributed to the Font Software.
++
++PERMISSION & CONDITIONS
++Permission is hereby granted, free of charge, to any person obtaining
++a copy of the Font Software, to use, study, copy, merge, embed, modify,
++redistribute, and sell modified and unmodified copies of the Font
++Software, subject to the following conditions:
++
++1) Neither the Font Software nor any of its individual components,
++in Original or Modified Versions, may be sold by itself.
++
++2) Original or Modified Versions of the Font Software may be bundled,
++redistributed and/or sold with any software, provided that each copy
++contains the above copyright notice and this license. These can be
++included either as stand-alone text files, human-readable headers or
++in the appropriate machine-readable metadata fields within text or
++binary files as long as those fields can be easily viewed by the user.
++
++3) No Modified Version of the Font Software may use the Reserved Font
++Name(s) unless explicit written permission is granted by the corresponding
++Copyright Holder. This restriction only applies to the primary font name as
++presented to the users.
++
++4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
++Software shall not be used to promote, endorse or advertise any
++Modified Version, except to acknowledge the contribution(s) of the
++Copyright Holder(s) and the Author(s) or with their explicit written
++permission.
++
++5) The Font Software, modified or unmodified, in part or in whole,
++must be distributed entirely under this license, and must not be
++distributed under any other license. The requirement for fonts to
++remain under this license does not apply to any document created
++using the Font Software.
++
++TERMINATION
++This license becomes null and void if any of the above conditions are
++not met.
++
++DISCLAIMER
++THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
++MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
++OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
++COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
++DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
++OTHER DEALINGS IN THE FONT SOFTWARE.
+diff --git a/projects/cards/romfs/fonts/selawkl.ttf b/projects/cards/romfs/fonts/selawkl.ttf
+new file mode 100644
+index 0000000000000000000000000000000000000000..cbfaaf99cc89bdfcb964aaaba1ef0bc105923588
+GIT binary patch
+literal 44232
+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
+GD&)VU2tQE(
+
+literal 0
+HcmV?d00001
+
+diff --git a/projects/cards/src/Dashboard360.hpp b/projects/cards/src/Dashboard360.hpp
+new file mode 100644
+index 0000000..45fa4a6
+--- /dev/null
++++ b/projects/cards/src/Dashboard360.hpp
+@@ -0,0 +1,47 @@
++#pragma once
++#include <array>
++#include <cmath>
++#include <limits>
++
++// Logical 1280x720 coordinates, shared by drawing, touch and D-pad navigation.
++namespace cards::dash360 {
++struct Tile {
++    float x, y, w, h;
++    bool contains(float px, float py) const {
++        return px >= x && px < x + w && py >= y && py < y + h;
++    }
++};
++inline constexpr std::array<Tile, 9> home = {{
++    {228,184,174,130}, {228,318,174,130}, {228,452,174,130},
++    {406,184,462,264}, {872,184,178,64}, {872,252,178,196},
++    {406,452,229,130}, {639,452,229,130}, {872,452,178,130}
++}};
++inline constexpr std::array<const char*, 8> tabs = {
++    "bing", "home", "social", "games", "tv & movies", "music", "apps", "settings"
++};
++inline constexpr std::array<float, 8> tabX = {154,254,374,494,668,862,980,1090};
++inline Tile grid(int index) {
++    return {228.f + (index % 5) * 166.f, 184.f + (index / 5) * 202.f, 162.f, 198.f};
++}
++inline Tile tile(int index, bool isHome) { return isHome ? home.at(index) : grid(index); }
++// Prefer a tile whose edge overlaps the current tile on the perpendicular
++// axis. This makes the large hero panel behave naturally beside three rows.
++inline int neighbor(int from, int count, bool isHome, int dx, int dy) {
++    const auto a = tile(from, isHome);
++    float best = std::numeric_limits<float>::max();
++    int result = from;
++    for (int i = 0; i < count; ++i) {
++        if (i == from) continue;
++        const auto b = tile(i, isHome);
++        const float cx = b.x + b.w/2 - a.x - a.w/2;
++        const float cy = b.y + b.h/2 - a.y - a.h/2;
++        if ((dx && cx * dx <= 1) || (dy && cy * dy <= 1)) continue;
++        const bool overlap = dx ? b.y < a.y+a.h && a.y < b.y+b.h
++                                : b.x < a.x+a.w && a.x < b.x+b.w;
++        const float score = (overlap ? 0.f : 10000.f) + (dx ? std::abs(cx) + std::abs(cy)*2 : std::abs(cy) + std::abs(cx)*2);
++        if (score < best) { best = score; result = i; }
++    }
++    return result;
++}
++inline int wrapTab(int tab) { return (tab % 8 + 8) % 8; }
++} // namespace cards::dash360
+diff --git a/projects/cards/src/Dashboard360.inc b/projects/cards/src/Dashboard360.inc
+new file mode 100644
+index 0000000..a517641
+--- /dev/null
++++ b/projects/cards/src/Dashboard360.inc
+@@ -0,0 +1,314 @@
++// Included inside namespace cards, after CardsActivity's drawing helpers.
++bool CardsActivity::dashLibrary() const {
++    return m_dashTab == 3 || m_dashTab == 4 || m_dashTab == 6;
++}
++
++int CardsActivity::dashCount() const {
++    if (m_dashTab == 1) return 9;
++    if (dashLibrary()) {
++        const int count = static_cast<int>(m_pages[m_page].size());
++        return std::min(10, count - std::min((m_sels[m_page] / 10) * 10, count));
++    }
++    if (m_dashTab == 0) return 2;
++    if (m_dashTab == 2) return 4;
++    if (m_dashTab == 5) return 3;
++    return 10;
++}
++
++void CardsActivity::dashTab(int tab) {
++    m_dashTab = dash360::wrapTab(tab);
++    m_dashTile = 0;
++    m_zone = Zone::Cards;
++    const int target = m_dashTab == 6 ? kHomebrew : m_dashTab == 4 ? kMedia : kGames;
++    // Dashboard tabs own page selection, including a page hidden in CardsNX.
++    if (m_page != target) {
++        m_page = target;
++        sel() = std::clamp(sel(), 0, std::max(0, static_cast<int>(games().size()) - 1));
++        m_scroll = static_cast<float>(sel());
++        m_pageIn = 1.f;
++        requeueArt();
++        wantArt();
++    }
++    if (dashLibrary()) m_dashTile = sel() % 10;
++    m_audio.play("navigation");
++}
++
++void CardsActivity::dashSettings(const std::string& section) {
++    openSettings();
++    for (int i = 0; i < static_cast<int>(m_sheet.size()); ++i)
++        if (m_sheet[i].name == section) { m_sheetSec = i; m_sheetRow = 0; break; }
++}
++
++void CardsActivity::dashSearch() {
++    askText("Search your library", "Find an installed game or homebrew app", "", 64, [this](const std::string& query) {
++        if (query.empty()) return;
++        auto lower = [](std::string s) {
++            std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
++            return s;
++        };
++        const auto q = lower(query);
++        std::vector<MenuItem> rows;
++        for (int page : {static_cast<int>(kGames), static_cast<int>(kHomebrew), static_cast<int>(kMedia)})
++            for (const auto& g : m_pages[page])
++                if (lower(g.name).find(q) != std::string::npos)
++                    rows.push_back(action(g.name, [this, g, page]() {
++                        dashTab(page == kHomebrew ? 6 : page == kMedia ? 4 : 3);
++                        selectById(g.id);
++                        m_dashTile = sel() % 10;
++                    }));
++        if (rows.empty()) { say("No matching games or apps."); return; }
++        openMenu("Search results", std::move(rows));
++    });
++}
++
++void CardsActivity::dashActivate() {
++    m_audio.play("activation");
++    if (dashLibrary()) { if (current()) play(); return; }
++    if (m_dashTab == 0) {
++        if (m_dashTile == 0) dashSearch(); else openBrowser();
++    } else if (m_dashTab == 1) {
++        switch (m_dashTile) {
++            case 0: case 3: if (current()) play(); else dashTab(3); break;
++            case 1: openPagePicker(); break;
++            case 2: dashTab(3); sortGames(0); select(0); m_dashTile = 0; break;
++            case 4: dashSettings("Bluetooth"); break;
++            case 5: openGallery(); break;
++            case 6: dashTab(3); break;
++            case 7: dashTab(6); break;
++            case 8:
++#ifdef SWITCHU_MENU
++                openNews();
++#else
++                say("News is available when this dashboard runs as HOME.");
++#endif
++                break;
++        }
++    } else if (m_dashTab == 2) {
++        switch (m_dashTile) {
++            case 0:
++#ifdef SWITCHU_MENU
++                openSocial();
++#else
++                { std::string error; openSystem("friends", m_user, error); if (!error.empty()) say(error); }
++#endif
++                break;
++            case 1: openUsers(); break;
++            case 2: openDiscord(); break;
++            case 3: openNotifications(); break;
++        }
++    } else if (m_dashTab == 5) {
++        if (m_dashTile == 0) openMusic();
++        else if (m_dashTile == 1) dashSettings("Sound");
++        else dashTab(4);
++    } else {
++        static const char* sections[] = {"Console", "Look", "Sound", "Internet", "Bluetooth", "Storage", "Home", "Notifications", "About"};
++        if (m_dashTile == 9) openPower();
++        else dashSettings(sections[m_dashTile]);
++    }
++    // Page-picker actions can change the CardsNX page behind this shell.
++}
++
++bool CardsActivity::dashInput(float dt) {
++    if (m_moving) return false;
++    auto& in = app().input();
++    using B = nxui::Button;
++    if (in.isDown(B::L) || in.isDown(B::ZL)) dashTab(m_dashTab - 1);
++    if (in.isDown(B::R)) dashTab(m_dashTab + 1);
++    if (in.isDown(B::ZR)) openQuick();
++    if (in.isDown(B::Minus)) openNotifications();
++    if (in.isDown(B::X)) askClose();
++    if (in.isDown(B::Y)) {
++        openMenu("Guide", {
++            action("Home", [this]() { dashTab(1); m_dashNav = false; }),
++            action("Search", [this]() { dashSearch(); }),
++            action("My pages / pins", [this]() { openPagePicker(); }),
++            action("Quick settings", [this]() { openQuick(); }),
++            action("Settings", [this]() { openSettings(); }),
++            action("Sleep / power", [this]() { openPower(); })
++        });
++        return true;
++    }
++    if (in.isDown(B::Plus) && current() && (dashLibrary() || (m_dashTab == 1 && (m_dashTile == 0 || m_dashTile == 3)))) { openOptions(); return true; }
++    if (in.isDown(B::B)) { dashTab(1); m_dashNav = false; return true; }
++    int dx = 0, dy = 0;
++    const B directions[][3] = {{B::DLeft,B::LStickL,B::RStickL}, {B::DRight,B::LStickR,B::RStickR},
++                              {B::DUp,B::LStickU,B::RStickU}, {B::DDown,B::LStickD,B::RStickD}};
++    bool held = false, down = false;
++    int direction = -1;
++    for (int i = 0; i < 4; ++i)
++        for (auto button : directions[i]) {
++            if (in.isDown(button)) { down = true; direction = i; }
++            if (in.isHeld(button)) { held = true; if (direction < 0) direction = i; }
++        }
++    if (down) m_dashRepeat = 0.32f;
++    else if (held) { m_dashRepeat -= dt; if (m_dashRepeat <= 0) { down = true; m_dashRepeat = 0.12f; } }
++    if (down) {
++        dx = direction == 0 ? -1 : direction == 1 ? 1 : 0;
++        dy = direction == 2 ? -1 : direction == 3 ? 1 : 0;
++        if (m_dashNav) {
++            if (dx) dashTab(m_dashTab + dx);
++            if (dy > 0) m_dashNav = false;
++        } else if (dashCount() > 0) {
++            const int old = std::clamp(m_dashTile, 0, dashCount()-1);
++            const int next = dash360::neighbor(old, dashCount(), m_dashTab == 1, dx, dy);
++            if (dashLibrary() && ((dx > 0 && old % 5 == 4) || (dx < 0 && old % 5 == 0))) {
++                const int target = sel() + dx;
++                if (target >= 0 && target < static_cast<int>(games().size())) {
++                    select(target); m_dashTile = sel() % 10;
++                }
++            } else if (next != old) {
++                m_dashTile = next;
++                if (dashLibrary()) select((sel()/10)*10 + next);
++            } else if (dy < 0) m_dashNav = true;
++            m_audio.play("navigation");
++        } else if (dy < 0) m_dashNav = true;
++    }
++    if (in.isDown(B::A)) {
++        if (m_dashNav) m_dashNav = false;
++        else dashActivate();
++    }
++    return true;
++}
++
++bool CardsActivity::dashTouch() {
++    // Existing modal screens keep their touch handlers.
++    if (m_pickOpen || m_spQrOpen || m_sheetOpen || m_notifOpen || m_quickOpen || m_powerOpen || m_dotsOpen
++        || m_musicOpen || m_optOpen || !m_menu.empty() || m_moving)
++        return handleTouch();
++    auto& in = app().input();
++    if (!in.touchUp()) return in.isTouching();
++    const float x = in.touchX(), y = in.touchY();
++    if (y >= 116 && y < 171) {
++        for (int i = 7; i >= 0; --i)
++            if (x >= dash360::tabX[i] - 12) { dashTab(i); m_dashNav = false; break; }
++        return true;
++    }
++    if (dashLibrary() && y >= 590 && y < 640) {
++        const int base = (sel()/10)*10;
++        if (x >= 970 && base+10 < static_cast<int>(games().size())) select(base+10);
++        else if (x >= 870 && x < 970 && base >= 10) select(base-10);
++        m_dashTile = sel()%10;
++        return true;
++    }
++    if (y < 100 && x > 1100) { openUsers(); return true; }
++    for (int i = 0; i < dashCount(); ++i)
++        if (dash360::tile(i, m_dashTab == 1).contains(x,y)) {
++            m_dashNav = false;
++            m_dashTile = i;
++            if (dashLibrary()) select((sel()/10)*10+i);
++            dashActivate();
++            return true;
++        }
++    return true;
++}
++
++void CardsActivity::drawDashboard(nxui::Renderer& r) {
++    const nxui::Color green(0.f,0.52f,0.f,1.f), pale(0.67f,0.67f,0.67f,1.f);
++    r.drawGradientRect({0,0,1280,610}, {0.22f,0.22f,0.22f,1}, {0.72f,0.72f,0.72f,1});
++    r.drawGradientRect({0,610,1280,110}, {0.72f,0.72f,0.72f,1}, {0.50f,0.50f,0.50f,1});
++    for (int i = 0; i < 8; ++i) {
++        const float scale = i == 4 ? 0.93f : 1.f;
++        textMid(r, m_fDashNav, dash360::tabs[i], dash360::tabX[i], 143,
++                i == m_dashTab ? kWhite : nxui::Color(0.58f,0.58f,0.58f,1), scale);
++        if (m_dashNav && i == m_dashTab)
++            r.drawRect({dash360::tabX[i],162,measured(m_fDashNav,dash360::tabs[i]).x*scale,2}, kWhite);
++    }
++    if (m_avatar && m_avatar->valid()) r.drawTexture(m_avatar.get(), {1154,40,28,34});
++    else icon(r,"friends",1168,57,28,kWhite);
++    textMid(r,m_fBody,m_clock,1110,93,pale,0.8f);
++    // Neighboring hubs peeking in at the edges, as in the reference.
++    r.drawGradientRect({-118,246,174,336},green.withAlpha(0.45f),green.withAlpha(0.12f));
++    r.drawGradientRect({1212,246,174,336},green.withAlpha(0.45f),green.withAlpha(0.12f));
++    textMid(r,m_fBody,m_dashTab == 2 ? "games" : "Friends",1228,296,kWhite.withAlpha(0.35f));
++
++    const bool library = dashLibrary();
++    if (library) m_dashTile = sel()%10;
++    const int count = dashCount();
++    m_dashTile = std::clamp(m_dashTile,0,std::max(0,count-1));
++    static const char* homeLabels[] = {"Play", "My Pins", "Recent", "Play", "Controllers", "Album", "My Games", "My Apps", "News"};
++    static const char* homeIcons[] = {"play","tag","repeat","play","pad","sys_album","home","dots","news"};
++    static const char* settings[] = {"System", "Preferences", "Audio", "Network", "Controllers", "Storage", "Home", "Notifications", "About", "Turn Off"};
++    static const char* settingIcons[] = {"gear","sun","speaker","wifi","pad","copy","home","bell","dots","power"};
++    static const char* social[] = {"Friends", "Profile", "Discord", "Notifications"};
++    static const char* socialIcons[] = {"friends","sys_mii","discord","bell"};
++    static const char* music[] = {"Music Player", "Audio Settings", "Media Apps"};
++    static const char* musicIcons[] = {"music","speaker","play"};
++    for (int i = 0; i < count; ++i) {
++        auto t = dash360::tile(i,m_dashTab == 1);
++        const nxui::Rect box{t.x,t.y,t.w,t.h};
++        const bool chosen = i == m_dashTile && !m_dashNav;
++        r.drawRect({t.x+2,t.y+5,t.w,t.h},nxui::Color(0,0,0,0.15f));
++        r.drawGradientRect(box,green, nxui::Color(0.f,0.43f,0.f,1));
++        std::string label;
++        const char* glyph = "home";
++        const Game* game = nullptr;
++        if (library) {
++            const int index = (sel()/10)*10+i;
++            if (index < static_cast<int>(games().size())) game = &games()[index];
++            label = game ? game->name : "";
++            glyph = m_dashTab == 6 ? "dots" : m_dashTab == 4 ? "play" : "pad";
++        } else if (m_dashTab == 1) {
++            label = homeLabels[i]; glyph = homeIcons[i];
++            if (i == 0 || i == 3) { game = current(); if (game) label = (i == 0 ? "Play " : "") + game->name; }
++        } else if (m_dashTab == 2) { label = social[i]; glyph = socialIcons[i]; }
++        else if (m_dashTab == 5) { label = music[i]; glyph = musicIcons[i]; }
++        else if (m_dashTab == 0) { label = i == 0 ? "Search Games & Apps" : "Web Browser"; glyph = i == 0 ? "tag" : "sys_browser"; }
++        else { label = settings[i]; glyph = settingIcons[i]; }
++        const nxui::Texture* tex = nullptr;
++        if (game) {
++            const auto art = m_art.find(game->id);
++            if (art != m_art.end()) {
++                if (m_dashTab == 1 && i == 3 && art->second.bg) tex = art->second.bg.get();
++                else if (art->second.card) tex = art->second.card.get();
++                else if (art->second.icon) tex = art->second.icon.get();
++            }
++            if (!tex) { const auto th = m_thumbs.find(game->id); if (th != m_thumbs.end() && th->second.tex) tex = th->second.tex.get(); }
++        }
++        if (tex && tex->valid()) {
++            drawCover(r,tex,box,0,kWhite,0,0);
++            r.drawGradientRect({t.x,t.y+t.h-48,t.w,48},nxui::Color(0,0,0,0),nxui::Color(0,0,0,0.9f));
++        } else {
++            const float size = t.h < 100 ? 34 : m_dashTab == 1 && i == 3 ? 88 : 62;
++            const float cx = t.x+t.w/2, cy = t.y+(t.h-24)/2;
++            if (m_dashTab == 1 && i == 2) {
++                r.drawCircle({cx,cy},26,kWhite);
++                r.drawCircle({cx,cy},21,green);
++                r.drawLine({cx,cy},{cx,cy-14},kWhite,4);
++                r.drawLine({cx,cy},{cx+12,cy},kWhite,4);
++            } else if (m_dashTab == 1 && i == 1) {
++                // The diagonal white pushpin used by the reference dashboard.
++                r.drawTriangle({cx+5,cy-24},{cx+24,cy-5},{cx+8,cy+2},kWhite);
++                r.drawTriangle({cx+5,cy-24},{cx+8,cy+2},{cx-2,cy-8},kWhite);
++                r.drawTriangle({cx-2,cy-8},{cx+8,cy+2},{cx-9,cy+18},kWhite);
++                r.drawTriangle({cx-13,cy-2},{cx+2,cy+13},{cx-9,cy+18},kWhite);
++                r.drawLine({cx-9,cy+12},{cx-22,cy+25},kWhite,3);
++            } else icon(r,glyph,cx,cy,size,kWhite.withAlpha(0.91f));
++        }
++        textMid(r,m_fBody,fit(m_fBody,label,t.w-20,0.96f),t.x+10,t.y+t.h-16,kWhite,0.96f);
++        if (chosen) {
++            r.drawRectOutline({t.x-4,t.y-4,t.w+8,t.h+8},kWhite.withAlpha(0.90f),3);
++            r.drawRectOutline(box,nxui::Color(0.40f,0.90f,0.10f,1),2);
++        }
++        // Faint floor reflection, kept to the last row of the tile group.
++        if (t.y+t.h >= 580) {
++            r.drawGradientRect({t.x,588,t.w,32},green.withAlpha(0.12f),green.withAlpha(0));
++        }
++    }
++    if (library && count == 0) {
++        const std::string message = m_dashTab == 6 ? "No homebrew found in sdmc:/switch" : m_dashTab == 4 ? "No media apps found" : "No games installed";
++        textMid(r,m_fLabel,message,228,310,kWhite);
++    }
++    if (library) {
++        textMid(r,m_fBody,"< Prev     Next >",880,610,kWhite.withAlpha(0.8f),0.85f);
++        const auto n = games().size();
++        const auto page = static_cast<size_t>(sel()/10+1);
++        textMid(r,m_fBody,std::to_string(n)+" items    "+std::to_string(page)+" / "+std::to_string(std::max<size_t>(1,(n+9)/10)),228,610,kWhite.withAlpha(0.8f),0.85f);
++    }
++    r.drawCircle({104,660},9,{0.35f,0.72f,0.1f,1});
++    textMid(r,m_fBadge,"A",99,660,kWhite,0.8f);
++    textMid(r,m_fBody,"Select",119,660,kWhite,0.85f);
++    textMid(r,m_fBody,"L / R  Hubs     Y  Guide     ZR  Quick Settings",228,660,kWhite.withAlpha(0.8f),0.8f);
++    if (current() && (library || (m_dashTab == 1 && (m_dashTile == 0 || m_dashTile == 3)))) textMid(r,m_fBody,"+  Options",990,660,kWhite.withAlpha(0.8f),0.8f);
++    if (m_moving) textMid(r,m_fBody,"Move: Left / Right     A  Done     B  Cancel",228,628,kWhite);
++    if (m_leaving) r.drawRect({0,0,1280,720},nxui::Color(0,0,0,std::min(1.f,m_leaveT*1.5f)));
++}
+diff --git a/tests/dashboard360_test.cpp b/tests/dashboard360_test.cpp
+new file mode 100644
+index 0000000..e1e3373
+--- /dev/null
++++ b/tests/dashboard360_test.cpp
+@@ -0,0 +1,23 @@
++#include "../projects/cards/src/Dashboard360.hpp"
++#include <cassert>
++#include <queue>
++#include <iostream>
++using namespace cards::dash360;
++int main() {
++  // Every action must be reachable with a controller from the launch tile.
++  for(bool isHome : {true,false}) for(int n=1;n<=(isHome?9:10);++n) {
++    std::array<bool,10> seen{};std::queue<int> q;q.push(0);seen[0]=true;
++    while(!q.empty()) {int i=q.front();q.pop();for(auto d : std::array<std::array<int,2>,4>{{{-1,0},{1,0},{0,-1},{0,1}}}) {
++      int j=neighbor(i,n,isHome,d[0],d[1]);assert(j>=0&&j<n);
++      if(!seen[j]){seen[j]=true;q.push(j);}
++    }}
++    for(int i=0;i<n;++i){assert(seen[i]);auto t=tile(i,isHome);assert(t.contains(t.x+t.w/2,t.y+t.h/2));
++      assert(!t.contains(t.x+t.w,t.y));
++      for(int j=i+1;j<n;++j){auto u=tile(j,isHome);assert(!(t.x<u.x+u.w&&u.x<t.x+t.w&&t.y<u.y+u.h&&u.y<t.y+t.h));}
++    }
++  }
++  assert(neighbor(0,9,true,0,1)==1);assert(neighbor(1,9,true,0,1)==2);
++  assert(neighbor(0,9,true,1,0)==3);assert(neighbor(3,9,true,0,1)==6);
++  assert(wrapTab(-1)==7&&wrapTab(8)==0);
++  std::cout<<"Dashboard navigation, tile hit areas and tab wrapping passed\n";
++}
+diff --git a/tools/package_dashboard360.py b/tools/package_dashboard360.py
+new file mode 100644
+index 0000000..6fb0819
+--- /dev/null
++++ b/tools/package_dashboard360.py
+@@ -0,0 +1,73 @@
++#!/usr/bin/env python3
++"""Package a compiled 360 dashboard update for an existing HomeNX install."""
++import argparse
++from pathlib import Path
++import zipfile
++import shutil
++import json
++import hashlib
++
++root = Path(__file__).resolve().parents[1]
++parser = argparse.ArgumentParser()
++parser.add_argument('--output', type=Path, required=True)
++parser.add_argument('--daemon-provenance', type=Path)
++args = parser.parse_args()
++output = args.output.resolve()
++release = root / 'build/cross/aarch64/release'
++
++files = {
++    'switch/SwitchU/bin/menu/main': release / 'exefs/switchu-menu/main',
++    'switch/SwitchU/bin/menu/main.npdm': release / 'exefs/switchu-menu/main.npdm',
++    'atmosphere/contents/0100000000001000/exefs.nsp': release / 'switchu-daemon.nsp',
++    'switch/SwitchU/bin/cardsnx.nro': release / 'CardsNX.nro',
++    'switch/SwitchU/bin/homenx-loader.nro': release / 'HomeNX-Loader.nro',
++}
++for folder in ('fonts', 'icons', 'shaders', 'certs'):
++    base = root / 'build/cards-romfs' / folder
++    if not base.is_dir():
++        raise SystemExit(f'Missing CardsNX assets: {base}')
++    for p in base.rglob('*'):
++        if p.is_file(): files['switch/SwitchU/cards/' + str(p.relative_to(base.parent))] = p
++for folder in ('fonts', 'icons', 'i18n', 'shaders'):
++    base = root / 'romfs' / folder
++    for p in base.rglob('*'):
++        if p.is_file(): files['switch/SwitchU/' + str(p.relative_to(root / 'romfs'))] = p
++files['switch/SwitchU/cards/lang.tsv'] = root / 'projects/cards/romfs/lang.tsv'
++for name, p in files.items():
++    if not p.is_file() or p.stat().st_size == 0:
++        raise SystemExit(f'Missing or empty build output: {p} (for {name})')
++for p, offset, magic in (
++    (release / 'CardsNX.nro', 16, b'NRO0'),
++    (release / 'HomeNX-Loader.nro', 16, b'NRO0'),
++    (release / 'exefs/switchu-menu/main', 0, b'NSO0'),
++    (release / 'switchu-daemon.nsp', 0, b'PFS0'),
++):
++    with p.open('rb') as f:
++        f.seek(offset)
++        if f.read(4) != magic:
++            raise SystemExit(f'Unexpected executable format: {p}')
++if not any(n.startswith('switch/SwitchU/shaders/') for n in files):
++    raise SystemExit('The rebuilt frontend shaders are missing')
++
++output.mkdir(parents=True, exist_ok=True)
++manifest = {'name': 'HomeNX 360 experimental',
++            'upstream_commit': '94f2bd56698fed40f2897131ea09463775840767',
++            'hardware_tested': False,
++            'sha256': {name: hashlib.sha256(p.read_bytes()).hexdigest() for name, p in sorted(files.items())}}
++if args.daemon_provenance:
++    manifest['daemon'] = json.loads(args.daemon_provenance.read_text())
++    expected = manifest['daemon']['sha256']
++    actual = manifest['sha256']['atmosphere/contents/0100000000001000/exefs.nsp']
++    if actual != expected: raise SystemExit('Daemon provenance does not match the binary')
++else:
++    manifest['daemon'] = {'origin': 'local build'}
++manifest_text = json.dumps(manifest, indent=2) + '\n'
++(output / 'BUILD-MANIFEST.json').write_text(manifest_text)
++shutil.copy2(release / 'CardsNX.nro', output / 'HomeNX360-preview.nro')
++shutil.copy2(root / 'README-360.md', output / 'INSTALL.md')
++with zipfile.ZipFile(output / 'HomeNX360-update.zip', 'w', zipfile.ZIP_DEFLATED) as z:
++    for name, p in sorted(files.items()): z.write(p, name)
++    z.writestr('config/SwitchU/frontend.txt', 'cards\n')
++    z.writestr('switch/SwitchU/dashboard360-build.json', manifest_text)
++    z.write(root / 'README-360.md', 'INSTALL-360.md')
++print('Packaged preview NRO and HomeNX update:', output)
