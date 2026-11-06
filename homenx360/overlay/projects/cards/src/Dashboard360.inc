@@ -221,25 +221,7 @@ bool CardsActivity::dashTouch() {
 }
 
 void CardsActivity::drawDashBoot(nxui::Renderer& r) {
-    const float t=3.2f-m_dashBoot;
-    r.drawGradientRect({0,0,1280,720},{0.98f,0.98f,0.98f,1},{0.78f,0.81f,0.79f,1});
-    const float appear=nxe::ease(t/0.75f);
-    // Original, procedural introduction: no Xbox video or logo is bundled.
-    for (int ring=0;ring<3;++ring) for (int j=0;j<64;++j) {
-        const float a=j*6.2831853f/64.f+t*(1.6f+ring*0.3f);
-        const float b=a+6.2831853f/64.f;
-        const float radius=(160.f-ring*15.f)*(1.f-0.48f*nxe::ease((t-1.f)/1.4f));
-        const auto point=[&](float v) { return nxui::Vec2{640+std::cos(v)*radius,305+std::sin(v)*radius*0.42f+std::cos(v)*ring*9}; };
-        r.drawLine(point(a),point(b),{0.23f+0.10f*ring,0.68f+0.06f*ring,0.05f,appear*(0.3f+0.5f*j/64.f)},7.f-ring);
-    }
-    r.drawCircle({640,305},66*appear,{0.89f,0.91f,0.88f,1});
-    r.drawCircle({628,290},44*appear,{0.99f,1,0.98f,1});
-    const float mark=nxe::ease((t-1.15f)/0.65f);
-    icon(r,"home",640,305,76,{0.23f,0.57f,0.03f,mark});
-    const std::string title="HomeNX 360";
-    textMid(r,m_fDashNav,title,640-measured(m_fDashNav,title).x/2,440,{0.28f,0.31f,0.28f,mark});
-    textMid(r,m_fBody,"A / B  Skip",565,640,{0.42f,0.45f,0.42f,0.8f},0.8f);
-    if (m_dashBoot<0.35f) r.drawRect({0,0,1280,720},{0.72f,0.76f,0.69f,1.f-m_dashBoot/0.35f});
+    m_bootClip.draw(r);
 }
 
 void CardsActivity::drawDashboard(nxui::Renderer& r) {

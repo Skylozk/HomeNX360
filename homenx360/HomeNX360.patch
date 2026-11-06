@@ -1,8 +1,8 @@
 diff --git a/THIRD_PARTY_NOTICES.md b/THIRD_PARTY_NOTICES.md
-index 67af324..5f256bd 100644
+index 67af324..653b30c 100644
 --- a/THIRD_PARTY_NOTICES.md
 +++ b/THIRD_PARTY_NOTICES.md
-@@ -62,3 +62,11 @@ Wii U sounds and music are Nintendo's.
+@@ -62,3 +62,14 @@ Wii U sounds and music are Nintendo's.
  
  - **PowerCmptr**: the HomeNX lock screen and Discord token sign-in
    ([ad3333m/homenx#5](https://github.com/ad3333m/homenx/pull/5)).
@@ -14,8 +14,35 @@ index 67af324..5f256bd 100644
 +Open Font License 1.1. The unmodified font is from Microsoft/Selawik release
 +1.01. The complete license accompanies it in
 +`projects/cards/romfs/fonts/Selawik-OFL.txt` and the packaged font assets.
++
++Xbox 360 startup footage and sound are Microsoft material, separate from the
++GPL code. See media/STARTUP-MEDIA-NOTICE.md for the source recording and hashes.
+diff --git a/projects/cards/src/Audio.cpp b/projects/cards/src/Audio.cpp
+index 3e32dd8..9698a73 100644
+--- a/projects/cards/src/Audio.cpp
++++ b/projects/cards/src/Audio.cpp
+@@ -243,6 +243,7 @@ bool Audio::start() {
+ 
+ void Audio::opened() {
+     Mix_AllocateChannels(8);
++    Mix_ReserveChannels(1); // channel 0 belongs to the startup clip
+     m_open = true;
+     Mix_Volume(-1, MIX_MAX_VOLUME * m_soundVolume / 100);
+     Mix_HookMusicFinished(onTrackEnded);
+diff --git a/projects/cards/src/Audio.hpp b/projects/cards/src/Audio.hpp
+index cd6ec69..ea90cbf 100644
+--- a/projects/cards/src/Audio.hpp
++++ b/projects/cards/src/Audio.hpp
+@@ -15,6 +15,7 @@ namespace cards {
+ class Audio {
+ public:
+     bool start();
++    bool ready() const { return m_open; }
+     void stop();
+     void update();                      // the next track once one ends
+     void setMusic(bool on, int volume); // volume 0..100
 diff --git a/projects/cards/src/CardsActivity.cpp b/projects/cards/src/CardsActivity.cpp
-index 6aa39c4..c24bf75 100644
+index 6aa39c4..a46fa73 100644
 --- a/projects/cards/src/CardsActivity.cpp
 +++ b/projects/cards/src/CardsActivity.cpp
 @@ -1,4 +1,5 @@
@@ -60,7 +87,24 @@ index 6aa39c4..c24bf75 100644
      sortGames(m_settings.sort, false);
      for (int& s : m_sels) s = 0;
      m_scroll = 0.f;
-@@ -904,7 +909,7 @@ const Game* CardsActivity::current() {
+@@ -749,6 +754,8 @@ bool CardsActivity::onCreate() {
+         return out;
+     });
+     m_retryIn = 1.2f; // the shelf is covered by degrees, starting right away
++    if (m_dashBoot>0.f && m_settings.motion) m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
++    else m_dashBoot=0.f;
+     m_intro = m_settings.motion ? 0.f : 1.f; // the cards rise in (the game's picture lets go first: see onUpdate)
+ #ifdef SWITCHU_MENU
+     if (m_atBoot && m_settings.lockScreen) lock();
+@@ -823,6 +830,7 @@ void CardsActivity::perfLine(const std::string& line) {
+ }
+ 
+ void CardsActivity::onDestroy() {
++    m_bootClip.stop();
+     m_jobsStop = true; // the network jobs stop early: closing must not wait them out
+     {
+         std::lock_guard<std::mutex> lk(m_mu);
+@@ -904,7 +912,7 @@ const Game* CardsActivity::current() {
  
  void CardsActivity::applyTheme() {
      m_theme = nxui::Theme::dark();
@@ -69,7 +113,7 @@ index 6aa39c4..c24bf75 100644
      m_theme.panelBorder = nxui::Color(1.f, 1.f, 1.f, 0.16f);
      m_theme.panelHighlight = nxui::Color(1.f, 1.f, 1.f, 0.05f);
      m_theme.iconDefault = nxui::Color(1.f, 1.f, 1.f, 0.06f);
-@@ -915,7 +920,7 @@ void CardsActivity::applyTheme() {
+@@ -915,7 +923,7 @@ void CardsActivity::applyTheme() {
  }
  
  nxui::Color CardsActivity::accent(float a) const {
@@ -78,7 +122,7 @@ index 6aa39c4..c24bf75 100644
  }
  
  nxui::Color CardsActivity::glassTint(float a) const {
-@@ -1288,6 +1293,8 @@ void CardsActivity::wantArt() {
+@@ -1288,6 +1296,8 @@ void CardsActivity::wantArt() {
          jobs.push_back({page[(size_t)i], what, m_artGen});
      };
      const int s = sel();
@@ -87,7 +131,7 @@ index 6aa39c4..c24bf75 100644
      add(s, kCard);
      add(s, kBackground);
      add(s, kIcon); // (a title picture can mean a search online: after the pictures you see)
-@@ -1631,6 +1638,9 @@ void CardsActivity::goToPage(int page, int dir) {
+@@ -1631,6 +1641,9 @@ void CardsActivity::goToPage(int page, int dir) {
      if (m_moving) finishMove(true);
      if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
      m_page = page;
@@ -97,7 +141,52 @@ index 6aa39c4..c24bf75 100644
      m_pageDir = dir > 0 ? 1 : -1;
      m_pageIn = m_settings.motion ? 0.f : 1.f;
      m_detailIn = m_pageIn;
-@@ -7242,7 +7252,7 @@ void CardsActivity::keepTextCachesSmall() {
+@@ -2042,7 +2055,7 @@ void CardsActivity::comeBack() {
+     m_leaveT = 0.f;
+     m_leaveThen = nullptr;
+     m_intro = std::min(m_intro, 0.6f); // the cards rise back in
+-    m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++    m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+ }
+ 
+ void CardsActivity::play() {
+@@ -4674,7 +4687,7 @@ void CardsActivity::quickChange(int row, int delta) {
+     takeFacts(true);
+     if (row == kQMusic) {
+         m_settings.musicVolume = std::clamp(m_settings.musicVolume + delta * 10, 0, 100);
+-        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+     } else if (row == kQSounds) {
+         m_settings.soundVolume = std::clamp(m_settings.soundVolume + delta * 10, 0, 100);
+         m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
+@@ -4877,7 +4890,7 @@ void CardsActivity::updateMusic() {
+             spotifyDo(Spotify::Cmd::Volume, std::clamp(std::max(0, m_sp.volume) + (right ? 5 : -5), 0, 100));
+         } else if (left || right) {
+             m_settings.musicVolume = std::clamp(m_settings.musicVolume + (right ? 5 : -5), 0, 100);
+-            m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++            m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+             m_settings.save();
+         }
+     } else {
+@@ -5061,7 +5074,7 @@ void CardsActivity::updateSpotifyQr() {
+     if (state == Spotify::Login::Done) {
+         m_spQrOpen = false;
+         m_settings.spotify = true; // signed in: the music player shows it
+-        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+         m_settings.save();
+         m_audio.play("activation");
+         say("Signed in: Spotify is in the music player now");
+@@ -5639,7 +5652,7 @@ void CardsActivity::buildSettings() {
+     Section sound{"Sound", "music", {}};
+     sound.rows.push_back(toggle("Music", [this]() { return m_settings.music; }, [this, save]() {
+         m_settings.music = !m_settings.music;
+-        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+         save();
+     }, "HomeNX's HOME music"));
+     sound.rows.push_back(slider("Music volume", [this]() { return m_settings.musicVolume; }, [this, save](int v) {
+@@ -7242,7 +7255,7 @@ void CardsActivity::keepTextCachesSmall() {
          s_lastTrim = now;
          f.trimCache(124, 3u << 20); // (trimCache scales its byte limit too)
      };
@@ -106,16 +195,44 @@ index 6aa39c4..c24bf75 100644
  #ifdef SWITCHU_MENU
      // Discord, Social and the keyboard draw with HomeNX's font: nothing trimmed
      // its cache, and once full no new channel names or messages showed.
-@@ -7794,6 +7804,8 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7744,13 +7757,13 @@ void CardsActivity::onUpdate(float dt) {
+     // song were a stall on frames 2-3) at 1.5 s, the avatar at 3 s, and the
+     // icons decoded on a thread meanwhile.
+     if (m_startStage < 3) {
+-        if (m_startStage < 2 && m_time > 1.5f) {
++        if (m_startStage < 2 && (m_time > 1.5f || m_dashBoot>0.f)) {
+             m_startStage = 2;
+             m_audio.start();
+             m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
+             m_audio.setShuffle(m_settings.shuffle);
+             m_audio.setRepeat(m_settings.repeat);
+-            m_audio.setMusic(homeMusic(), m_settings.musicVolume);
++            m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
+         } else if (m_startStage == 2 && m_time > 3.f) {
+             m_startStage = 3;
+             loadAvatar();
+@@ -7794,6 +7807,7 @@ void CardsActivity::onUpdate(float dt) {
          app().gpu().endTextureUploadBatch();
      }
      m_time += dt;
-+    if (!m_settings.motion) m_dashBoot = 0.f;
-+    if (m_dashBoot > 0.f) m_dashBoot = std::max(0.f, m_dashBoot - std::min(dt, 1.f/30.f));
++
      updateNotices(dt);
      updateStorage();
      perfMark("start-up");
-@@ -7823,6 +7835,10 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7813,6 +7827,12 @@ void CardsActivity::onUpdate(float dt) {
+     }
+     perfMark("pictures");
+     m_audio.update();
++    if (m_dashBoot>0.f && !m_settings.motion) m_bootClip.stop();
++    const bool bootActive=m_bootClip.update(app().gpu(),app().renderer(),m_audio.ready(),m_settings.sounds,m_settings.soundVolume);
++    if (m_dashBoot>0.f && (!bootActive || !m_settings.motion)) {
++        m_dashBoot=0.f;
++        m_audio.setMusic(homeMusic(),m_settings.musicVolume);
++    }
+     perfMark("music");
+     const bool motion = m_settings.motion;
+     // A lagged frame doesn't skip through the animations: they take real time
+@@ -7823,6 +7843,10 @@ void CardsActivity::onUpdate(float dt) {
      // rise hidden behind a still frame.
      if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
      step(m_pageIn, 0.38f);
@@ -126,18 +243,20 @@ index 6aa39c4..c24bf75 100644
      step(m_detailIn, 0.25f);
      step(m_sheen, 0.8f);
      step(m_menuIn, 0.2f);
-@@ -8341,6 +8357,10 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8341,6 +8365,12 @@ void CardsActivity::onUpdate(float dt) {
      }
  
      perfMark("HomeNX's screens, leaving");
 +    if (m_dashBoot > 0.f) {
-+        if (app().input().isDown(nxui::Button::A) || app().input().isDown(nxui::Button::B)) m_dashBoot=0.f;
++        if (app().input().isDown(nxui::Button::A) || app().input().isDown(nxui::Button::B)) {
++            m_bootClip.stop();m_dashBoot=0.f;m_audio.setMusic(homeMusic(),m_settings.musicVolume);
++        }
 +        return;
 +    }
      if (updateLock(dt)) return;
      perfMark("lock screen");
      if (!m_settings.introDone && !m_introOpen && m_time > 0.8f && !m_leaving) { // the first time
-@@ -8370,7 +8390,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8370,7 +8400,7 @@ void CardsActivity::onUpdate(float dt) {
          updateTask();
          return;
      }
@@ -146,7 +265,7 @@ index 6aa39c4..c24bf75 100644
  
      if (m_pickOpen) { // (over Settings too)
          updatePicker();
-@@ -8425,6 +8445,8 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8425,6 +8455,8 @@ void CardsActivity::onUpdate(float dt) {
          return;
      }
  
@@ -155,7 +274,7 @@ index 6aa39c4..c24bf75 100644
      // Left / right: repeating while held.
      const bool left = in.isHeld(B::DLeft) || in.isHeld(B::LStickL) || in.isHeld(B::RStickL);
      const bool right = in.isHeld(B::DRight) || in.isHeld(B::LStickR) || in.isHeld(B::RStickR);
-@@ -8527,51 +8549,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
+@@ -8527,51 +8559,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
      m_drawMarkTick = armGetSystemTick();
      m_drawMarkMs = 0.f;
      m_drawMarkName = "";
@@ -210,7 +329,7 @@ index 6aa39c4..c24bf75 100644
      drawStep("draw: the menus");
      drawSheet(r);
      drawPopup(r); // (over Settings)
-@@ -8621,8 +8601,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
+@@ -8621,8 +8611,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
  }
  
  void CardsActivity::frost(nxui::Renderer& r, const nxui::Rect& rect, float radius, const nxui::Color& tint) {
@@ -221,7 +340,7 @@ index 6aa39c4..c24bf75 100644
  }
  
  void CardsActivity::glassCircle(nxui::Renderer& r, float cx, float cy, float d, bool focused, const char* name,
-@@ -8783,6 +8763,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
+@@ -8783,6 +8773,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
  }
  
  bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
@@ -239,7 +358,7 @@ index 6aa39c4..c24bf75 100644
      const float rel = static_cast<float>(index) - m_scroll;
      // A page switch slides the row in from the side.
      float slide = (1.f - easeOut(m_pageIn)) * 160.f * static_cast<float>(m_pageDir);
-@@ -9310,7 +9301,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
+@@ -9310,7 +9311,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
      // The control on the right, and the room it leaves for the label.
      const float right = row.x + row.width - 18.f;
      float control = 0.f;
@@ -248,7 +367,7 @@ index 6aa39c4..c24bf75 100644
      switch (item.kind) {
          case MenuItem::Toggle: {
              const float on = item.level ? item.level() : 0.f;
-@@ -10037,4 +10028,6 @@ void CardsActivity::updateStorage() {
+@@ -10037,4 +10038,6 @@ void CardsActivity::updateStorage() {
      }
  }
  
@@ -256,10 +375,17 @@ index 6aa39c4..c24bf75 100644
 +
  } // namespace cards
 diff --git a/projects/cards/src/CardsActivity.hpp b/projects/cards/src/CardsActivity.hpp
-index 0fed0fa..f3da0be 100644
+index 0fed0fa..d5176f8 100644
 --- a/projects/cards/src/CardsActivity.hpp
 +++ b/projects/cards/src/CardsActivity.hpp
-@@ -63,6 +63,30 @@ public:
+@@ -1,5 +1,6 @@
+ #pragma once
+ #include "Audio.hpp"
++#include "BootClip.hpp"
+ #include "Library.hpp"
+ #include "Mtp.hpp"
+ #include "Settings.hpp"
+@@ -63,6 +64,31 @@ public:
      nxui::Widget* focusRoot() override; // HomeNX's screens when one is open; else it reads the buttons itself
  
  private:
@@ -270,11 +396,12 @@ index 0fed0fa..f3da0be 100644
 +    int m_dashPrevTab = 1, m_dashDir = 1;
 +    bool m_dashNav = false;
 +    float m_dashRepeat = 0.f, m_dashIn = 1.f;
-+    float m_dashCard = 0.f, m_dashPrevCard = 0.f, m_dashBoot = 3.2f;
++    float m_dashCard = 0.f, m_dashPrevCard = 0.f, m_dashBoot = 1.f;
 +    int m_dashPrevTile = 0, m_dashPrevPage = 0, m_dashGuideRow = 0;
 +    bool m_dashGuide = false;
 +    void dashMove(int delta);
 +    void dashGuideActivate();
++    BootClip m_bootClip;
 +    void drawDashBoot(nxui::Renderer& r);
 +    int dashCount() const;
 +    bool dashLibrary() const;
@@ -291,12 +418,23 @@ index 0fed0fa..f3da0be 100644
      enum Page { kGames, kHomebrew, kNintendo, kMedia, kPageCount };
      int pageCount() const { return kPageCount + static_cast<int>(m_settings.customPages.size()); }
 diff --git a/xmake.lua b/xmake.lua
-index d9ca0a5..b37f132 100644
+index d9ca0a5..d8987fb 100644
 --- a/xmake.lua
 +++ b/xmake.lua
-@@ -418,6 +418,7 @@ target("CardsNX")
+@@ -187,7 +187,7 @@ target("SwitchU")
+     add_includedirs("projects/manager/src", {public = false})
+     -- CardsNX as HOME (NXToggle > Home screen): its screen, built in; its files
+     -- (fonts, icons, the GameTDB index) ship in switch/SwitchU/cards/.
+-    add_files("projects/cards/src/Audio.cpp", "projects/cards/src/CardsActivity.cpp", "projects/cards/src/Library.cpp",
++    add_files("projects/cards/src/BootClip.cpp", "projects/cards/src/Audio.cpp", "projects/cards/src/CardsActivity.cpp", "projects/cards/src/Library.cpp",
+               "projects/cards/src/Mtp.cpp", "projects/cards/src/Spotify.cpp")
+     add_files("projects/updater/src/Catalog.cpp") -- homebrew updates, as the Homebrew Manager finds them
+     add_includedirs("projects/cards/src", {public = false})
+@@ -417,7 +417,9 @@ target("CardsNX")
+         local romfs_dir = path.join(os.projectdir(), "build/cards-romfs")
          os.mkdir(path.join(romfs_dir, "fonts"))
          os.mkdir(path.join(romfs_dir, "icons"))
++        os.cp(path.join(os.projectdir(), "projects/cards/romfs/boot"), romfs_dir)
          os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/*.ttf"), path.join(romfs_dir, "fonts"))
 +        os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/Selawik-OFL.txt"), path.join(romfs_dir, "fonts"))
          os.cp(path.join(os.projectdir(), "projects/cards/romfs/icons/*.png"), path.join(romfs_dir, "icons"))
@@ -304,10 +442,10 @@ index d9ca0a5..b37f132 100644
          os.cp(path.join(os.projectdir(), "projects/cards/romfs/certs/*.pem"), path.join(romfs_dir, "certs"))
 diff --git a/NXE-REFERENCES.md b/NXE-REFERENCES.md
 new file mode 100644
-index 0000000..827753f
+index 0000000..dcc2837
 --- /dev/null
 +++ b/NXE-REFERENCES.md
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,59 @@
 +# NXE reference research
 +
 +Target: the 2008–2009 New Xbox Experience (NXE). The supplied 54.404-second
@@ -350,21 +488,26 @@ index 0000000..827753f
 +- Continuous card focus/scrolling, a 0.30-second vertical channel transition,
 +  controller repeat and matching trapezoid touch targets. These timings are
 +  design choices, not measurements of inaccessible videos.
-+- An original 3.2-second procedural HomeNX startup with green orbiting ribbons;
-+  A/B skips it, returning HOME does not replay it, and disabling Animations
-+  removes it. It runs inside HomeNX, after the system boot process.
++- Startup playback is now covered in [the startup reference analysis](STARTUP-REFERENCES.md).
++  It runs inside HomeNX, after the system boot process.
 +- A compact Guide with real Switch library, friends, search, settings and power
 +  actions. Libraries scroll beyond the old ten-item page.
 +
 +This is an NXE-inspired adaptation, not an exact reproduction of every screen.
 +Existing HomeNX settings dialogs remain available. Xbox Live, Marketplace,
-+Netflix, 3D Xbox avatars, achievements and the proprietary Xbox startup audio
-+are not recreated. No third-party videos, extracted assets or Xbox firmware
-+are distributed in the update. Additional uploaded NXE clips can supply actual
++Netflix, 3D Xbox avatars and Xbox achievements are not recreated.
++The original startup recording is credited separately from the GPL code;
++Xbox firmware is not distributed in the update. Additional uploaded NXE clips can supply actual
 +frame-by-frame motion evidence for later refinement.
++
++## Startup update
++
++The recorded original-era startup supersedes the earlier procedural introduction.
++See [startup research](STARTUP-REFERENCES.md) for the downloaded recordings,
++frame verification and remaining hardware limits.
 diff --git a/README-360.md b/README-360.md
 new file mode 100644
-index 0000000..42b271e
+index 0000000..320e27f
 --- /dev/null
 +++ b/README-360.md
 @@ -0,0 +1,77 @@
@@ -375,7 +518,7 @@ index 0000000..42b271e
 +
 +This changes CardsNX, including CardsNX running as the HomeNX HOME screen, into
 +an experimental 2008 NXE-inspired dashboard: vertical channels, overlapping
-+cards, reflections, a Guide and an original skippable startup. Game artwork and
++cards, reflections, a Guide and a skippable recorded Xbox 360 startup. Game artwork and
 +names come from the Switch's library. Existing HomeNX dialogs remain available.
 +The startup runs inside HomeNX; it does not replace the console bootloader.
 +See [the reference log](NXE-REFERENCES.md) for the evidence and remaining gaps.
@@ -445,6 +588,85 @@ index 0000000..42b271e
 +
 +See the root README for the pinned source preparation script and GitHub Actions
 +workflow. The source overlay is in `homenx360/overlay/`.
+diff --git a/STARTUP-REFERENCES.md b/STARTUP-REFERENCES.md
+new file mode 100644
+index 0000000..59f952d
+--- /dev/null
++++ b/STARTUP-REFERENCES.md
+@@ -0,0 +1,52 @@
++# Original Xbox 360 startup research
++
++The selected target is the original pre-Kinect (2005–2010) animation used with
++NXE, as explicitly chosen by the user. This is a bounded reference survey, not
++an exhaustive inventory of every video ever uploaded. Search descriptions and
++unavailable streams are distinguished from files actually downloaded and inspected.
++
++## Downloaded and inspected
++
++| Reference | Media | Finding |
++|---|---|---|
++| [DashX360: Blades Startup.mp4](https://github.com/ZivvoZ/dashx360/blob/main/Assets/Boot/Blades%20Startup.mp4) | 1920×1080, H.264/AAC, 288 frames at 30 fps; video 9.6 s, container 9.612993 s | Original close-up metal sphere, glowing X, pullback, wordmark and ripple. Selected playback recording; no added fade. |
++| [Xenia Dashboard NXE recording](https://github.com/mfrafael/xenia-dashboard/blob/main/skins/nxe/assets/boot.webm) | 1920×1080, VP9/Opus, 60 fps, 8.85 s | Same original-era composition and sequence, with a different ending/fade and duration. Used to cross-check the variant. |
++| [Steam Deck startup collection](https://github.com/kageurufu/steamdeck_startup_animations/blob/main/deck_startup/deck_startup.x360.webm) | 1280×800, VP9/Vorbis, about 7.387 s | Later green ribbon startup with letterboxing. Rejected for the selected original-era target. |
++| User-supplied `videoplayback.mp4` | 640×360, 54.404 s | Later ribbon startup followed by a Metro dashboard. Kept as the previous reference; not used for this startup. |
++
++The selected source has SHA-256
++`49167ff153513d9e3e9d89b80cf63522d67a1bb28f547bd81ff748c338f920a8`
++and Git blob `617b003906e131c87c636696efebd219fb0286ef`.
++The independent NXE WebM has SHA-256
++`d1de7996c54bbfdc99675a1f0db6b7fc4b167d4f4470892d9358ea07ad0b06ff`.
++
++## Located but not inspected as video
++
++- [Original Xbox 360 Startup Animation, 1440p60](https://www.youtube.com/watch?v=yVaK1oGwDUg): the uploader describes an emulator capture of the original executable. Video access was throttled; it was not downloaded or watched here.
++- [All Xbox Startup Screens Evolution](https://www.youtube.com/watch?v=EPClnDFPmpU): search metadata distinguishes the 2005 and 2010 variants; stream not inspected.
++- [Ultimate Xbox Startup compilation](https://www.youtube.com/watch?v=yVgamboqH7c): located through search; stream not inspected.
++- [Original Startup on Make a GIF](https://makeagif.com/gif/original-xbox-360-startup-1080p-RFReXD): public media download returned HTTP 403.
++- [Original Xbox 360 Boot on Steam Deck Repo](https://steamdeckrepo.com/post/ER3bL/xbox_360_boot_original): located; page supplied no inspectable media.
++- [TCRF startup comparison](https://tcrf.tiago.zip/wiki/Xbox_360): article located; linked MP4 download returned HTTP 403.
++- [Original Startup on Coub](https://coub.com/view/2fbgue): located through search; stream not inspected.
++
++## Playback and fidelity
++
++The app plays the selected recording rather than drawing an approximate logo.
++All 288 source frames are converted to logical 1280×720 with Lanczos scaling,
++without cropping, recoloring or overlays, then encoded losslessly as WebP.
++Every encoded frame is decoded and compared with the resized source RGB pixels.
++`projects/cards/romfs/boot/nxe360.json` records the source/bank hashes and each
++frame's RGB hash. The source recording and conversion script are included.
++The recorded audio is preserved as 44.1 kHz stereo PCM for the existing mixer.
++
++The clip uses a real-time clock, not HomeNX's animation timer. Background music
++waits until it ends. A/B skips it and stops its sound; Animations and sound
++settings are respected. Returning HOME from software does not replay it.
++Missing/corrupt media fails open to the dashboard rather than trapping HOME.
++
++This matches the supplied recording's imagery and timing at 720p. Its capture
++chain, the original console's rendering, display calibration, actual Switch
++frame pacing, and exact audiovisual latency have not been verified on hardware.
++Frames can be skipped to maintain sound synchronization if decoding falls behind.
++No claim of pixel-perfect equivalence to every Xbox 360 recording is made.
+diff --git a/media/STARTUP-MEDIA-NOTICE.md b/media/STARTUP-MEDIA-NOTICE.md
+new file mode 100644
+index 0000000..5049317
+--- /dev/null
++++ b/media/STARTUP-MEDIA-NOTICE.md
+@@ -0,0 +1,15 @@
++# Xbox 360 startup media
++
++The Xbox 360 startup animation, logo and audio are Microsoft material. These
++media files are separate from the HomeNX code's GPL-3.0 license; that software
++license does not grant rights to Microsoft's artwork or audio.
++
++Source recording: ZivvoZ/dashx360, `Assets/Boot/Blades Startup.mp4`, Git blob
++`617b003906e131c87c636696efebd219fb0286ef`.
++https://github.com/ZivvoZ/dashx360/blob/main/Assets/Boot/Blades%20Startup.mp4
++
++SHA-256: `49167ff153513d9e3e9d89b80cf63522d67a1bb28f547bd81ff748c338f920a8`.
++`startup-nxe-source.mp4` is the unchanged downloaded recording.
++`projects/cards/romfs/boot/nxe360.bin` contains derived lossless 720p frames and
++PCM sound. The conversion script and complete per-frame verification report
++are included. Nintendo and Microsoft do not endorse this project.
 diff --git a/packages/s/switch-pkg/xmake.lua b/packages/s/switch-pkg/xmake.lua
 new file mode 100644
 index 0000000..72a4895
@@ -501,6 +723,344 @@ index 0000000..72a4895
 +        raise("Install devkitPro package '%s' in your SDK before building", package:data("pkgname"))
 +    end)
 +package_end()
+diff --git a/projects/cards/romfs/boot/STARTUP-MEDIA-NOTICE.md b/projects/cards/romfs/boot/STARTUP-MEDIA-NOTICE.md
+new file mode 100644
+index 0000000..5049317
+--- /dev/null
++++ b/projects/cards/romfs/boot/STARTUP-MEDIA-NOTICE.md
+@@ -0,0 +1,15 @@
++# Xbox 360 startup media
++
++The Xbox 360 startup animation, logo and audio are Microsoft material. These
++media files are separate from the HomeNX code's GPL-3.0 license; that software
++license does not grant rights to Microsoft's artwork or audio.
++
++Source recording: ZivvoZ/dashx360, `Assets/Boot/Blades Startup.mp4`, Git blob
++`617b003906e131c87c636696efebd219fb0286ef`.
++https://github.com/ZivvoZ/dashx360/blob/main/Assets/Boot/Blades%20Startup.mp4
++
++SHA-256: `49167ff153513d9e3e9d89b80cf63522d67a1bb28f547bd81ff748c338f920a8`.
++`startup-nxe-source.mp4` is the unchanged downloaded recording.
++`projects/cards/romfs/boot/nxe360.bin` contains derived lossless 720p frames and
++PCM sound. The conversion script and complete per-frame verification report
++are included. Nintendo and Microsoft do not endorse this project.
+diff --git a/projects/cards/romfs/boot/nxe360.json b/projects/cards/romfs/boot/nxe360.json
+new file mode 100644
+index 0000000..ece7f44
+--- /dev/null
++++ b/projects/cards/romfs/boot/nxe360.json
+@@ -0,0 +1,311 @@
++{
++  "source_sha256": "49167ff153513d9e3e9d89b80cf63522d67a1bb28f547bd81ff748c338f920a8",
++  "source_size": [
++    1920,
++    1080
++  ],
++  "playback_size": [
++    1280,
++    720
++  ],
++  "frame_rate": [
++    30,
++    1
++  ],
++  "frames": 288,
++  "duration_us": 9612993,
++  "resampling": "Lanczos to Switch logical 1280x720; no cropping or overlays",
++  "frame_encoding": "lossless WebP; every decoded frame compared with resized source RGB",
++  "audio": "PCM 16-bit stereo 44100 Hz",
++  "bank_sha256": "9110c9c6abad180b087d029000522606172f7c5c942e0f5ee40003707dcde064",
++  "frame_rgb_sha256": [
++    "9fe4b7cea540352bd5d9b6a0039318276148b2877fce99905738f38af184d8e0",
++    "b356ea14f70d56157d3592d5b83c22b27d3a0c47a09d7801a8ed0f2c8f4b2873",
++    "a5c81eae5a268c05cf12505d36b123ea840f77c7a392e586cc774d02d50c2789",
++    "ec63a08d6c599a3f19a88e46516d21f42a01d6f7c3dcc572a6ef14c6e97ac9fe",
++    "d343dfab98c4e1484e6902545e3b9f7da0c952a90e0130ca467cdc2df487ca23",
++    "b640d6a233f2d3f9080b5b248eb0981665b005a87653fbda3a69de9bccd1a16d",
++    "5030b7054e6302f019bbd1749126abffa96cab1894a10dd20d43a9e9e7a764f2",
++    "987fcee6cd22c33018ac84dc15c8503a85e37be3f29f9f09976c239dc3660607",
++    "c0ba5b8e5e48e23d8fcf919d82c629999dc71546efb50192b8274d8b580736a2",
++    "889762046ac4c6c8ae83b619c5e40029c2b98a0517d134107b215c69cd4cce38",
++    "2bc5bf2d25b3c09a30de35ca8f8ff3599eae5a4449686db418b79437e531c080",
++    "06d1a92f5c9142f2a6fa2836b35350ff09b6e609bc9cfdfb35c8362f8e594610",
++    "91b5a3987ba256e3da5b55530b084da7bbfab78429e0e1c95156dc2e0c47db2f",
++    "4423d834063bdc7a99f254e15d2866ddeb9d10c8c6ba3514af71424477b3545c",
++    "044e5d6433d52eaedeb04677abefe654fef78290920e980efdd689e9805422ab",
++    "eb84eac026f1f5dcfb29e43dcd07fc42ab4aaf4f18f6f9d7f457297f910917f2",
++    "024f9244d8b5187c4fd3258bcf987f67e9142722cc66628385a9117527b48e19",
++    "d23703128267f1a9c1697930b1bdf452da0bc59afde4fa72e5eb0a5208b80112",
++    "47adeec5fb29da673adeedf1cbc3cf742dbd2c97081133efaa6887728a63b998",
++    "39be18013b8e7b5d620c94b71a1ba7fa0600229ecc96cc42945ddfd09bc1fe4e",
++    "693c84ddcb890f67cd9a828a6af566a17be02299446017496dbfce4427000ba3",
++    "68adeac272068f142cc6ea858833b3fe228609c422b198350fb65edf9e57c9b6",
++    "ad2d2a33c9c821ac90dd22ef8755925c9ec743ecc7c15e48e2e3a4c17ec1ef06",
++    "a5abbe5ea3280ed3d1412f73a0816ffd2c10c4fa028110178b5b915cf7feee92",
++    "bbcc8350fbe2144016f638593c5b22c3eebc90497f7a329b48d5220a8457be2b",
++    "d31f4b2490af184d1c794eebaee042fb3dabb20ecb933bad1787c08a8e21c997",
++    "d8b93877cd26f6e4527b3bb0c99d4f8b20b1f94fd9a4cf4a0e7a30163751dba5",
++    "512c604cd341b555bf28a989369940acff44506cae2e7ea87b54c3a929c7a3e6",
++    "3136bee0c87f3472df8bc1863aa41469b02f67d29563d62d46ac923d93280813",
++    "a64369f4c54c44fee196ff4c16ed6d4511cb9fdd7299bfd2ef718d45749bb5a4",
++    "2cc81441f528583ef1f2aed1e0e03f4b771c72833a6a92b779b069566310b8ae",
++    "ff9bad957d59d99a6b95b7af64d09a23dc4c7a72a83ba122b5598fb864dbfc0d",
++    "939c04744dad472dceb1224912c412fca7300d809cd9a798be4feaa7ee4059e5",
++    "27d28d5c2699c1464486fa708d9142aef72a9a341a29be7beb211d8000b76d53",
++    "a931a930a2317a3ebd1ab44a3cf9b8dbf494ae3b08c72dc43fddfc6185b2f23d",
++    "032789c8162252157fc2b0ce182d9a7ce764eb4cb464587c58396ba5fc02176b",
++    "b84021e70e82b4426ea7fe1dceacaa5da04db63cb5805e1e976e4549f02a0ecb",
++    "642f0afd6e64cce7bffa21f7427ba523d01b2973afc1a97dd865a63d4cead9be",
++    "99a8dda59cebdfdfe6d8cd1a62031cac50f5f8c1fc7ce0d972321b105d7fef3a",
++    "4fcc2aa3e1ddd616740305797d7a769fff0e50bbef48f0f8d5f71c11c901b144",
++    "a752e3e06cfb98f15f56d4f0438ccf0d65804f06da55686cb4d02cad9d8682bd",
++    "1a3718b221d4967ec2cadcd5bffe4a0a2cacf3a76ca37b2e797373a3251019ce",
++    "6b134d02d9bc8239158eca2dc4414ea52fb42ba46a1fbab925f4a9b066135069",
++    "72632a94b820e02f079cc1bd2f4eb52c4cb513b083dcfa0244fe7f6c7aa873cf",
++    "e347d3f90c2231c1a3273b9e282e2416239b117ad2d066056865c4ff5189a06f",
++    "f2159a5dfe849fe3d58d13cbc24935d6bd30b1858104a8996e531895ee08f108",
++    "ea0345eee1165906d6411919ea0d0eb0f00f90934274acc9209b87a2ab59891b",
++    "3f1cc3b3d795f6550c6c8bd5153a994edfd58b3157114182f0f2e94667ab350d",
++    "8f1d1cedd4ed4b2e2f7ded12a2c6e9541ef8eb298074f3c84951a3457b0c60b2",
++    "186b3842a289375f4e41d7c40e5e64b04197d6cedc9215531b6ac1d960f97121",
++    "7d4d122eb32b7ac1376d6b6b00b1abe7f5edd6f984992bd967d5955fed100a2c",
++    "ba79eedf0ce2197504c0d79a358ed4b9a94101b0eb3b9cf84732a7e627b14b9f",
++    "37aba76ef7a30cf082665b28f6793dadbb686ff22953696cfae35b713d7881ff",
++    "1e87471f88a7e9c993389e0c81d4d09f16b5e3c7a9efb8a941ae9105f48c2e2c",
++    "e0c52acda5c113e43c41ac5380fba3f320438f3b250f3d57cd73b50b831bcb2b",
++    "d4b798ca86dca5bc9263b29651b43702c97b8bf540dde9e95a0f7551e17b86a6",
++    "d28e3230009ca041081db9a3ec6884d9d456e7d62f6e7233c478316606e8e004",
++    "b0769fe353774e62a93f16d15d821273878aa8a4c4bcb0d3a601b7583b2a5ce1",
++    "212df918c70947e32cdbf0dbb1ae2d9f348738da7d9a1af72312f272d1b0e36b",
++    "8c4772075312035389bf8fc94afd8575bb6ca07fdf7ca86e182e8a0a68544c5c",
++    "e48860ea0543f52342d4659b3863b731f64516881327fa6970b78f75a3413b16",
++    "70fb91e61fcedb4113eecb9cf2272025ad7b3979dad353a36aca73c1e3af9a10",
++    "efd2ab3f338a923843c481fb5e736ecf003be88f4d9f97e4803c43c30d669d4b",
++    "5ecbfec047bb0d5bf37f3956b069b7f45093b2b9601854dd5957f32b59c8ffcd",
++    "86a985993c2e373cc2192068dc56f7279b2052f5a1a401d542f8d3b72dec499a",
++    "591e08a50bb4716daf6aa1cdf38e75b689c325ed00d92b83d78939bebee325e5",
++    "34c426ebc0bd7ccfaf8661e8251b5e35a6a0e78ebe43e83be6d57734865b1ba6",
++    "9db734ca8f7e9d8373cc453b41c1a6ec8a217570432e217f0fdfe0e8fa64464f",
++    "c89a16569f706a71412f89514d0bba5f1946c6c1cd68f1030644dc5f52633977",
++    "8bc4fc297c68bf599e180f97b06dfdc945a48098e1f56488afa6401616547699",
++    "29f8ac8834436323f68bed02b5d75cb61e308eab3fa4543c057bbd6132fed45c",
++    "0a928bdf6150e7b9e6bad2727d82d1926564a4ea8976a389c6479d653706b7f9",
++    "43b1e34631e4ac978e5d34f92e2a69d8137dc40dd018f578ad40581d2e140368",
++    "1dc3ff31a877d3e27b23e8128e7e74b88ff28cb5e91fe123f287c2c9a274425e",
++    "12f5ee2bb953c82d33d1df2d0c9e3d05a967f8f04af53b2633bb93930bdcb1a3",
++    "1dfd666c0b4216a4e64f5605a5393ae07cbf073e78f429227ea00aab88473d73",
++    "668121653a953ca5ae3851a2b6c4962117d84184c075cfbb9cba02ba30f03a47",
++    "fbeafe842b3e52b0c307ac66097e8ae7e835496c54cb944ba0131c962cd3cb0f",
++    "db82668221e0e3cbe8e9bb8d658123d5cc54d6429be5cda25a49cd84e32231e2",
++    "589702fff4ca493cb86fbf04a78ca940798f07048da1a3023cb84da2421005bb",
++    "4814346bfc409da93f0d0eb994787593a3210318423897129dab640db5e6815c",
++    "f1a703eb6d18617bd1f4d755542645c8cbb5e3cb8c134ca6688a5c4b284bf8ac",
++    "11f90dcfb6d627233b9c3d31363cc27e56ea2834aedafff61b1f856e05c66b56",
++    "0cc24ce989278b8c195a5d5c449ec614a5a1a5a0257029d253da16dd77302998",
++    "06eb4dfc478d862646fc1c8c4e1b6962baacd0abeadeab2c3ebdb02f6cc4494d",
++    "316770dc862195ea13e939207c5026fc49612b8094ab3d6007a151e35327bfea",
++    "860d128bb72d47a69a68022e7ddd6fc3822ddda5005c1c619ebaeee7b57c3698",
++    "018e4a0f59cf7757db7f032805c661a4c540ce7662db74a540835bd5c457c122",
++    "d239ad76d9912a06f85c86b6fb650f9dafc6f4118bee530a859bcee880fed31c",
++    "2a51125cf045fa300b8d7bb4ac37aefe4bd28e8d04ace6875217b66c45ce179d",
++    "250a9b1dd8adcc88357e8be6a68cda3f4f0ad7c509152f8a0f703f7efd661941",
++    "354159118dec331349a10649441bdf6c5ce5ef9353f42f08b74ef26cb63d7ead",
++    "c5c084e6eb910925fcd0f3c22041890f1287ae3a04dd0d1ae29dfa21ab512a02",
++    "e85e63de0a7409a8f9746141312e64f1f26fad26f1c0a6fbc04d77779a5dcfb6",
++    "02399ac7826f06c3ea14c1b82eb25dfe46e348e4895ee0df107aa0121ee53cef",
++    "40aeedcf771feefe43d8199dc599f9c3824223d5bd28f830b16615414421911e",
++    "65d2f809251536022a4d57ed491f365310f10a0b402e20edca406a100907d1f5",
++    "24a5badb478f27458a632494954e0eebca7ae9cd224ddd11978ac7b3017ecee2",
++    "cc46413717b7801b85542f7f98bc68694f23d039f08abc8f7073d9436073cdbd",
++    "419db0ac5489b17c38d8dea5845573e353925921afc9c7fe5804d125db48c396",
++    "fe9dba8a45659784f27eb194054d88bd8fe2ae9f0c8f205c2ec18881e120b143",
++    "a2c4c068cac0ca61bb3334b80abebf4c053773ea334cdcf42010474caa8e1c8a",
++    "3a15dd62512102a012fb4b2c4d6b375f2a169d184c887f10bbcd141b209c6d48",
++    "16a3666c2410f925e0c05655d4e12f7ce8d0415e6b24fcc18684512dce162381",
++    "ec12f81daa120a126f544e9e0a645c7a689e014562c1bbb5f48a9fb88cd20c35",
++    "d441a5bbd3f070c07f2c8f6d10c8b1e15972ea28048cdef71dfe4c296fbe37be",
++    "29585db27d08f05790e0d2be20749936a353989afcc90155c8075c62df6d4531",
++    "410ee8598517b3b7fa94b873c445aa55610f4b1143445246bd29962c594a5671",
++    "f548711bc62408b0201714efe9608fcfcbfe0cdd6d8557178445386283a95764",
++    "7752928f825e38bb2d70be8a38c54b36c3b7a4b4eed7e1e8cf6675038764856c",
++    "8fe540f667acb24123cb245b279d6b59b62fd6768b1af8af4111013cc08b07b7",
++    "a6ae4ef8c6c87edcbf0061ed8bb8890e34591efbb8febc9d347ddd6b00917b28",
++    "c19d27392c396950666a7145d34f3d0982fb13e75f10985c4d76f1af2bfd51c8",
++    "9cd6daeba94b606ac43cc485067ab6d19a6e8aa8be1d91e00f2f377d70ddc4d0",
++    "c0f3dabf2cedcb12123dec71d78e868f2b444b30d108690206292eaa3c3ccc23",
++    "36c50aa6f0cfaa913d5fe8364a9921fb50f928fb4b631d57a8cd75007520bb05",
++    "e346e07ddb7365dd963e48a57c57256e1c1822c5725b8e1a93ec18241c54389e",
++    "8364a45cc8c868daf02deda63938d325e9232e6f4583dd5b5ee4d1b04047eac9",
++    "804e51326a7f3c537c272814f0b253b9673df351c27596000edd237c46818123",
++    "030d8688cef4d3a26efa754db97bd084b1dad90635a18cad759a3a4c6c0bd1ce",
++    "e5d7f8a050ca3cc353ae60315657542dfbb44d91ad75f8317026992dbf1002dc",
++    "4cd3086d7905e17e7bb8e9aca99b5d9da7fb6ef28f5aa3a60a72c5256585e10f",
++    "54bf14715af46f07a9b521239a6dc60d2f95fb5304217f4b45ef3e9650ab42a9",
++    "75eeb9a88663bd28034537edb0013cdc21edced7340aca47bf819d5c079cf812",
++    "bb7073d59e0cb70e4acabbd21f95875c3c530dfc75ef51c101192dd53588c167",
++    "bf450d2c1d498eeb263ff085423bcf90b609902c7ceb22d764fa5ed9149dd2a8",
++    "19a5cef6bbc84dfa95a66d8a0bcccec05e7f038d792b1f5ad0df36f5afd1e823",
++    "da199b411d374711d502a9e152a04047dfc39e8d4aec83c1f842dbf981c70bbc",
++    "e7ac6290aecbdaeeec06def32c9167485ed570775d1051b90c197ddd335b77d8",
++    "75a70693473f3a347b067309b150b1ac4d4f299fa11450a638a2d17b36b9ca9b",
++    "ee6c33bc6918810c8bb2f9f3d693ed8876426da793abd43c9ca167d8eb291ceb",
++    "6c98f22c8b5ab48fc799d125eba57d889190cdf711c5ccb479356a39b546ac65",
++    "88960c64a20d103b39bac339e79385560c5bc6dca08fe7f432d051fd634a85d3",
++    "4457c24d39d1c4a002716d637f7a7c95b418a7ed788126481f8bd0d6167975ec",
++    "d53ab56368749667ed9e2a44c987a4956eea6493fc161be6941ff1669a4be044",
++    "6ed1a48848506fc3f78329bcf8afa7eeb4dd3f907b0dbd33a483bbb07c8800de",
++    "4281597cbe8c27483c919556b58279b02933dade79b0d0e35de4eebe45002106",
++    "5dbb9f7a6ada37b1ad73689a4a7f8a357503640c7d62e66d2c7f2e06edcca9b9",
++    "faaf5687878193617e0e146fdffd9ae6424dcc6732fe81a078c9eee8130eba3a",
++    "fb090fe4505e62a42b35b12f15832be6bedfa81a3acd03c9a30f372fce3caaae",
++    "556b76d906bcf05a5cf9af18defd5adc7bfe6e15dbe74afa147820a4b71b294f",
++    "519fa73ba7f86b3e022c65083fd3a7bebfc72d71e756807f82a24c7b9f7420db",
++    "195e6cfca5ea48501afecbf43ef4023486499508302be2ab2b6c871dbbd7a2df",
++    "7613e9e8751c4a24cdbc3d9490f1d1c0456ad661871037d91e26f1507e782c10",
++    "6049881a588fd1d9f806fdf7cd1d0144a3686773f377cab07154db14a2416d02",
++    "8aff2fe9a767500f0147edcf732dac7c84d4e57465781831806a05b96050c810",
++    "c9cbf1d3e613ef9ef2b170bcd88474dc04564253745039670b0f072224934c1e",
++    "2e1ff068bde2edbf6a910b17b445d075c1759542b1d405984d92db8e551a6df9",
++    "14da33007fdc6068883a9a48c8e2cc90242d013beeba67b8fb450fbbbb95d3ae",
++    "7858b27f59e6a1dd59965472e5faa98674dfdc4c6628f195cd24ccd97676776c",
++    "e01528ffafa750ef3c933033b42f514934155ea31019daa104b9c10a53f2c07e",
++    "6c0e0df89513d933e2a93ec2b0c0d68c04bc7c796c0f44486d843aa60fe45c36",
++    "95b99589baee73a6b79266193eb72193a1ff19a677256bebcdcaf32f9618ebfc",
++    "f4f050d31280e9064acf6191de21502fc53b2fac0101aa8c898b23271455af33",
++    "c18828df1ebb3206980d28d874821d5b396c7cfab3e775224204cff173490fe6",
++    "475360778b0c59a38b4c13774527fb84d2e2e9ca13815f40e78818054c738523",
++    "492a77fa1e247b430b73cd42395bf3f845a8e81a88c5b9e214d1ac0b089ada03",
++    "8fa5c3a2f729e5b446d8214d652287da01c67a9c060f78120d70d6b30fa70b70",
++    "638c94e0a186fafdb09fc6be1bac7da9cb98b17019cf15136d9cd08108289bff",
++    "848201be28577a5216f79685af9353bbc137e5c1f983b4b6e366f754e1cc28a2",
++    "454c693692f50424ddb6f5dd28d4e60ca002a6f90892122cb3aecff8a0566161",
++    "4ae9b1315bfca7f0fe5a8e1d096de912b8e91d0815b69d0969fc2dd1d3bb9ddf",
++    "2bf388ea4eac2b88b1331ee9226b2ccbf82da5de19011d0a4d25ceab4443cb36",
++    "b6965163e1cff1627939793e523dcc481996c21d59b501f644912471d1523097",
++    "043706dad9ff31382caaaa7464e1afbc436502a21cf372dfc440b17f45008a79",
++    "f0c73d6ab918e04efc390bbe2416eb20dded60d451d10292e5ebf99244acd977",
++    "6e43992a8b3b4c435e0c6dd8435b507234bbc04b9c94cf1693cc473f06c5902e",
++    "55da6fbb2f5d1b14774e77fc495b48720c17b4a372b0ec7a0d25286d4c1f491b",
++    "95ef2e8ce16d95fa48efacf97cb24b2303178af92d580eedc1e2930aa41f2a06",
++    "88baab317d3096823c6d36af8044dbf46e9a5cc2dded78c6b4033d18ebe2d89e",
++    "74394dd8695381f0f15105c8393b9dff811997acceedcb225dc8111c1ae4f01d",
++    "be385dc7107f0ed9011cb2f5793b5f8a9365f1da7947004eda415b5b292dc77e",
++    "a362157e7938aa721e35f54ce3be3181009440b8331b8572fcc2e5768af5d32c",
++    "422423811a633f3bf606e48184077a427b9c6612267bcce8f2f1931b27776bc1",
++    "6d5e362f25c574a311b36df4adc0bebcd99a2ed78e7cc8cdbdfdb4eaf4416291",
++    "9997fb8a8627c3d1aa5880c84f885bcb6790f1c6aada2b909d21e7f19e9085f2",
++    "f027ac9499c26b6f1a78b78ca066809b4f16dadbbb3c35ba888c48a59bde5f47",
++    "47b120718fae13ffb3a7fa9af070fa36c55316a30d5a461e4ecb796050b21831",
++    "17c39d132fe4d4db6e7e6b0eefbb1039e9edf06a4e9d1c317cff8d374b136190",
++    "731636c3bc8f2dc12e588268d3b70ed7bca59864832943cf325c09e7ae5ffe44",
++    "aa6314d52cb5c526a408c730bdd7951cfba020e238643d891311ee813a0619d4",
++    "40c6095ccd2178e46564819a4daeb462ed9d4181f023c765b072a728a70531eb",
++    "ead30d8c30384f383db08fd6b152e2a45b5f2dd6ee1fefa02d57fc86c8d40f7b",
++    "5b260b7642009a3e1df950e242e77fadff63e406b47f263e85cd2484ca425f0d",
++    "081e8fd095a7d9a9ed66940019b913b3918fe003d1392bf2afaa6006c7283e03",
++    "984d261085ca7d5062b65ba9bfc52f614226c9f21d6b49eaaf2bf747e0e6be5a",
++    "80c07a462c75ab676cd17cab0fdaade6d527a6eac09d32ecde265a572fd76870",
++    "67e054f86bd908ca4d17390824ba3981ad9cf2acf2da1fde722c34cc96f0ae0e",
++    "4a64787f0dc56cccb61f6dacdcf332f24b2d008182ae3210965d1f620c147f1a",
++    "fb3ad08ae0a6130a72c2febbf9674946f7a37cd5b30615df1063cc6940f3b07e",
++    "4f8db4a932fe757679bd1bd6261989c0214994aecacae9efe13fdb4941ebeae6",
++    "e3e5da2644fc24c6e70bfd8f7a5921fb8b1674e130353c7a201fcd92713ad4c3",
++    "9d4294b501a50b05ad93175086f1b9feb2a29e4ca7ba60c5211d2e2609ccd9b5",
++    "7b7659860f2275dac1cdb35a2a9004fb28d7297361e05cd8973453c36baae6b3",
++    "63cba65014b673a7c22a802e763fcd9976f499d0754b77fed816436002036ac2",
++    "eaaf0240dc78794d24cb2889b721060c82041169e66df34bf2f30fbde423fc49",
++    "112055565729cff03e0aa6d249ee9f976667bd4a45e8c4972bda64c0cd6237fe",
++    "0df13f6283e1446cc1d57ace6967bc861360dedf31aa1bd8542f085372d60445",
++    "f4d0cbe5925f3306807fe3541c78b387411e92d73cf8f7b55fe57f3593693e0c",
++    "616edfd018c8e41ecd92cd1408d10af8fc1b6304be1c8f34ba5a800b0bd3167a",
++    "9a6b004f9f11f3a6574f144571ea687fa02302c8a4295ba15df538eee4a41131",
++    "e18f7db91dd807eae888177654e768c70e5b95ef69f24778dbd03a3cf90fa046",
++    "0ce9c5aef220e138046732ca57b315e33c10adad3b210468c1300bce4dc8200b",
++    "51d1ac8a4c8d52dbd227ce1c71e3f1d5efc7c6797c6704e1c0c7d977740ea8dd",
++    "c4c41636ae5784fcdf9d1e0a298547c266fb1e4fdbf9eed6c45237953a967a53",
++    "5bc3e6f34c587353f17571b3b71ffa712da2c9e9d8a388dec480053d0f936d16",
++    "ecd3721e0c4745084c592bab83c4901fa9b2de61a461868e7f36b146a53099d6",
++    "ec3323a51d047108c8b338291d56296e26c33438974aecefed55253315c44808",
++    "aa42c8967ab5b70d3e42dd6dd6e4b6f46db0355e3aa70fff4ccc0a94cc1a4080",
++    "d2ce4aae20d47c89bf50d602d58d509935567ced0326063fcfd09dfc7cf04ac9",
++    "a0d2b550ca8b5b3fdbf2817c9945bb8573455fd34d9bf823e18e54edb0504000",
++    "cae31452bf0b897902580e4147c7387fc5f05dd97a6e3c69e354ee3c2692d116",
++    "a50dc8b5f3f5efdce3757b6b022c47f8b9ea5772f1d939fbd206b0d056243e6f",
++    "f98b2167285cd64a27ecbabe397206cfa93c1ac1fdda26c10ac7f17bd24a92ee",
++    "15a73bd95f6a0ed41a5f51b5ab86e173af762e3145c5bb303ad1146a9ea7b60b",
++    "3a98991c82ff36ebcd3c5d48813a8b01f349e28e88b71f453505882b75cf1ff1",
++    "2ad1b776f1ef7df3b53a7b14267741f713186c7d8e03916b7e5308f50351bad5",
++    "315b49dc647f7f28d3d754dd9d7daac047ba0c23c8ddcad394075b9cec5dc751",
++    "6ce48bb7b270b7704de81b49e982c8f0a04a8c6e1010e3eb0ede5970676e14c8",
++    "35b78332312adb9242b75472efe9ba7c57eaa77192df87cbce679e95df5a9eee",
++    "df9aec5f44fa1e346a331b999165d1220f4b2f33113d752cc82eb4a57debd4d5",
++    "e19086b6c098aa4d67caa14037e7902a78c2210c0b71c74eadb5695585350171",
++    "44dfe4a2628ff7dbc5abf4d06739020648bd19d1e2eb442053252419e93c3de6",
++    "489fd1a052d23c15bb43165c2ecc6a3d6b9e883e79f120183cea543c0de6532b",
++    "16d2cbedcbb6d52c9feda3a5ba780683fe17440b1c45988324fdc836b771972f",
++    "58fdd06ee3d965735283da6c61d5f36aa94cf1f1561e7a7dca9f18f0e43c977f",
++    "b66e4c57d175600feccf4eb2ad6513dfc077b20e65a7365a1d3085415d489467",
++    "744320a1744dd086205eebdf9bb58eb8e85a7e75dc03d1cbee0e53013d635257",
++    "12cf5d3a6ed32c568ffff41a6302b921f1fadb67eb6ca4e7400428ed08ff0edf",
++    "5ac297b6939f0eab4e014c5d456b7bac28f059d331c17d3bae829d6be30e4d42",
++    "6d7b66028a5930b3d0ed2ccd5604f65a9bff0f327e7cd6ddb22184f9efecd9db",
++    "3e3d49e2e75d9f243e5b4f726c6e94d5753d49b594b3871ce4305f8894a70f46",
++    "8ed9eea746280e0f6145e571be5f8cd393b2353a2dfe906335a90aa3847510b3",
++    "74d9550c10111b2685dd41e7ed66ccac8f3dec0f2c0524a9524c7356a637e732",
++    "7a00d4f8e7703d09d676f3a18c2b72a748ee32f4026512994a4c8a63a58f8bbf",
++    "4de249fc704e908d6570b97336b7d9025ba84ac050684af7167e2bc461055097",
++    "a1e3bf55a0a9fc28a90bac679734aa6aaa7c5997ed124065058944ea480d0fba",
++    "8d2992300f3d2cc13445b6ac38250aa36480a29b52890577bfe0a62a9b161437",
++    "5d2c9309784facc4d0198aa0380d7bb4591fa99690e06815c19b9cf75cb4323d",
++    "59a91d92792bde0238296cb342c4b7cef3c80051838cf9c265a9ddef7cc0783d",
++    "fff99ab2330f5482fdd3292c7cd4990f5a4c65a6f942cfa4ce85912dba4714bc",
++    "608e07ada09206f0f81736b36c69bad416bfe20110b636ee96a2a9d177ab8770",
++    "f0529ed89107755067695b679f788deb2457fc27fcaeecd9e4f828f72f8cf830",
++    "6d0b46a7e42719b754efbc20fd81aaa26c0b87a7a24be3405b44d0785f14ce1f",
++    "73656f3e1aa7cee8de90adc87f06ab8ed41f9930d2226abae76953c055dd4133",
++    "1226642cd4b4845ea9ea75862590afc1b1ef0b150038bd051d6aeccb38fbe7b4",
++    "f5af9174ab4881f66ef47775b5e620a57ca84e121968ad8d72fc0821fcd03b54",
++    "4a4e973364a46d505d236cf58dce50ffec7108af0d8d3d4f5d70f96a4d7bd2e6",
++    "a8cc0b46de7cb5096f037090f1adf8b7367d1af7aeeeea7f1ee1ea5e5304b0df",
++    "bedaa4be70e9927dcb6d1e7c48526b2d20a78b0aabbc25a2865c5482389c8ec1",
++    "b075a4587e80eb425eac90ce7401de1e2a877ed1e10005e37a28dca6f6fb5865",
++    "4725964cd9ac8817e2cc59e05b4ddb27f734e571c230dc9cf892382888a6e093",
++    "51e3d51b7169328c5919ddcb3e75c4c93220f02d7fa8c23e026f96f9c19ccbd0",
++    "6fda89acc346d51012caf95b04ef3cdb100156b4edb5b215cfe980b3d074027b",
++    "17dfbce7c1a1f5f57aa0067790cedc4aad576de03e35e3416fbace3f74075cc3",
++    "e4bf7ec4063c6a8aa18a817b45b03839bca11bef357d855fb1a7ecbc771ae4fd",
++    "2ea46f7ea4dd4757004b32f6733d05963f864821f7f549ecfd4bc00f23c58f94",
++    "7188684083bc2005ec93bca5ca9beed50a2a9f2a8e453643e3096aa93aabe691",
++    "f0283ac64941015ad5f53c6744057efabac25cba20766fb29582adbda938a8a5",
++    "d7ab783b183bbccdbcdaec1388ecaca4a9e580859f56387bf0ed6815c3a07e5e",
++    "2cf28c7604a517677d2457b6c45188f83dfc319ff5c51baea887be5d6a67aa6c",
++    "9d6d5623a3e51043d9b289afa632beae156199f675e825fae0148bd42f48511e",
++    "f4eb90898ede358ad792abc9ed6c0c2366b267f8b9946c43acc11484d8c39933",
++    "54bc104bad5504c294ec989f2282981abfba4f4c04c9e81a04c5044b4690af91",
++    "e3fc783f1878cdc0701b972749eb8b9e27616e5d66251159718a4c7490a19047",
++    "c58f10faa3cdb7c8d08c6762299f9ddbacb3443a0136ceeb85796591d77c567f",
++    "0b3e7cb34796b7c231fcd2de9b7a268d09d38bbb06cf2dabf09cba40fe3fd612",
++    "27a4eef8161cc0c39966136c56f2c03125cee6c9b4aacc7850df3ff1e3424c14",
++    "7ee1fa3ea07cc92457226d68abe371568a35ce5a0a8bd887625f070fcab87436",
++    "ae6a07c9fd379e409cb11c477746fefd5521979a986ed215deb9fa7bcc4d122c",
++    "4af811f4d266478ec7f9c49e19be8a0dc4e406398f608f60961acea3c05157e3",
++    "ad39a931d42584db820c5e76d21a7b2768cfd39fd81c45a7ecf7bb5e31c9dda0",
++    "cbbe8eb7584b4f464c0842511b733107071bf33c518f4242998bbdbad8febd5f",
++    "ce88315c9f0736bca7fece0baf9a3c603940e5d1b88047fbac11fc5c70a605e7",
++    "a3f0e642673686c26ec512da1668c1be5148a85c2e609589fd8599bd3136cb9c",
++    "ca4a056aaea5a2a4bd7ba05eff09bf58c4535a9ecb287154f482269657a1d554",
++    "37682aa4494135b09bf1b82b3dfc3c40d7f0d199551855f70bbc75162efd1188",
++    "5815803b91b172dd90cbd16b116fbcda55aa43dfe8b93eada4d7572ed8846884",
++    "0c6f38d642af67010089210665dbeb29ecb0b563dda8f749da2db737eba3170e",
++    "1c661283f74a234ebf8f63a69d80e0e2bfe68fcf4bacc6ea620630100d2f3471",
++    "7653742ba9a98ace17c54b8943affde0134a343f2a8fa29021372a148df27a4d",
++    "e9eaa563ecdbe8e45551f0c7103d89eab630cbe80f75bc9a35756dd047b960e6",
++    "a25c1ce24b06456425a246234faceaedcb5a922cbe7205d9c22ccdab4b0c1162",
++    "82af8c54f5b57b3a0df7e68861e73b25b71f09779dc0db27c0d0662b8409f1a0",
++    "7915a550a84d3b5e8f881feb150e52cd8f6f8f6ec98b7b0f32479404926441d0",
++    "e4c8acd13b131159465bfe7b4aef18ee07b5b05763febe98c926a96a13851432",
++    "004383aac08a3a3cc404ee192ef775ceb3660e8d456e0cf3c845a23d0b2c747e",
++    "1a19bf2607c0b7438c14b9bd77688eac18b477e97a2cc602db8ea2841d7fa2f1"
++  ]
++}
 diff --git a/projects/cards/romfs/fonts/Selawik-OFL.txt b/projects/cards/romfs/fonts/Selawik-OFL.txt
 new file mode 100644
 index 0000000..ac8fdb9
@@ -1091,6 +1651,189 @@ GD&)VU2tQE(
 literal 0
 HcmV?d00001
 
+diff --git a/projects/cards/src/BootClip.cpp b/projects/cards/src/BootClip.cpp
+new file mode 100644
+index 0000000..ff7553a
+--- /dev/null
++++ b/projects/cards/src/BootClip.cpp
+@@ -0,0 +1,94 @@
++#include "BootClip.hpp"
++#include <nxui/core/Renderer.hpp>
++#include <nxui/core/ThreadPool.hpp>
++#include <SDL2/SDL.h>
++#include <SDL2/SDL_mixer.h>
++#include <webp/decode.h>
++#include <switch.h>
++#include <fstream>
++namespace cards {
++BootClip::~BootClip() { stop(); }
++void BootClip::open(const std::string& path) {
++    m_active=true;m_playing=false;m_opened=Clock::now();
++    m_loading=std::async(std::launch::async,[path]() {
++        nxui::moveToWorkerCores();svcSetThreadPriority(CUR_THREAD_HANDLE,0x3B);
++        auto data=std::make_shared<Data>();
++        std::ifstream file(path,std::ios::binary|std::ios::ate);
++        const auto size=file.tellg();
++        if (!file || size<40 || size>96*1024*1024) throw std::runtime_error("Startup asset missing or invalid");
++        data->bytes.resize(static_cast<size_t>(size));file.seekg(0);
++        if (!file.read(reinterpret_cast<char*>(data->bytes.data()),size)) throw std::runtime_error("Startup asset truncated");
++        data->bank=boot360::parse(data->bytes);
++        return data;
++    });
++}
++void BootClip::queue(unsigned index) {
++    if (m_decoding.valid() || !m_data || index>=m_data->bank.count) return;
++    auto data=m_data;
++    m_decoding=std::async(std::launch::async,[data,index]() {
++        nxui::moveToWorkerCores();svcSetThreadPriority(CUR_THREAD_HANDLE,0x3B);
++        const auto& b=data->bank;
++        const auto* src=data->bytes.data()+b.offsets[index];
++        const auto size=b.offsets[index+1]-b.offsets[index];
++        int w=0,h=0;
++        if (!WebPGetInfo(src,size,&w,&h) || w!=int(b.width) || h!=int(b.height)) throw std::runtime_error("Invalid startup image");
++        Frame frame;frame.index=index;frame.pixels.resize(size_t(w)*h*4);
++        if (!WebPDecodeRGBAInto(src,size,frame.pixels.data(),frame.pixels.size(),w*4)) throw std::runtime_error("Startup image decode failed");
++        return frame;
++    });
++}
++bool BootClip::update(nxui::GpuDevice& gpu,nxui::Renderer& renderer,bool audioReady,bool sound,int volume) {
++    using namespace std::chrono_literals;
++    try {
++        // A skipped startup's jobs finish off-thread, then release their buffers.
++        if (!m_active) {
++            if (m_loading.valid() && m_loading.wait_for(0s)==std::future_status::ready) (void)m_loading.get();
++            if (m_decoding.valid() && m_decoding.wait_for(0s)==std::future_status::ready) (void)m_decoding.get();
++            return false;
++        }
++        if (m_loading.valid() && m_loading.wait_for(0s)==std::future_status::ready) { m_data=m_loading.get();queue(0); }
++        if (!m_data) return true;
++        if (m_decoding.valid() && m_decoding.wait_for(0s)==std::future_status::ready) { m_ready=m_decoding.get();m_haveReady=true; }
++        const auto now=Clock::now();
++        bool starting=false;
++        if (!m_playing && m_haveReady) {
++            // Start image and audio together. Audio failure must not trap HOME.
++            if (sound && !audioReady && now-m_opened<3s) return true;
++            if (audioReady && sound && m_data->bank.audioSize) {
++                auto* rw=SDL_RWFromConstMem(m_data->bytes.data()+m_data->bank.audioOffset,m_data->bank.audioSize);
++                if (rw) m_sound=Mix_LoadWAV_RW(rw,1);
++                if (m_sound) Mix_Volume(0,MIX_MAX_VOLUME*std::clamp(volume,0,100)/100);
++            }
++            m_started=now;m_playing=true;starting=true;
++        }
++        if (!m_playing) return true;
++        const double elapsed=std::chrono::duration<double>(now-m_started).count();
++        if (elapsed>=m_data->bank.duration()) { stop();return false; }
++        const unsigned wanted=m_data->bank.frameAt(elapsed);
++        if (m_haveReady && m_ready.index<=wanted) {
++            auto texture=std::make_unique<nxui::Texture>();
++            nxui::GpuDevice::EssentialScope essential;
++            if (!texture->loadFromPixels(gpu,renderer,m_ready.pixels.data(),m_data->bank.width,m_data->bank.height)) {
++                stop();return false;
++            }
++            m_texture=std::move(texture);m_shown=m_ready.index;m_haveReady=false;m_ready.pixels.clear();
++            if (starting) {
++                m_started=Clock::now();
++                if (m_sound) Mix_PlayChannel(0,m_sound,0);
++            }
++            // Follow real elapsed time if decoding ever falls behind the sound.
++            queue(std::max(wanted,m_shown)+1);
++        }
++        return true;
++    } catch (const std::exception&) { stop();return false; }
++}
++void BootClip::draw(nxui::Renderer& renderer) {
++    renderer.drawRect({0,0,1280,720},{0,0,0,1});
++    if (m_texture) renderer.drawTexture(m_texture.get(),{0,0,1280,720});
++}
++void BootClip::stop() {
++    m_active=false;m_playing=false;
++    if (m_sound) { Mix_HaltChannel(0);Mix_FreeChunk(m_sound);m_sound=nullptr; }
++    m_texture.reset();m_data.reset();m_ready={};m_haveReady=false;
++}
++} // namespace cards
+diff --git a/projects/cards/src/BootClip.hpp b/projects/cards/src/BootClip.hpp
+new file mode 100644
+index 0000000..320f2d2
+--- /dev/null
++++ b/projects/cards/src/BootClip.hpp
+@@ -0,0 +1,32 @@
++#pragma once
++#include "BootFormat.hpp"
++#include <nxui/core/Texture.hpp>
++#include <chrono>
++#include <future>
++#include <memory>
++#include <string>
++struct Mix_Chunk;
++namespace cards {
++class BootClip {
++public:
++    ~BootClip();
++    void open(const std::string& path);
++    bool update(nxui::GpuDevice& gpu,nxui::Renderer& renderer,bool audioReady,bool sound,int volume);
++    void draw(nxui::Renderer& renderer);
++    void stop();
++private:
++    struct Data { std::vector<std::uint8_t> bytes; boot360::Bank bank; };
++    struct Frame { unsigned index=0; std::vector<std::uint8_t> pixels; };
++    using Clock=std::chrono::steady_clock;
++    std::future<std::shared_ptr<Data>> m_loading;
++    std::future<Frame> m_decoding;
++    std::shared_ptr<Data> m_data;
++    Frame m_ready;
++    std::unique_ptr<nxui::Texture> m_texture;
++    Mix_Chunk* m_sound=nullptr;
++    Clock::time_point m_opened{},m_started{};
++    bool m_active=false,m_playing=false,m_haveReady=false;
++    unsigned m_shown=0;
++    void queue(unsigned frame);
++};
++} // namespace cards
+diff --git a/projects/cards/src/BootFormat.hpp b/projects/cards/src/BootFormat.hpp
+new file mode 100644
+index 0000000..3add3fe
+--- /dev/null
++++ b/projects/cards/src/BootFormat.hpp
+@@ -0,0 +1,39 @@
++#pragma once
++#include <algorithm>
++#include <cmath>
++#include <cstdint>
++#include <stdexcept>
++#include <vector>
++namespace cards::boot360 {
++struct Bank {
++    std::uint32_t width=0,height=0,num=0,den=0,count=0,durationUs=0,audioSize=0,audioOffset=0;
++    std::vector<std::uint32_t> offsets;
++    unsigned frameAt(double seconds) const {
++        return static_cast<unsigned>(std::clamp(std::floor(seconds*num/den),0.,double(count-1)));
++    }
++    double duration() const { return durationUs/1000000.; }
++};
++inline Bank parse(const std::vector<std::uint8_t>& bytes) {
++    const char magic[8]={'N','X','B','O','O','T','1','\0'};
++    if (bytes.size()<40 || bytes.size()>96u*1024u*1024u || !std::equal(magic,magic+8,bytes.begin()))
++        throw std::runtime_error("Invalid startup bank");
++    auto u32=[&](size_t p) { return std::uint32_t(bytes.at(p)) | std::uint32_t(bytes.at(p+1))<<8 |
++        std::uint32_t(bytes.at(p+2))<<16 | std::uint32_t(bytes.at(p+3))<<24; };
++    Bank b; b.width=u32(8);b.height=u32(12);b.num=u32(16);b.den=u32(20);b.count=u32(24);
++    b.durationUs=u32(28);b.audioSize=u32(32);
++    if (b.width!=1280 || b.height!=720 || !b.den || !b.num || b.num>120000 || b.den>10000 ||
++        double(b.num)/b.den>60.01 || b.count<1 || b.count>1200 || b.audioSize>4u*1024u*1024u ||
++        b.durationUs<1 || b.durationUs>20000000 || std::abs(b.duration()-double(b.count)*b.den/b.num)>0.1)
++        throw std::runtime_error("Unsupported startup bank");
++    b.audioOffset=40+(b.count+1)*4;
++    if (std::uint64_t(b.audioOffset)+b.audioSize>=bytes.size() || u32(36)!=b.audioOffset+b.audioSize)
++        throw std::runtime_error("Invalid startup table");
++    for (unsigned i=0;i<=b.count;++i) b.offsets.push_back(u32(40+i*4));
++    if (b.offsets.front()!=b.audioOffset+b.audioSize || b.offsets.back()!=bytes.size())
++        throw std::runtime_error("Invalid startup bounds");
++    for (unsigned i=0;i<b.count;++i)
++        if (b.offsets[i+1]<=b.offsets[i] || b.offsets[i+1]-b.offsets[i]>8u*1024u*1024u)
++            throw std::runtime_error("Invalid startup frame");
++    return b;
++}
++} // namespace cards::boot360
 diff --git a/projects/cards/src/Dashboard360.hpp b/projects/cards/src/Dashboard360.hpp
 new file mode 100644
 index 0000000..4c5e392
@@ -1147,10 +1890,10 @@ index 0000000..4c5e392
 +} // namespace cards::dash360
 diff --git a/projects/cards/src/Dashboard360.inc b/projects/cards/src/Dashboard360.inc
 new file mode 100644
-index 0000000..122b952
+index 0000000..8ba8af7
 --- /dev/null
 +++ b/projects/cards/src/Dashboard360.inc
-@@ -0,0 +1,380 @@
+@@ -0,0 +1,362 @@
 +// Included inside namespace cards, after CardsActivity's drawing helpers.
 +bool CardsActivity::dashLibrary() const {
 +    return m_dashTab == 3 || m_dashTab == 4 || m_dashTab == 6;
@@ -1374,25 +2117,7 @@ index 0000000..122b952
 +}
 +
 +void CardsActivity::drawDashBoot(nxui::Renderer& r) {
-+    const float t=3.2f-m_dashBoot;
-+    r.drawGradientRect({0,0,1280,720},{0.98f,0.98f,0.98f,1},{0.78f,0.81f,0.79f,1});
-+    const float appear=nxe::ease(t/0.75f);
-+    // Original, procedural introduction: no Xbox video or logo is bundled.
-+    for (int ring=0;ring<3;++ring) for (int j=0;j<64;++j) {
-+        const float a=j*6.2831853f/64.f+t*(1.6f+ring*0.3f);
-+        const float b=a+6.2831853f/64.f;
-+        const float radius=(160.f-ring*15.f)*(1.f-0.48f*nxe::ease((t-1.f)/1.4f));
-+        const auto point=[&](float v) { return nxui::Vec2{640+std::cos(v)*radius,305+std::sin(v)*radius*0.42f+std::cos(v)*ring*9}; };
-+        r.drawLine(point(a),point(b),{0.23f+0.10f*ring,0.68f+0.06f*ring,0.05f,appear*(0.3f+0.5f*j/64.f)},7.f-ring);
-+    }
-+    r.drawCircle({640,305},66*appear,{0.89f,0.91f,0.88f,1});
-+    r.drawCircle({628,290},44*appear,{0.99f,1,0.98f,1});
-+    const float mark=nxe::ease((t-1.15f)/0.65f);
-+    icon(r,"home",640,305,76,{0.23f,0.57f,0.03f,mark});
-+    const std::string title="HomeNX 360";
-+    textMid(r,m_fDashNav,title,640-measured(m_fDashNav,title).x/2,440,{0.28f,0.31f,0.28f,mark});
-+    textMid(r,m_fBody,"A / B  Skip",565,640,{0.42f,0.45f,0.42f,0.8f},0.8f);
-+    if (m_dashBoot<0.35f) r.drawRect({0,0,1280,720},{0.72f,0.76f,0.69f,1.f-m_dashBoot/0.35f});
++    m_bootClip.draw(r);
 +}
 +
 +void CardsActivity::drawDashboard(nxui::Renderer& r) {
@@ -1628,84 +2353,39 @@ index 0000000..0ef3056
 +  }
 +} nxeNavigationChecks;
 +}
-diff --git a/tools/__pycache__/package_dashboard360.cpython-312.pyc b/tools/__pycache__/package_dashboard360.cpython-312.pyc
+diff --git a/tests/startup360_test.cpp b/tests/startup360_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..ed921c60d3d9cf80637d592db493d143d5b2052e
-GIT binary patch
-literal 5772
-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
-Yi+*1@)-~5|kjtpKdW+mn&Gnf67hT!J5dZ)H
-
-literal 0
-HcmV?d00001
-
+index 0000000..f750eb0
+--- /dev/null
++++ b/tests/startup360_test.cpp
+@@ -0,0 +1,24 @@
++#include "../projects/cards/src/BootFormat.hpp"
++#include <cassert>
++#include <fstream>
++#include <iostream>
++#include <iterator>
++int main(int argc,char** argv) {
++    assert(argc==2);
++    std::ifstream f(argv[1],std::ios::binary);
++    std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(f)),{});
++    const auto bank=cards::boot360::parse(bytes);
++    assert(bank.count==288 && bank.num==30 && bank.den==1);
++    assert(bank.frameAt(0)==0 && bank.frameAt(1)==30 && bank.frameAt(99)==287);
++    assert(bank.frameAt(-1)==0);
++    assert(bank.width==1280 && bank.height==720);
++    assert(bank.duration()>9.60 && bank.duration()<9.63);
++    auto rejects=[](const auto& data) { try { (void)cards::boot360::parse(data);return false; } catch (...) { return true; } };
++    auto bad=bytes;bad[0]=0;assert(rejects(bad));
++    bad=bytes;bad[20]=bad[21]=bad[22]=bad[23]=0;assert(rejects(bad));
++    bad=bytes;bad[24]=255;bad[25]=255;assert(rejects(bad));
++    bad=bytes;bad[40]=0;bad[41]=0;bad[42]=0;bad[43]=0;assert(rejects(bad));
++    bad=bytes;bad.pop_back();assert(rejects(bad));
++    assert(rejects(std::vector<std::uint8_t>(bytes.begin(),bytes.begin()+39)));
++    std::cout << "Startup bank, 288-frame timing, audio bounds and malformed-file checks passed\n";
++}
 diff --git a/tools/package_dashboard360.py b/tools/package_dashboard360.py
 new file mode 100644
-index 0000000..b4872a4
+index 0000000..c088b5a
 --- /dev/null
 +++ b/tools/package_dashboard360.py
 @@ -0,0 +1,76 @@
@@ -1734,7 +2414,7 @@ index 0000000..b4872a4
 +    'switch/SwitchU/bin/cardsnx.nro': release / 'CardsNX.nro',
 +    'switch/SwitchU/bin/homenx-loader.nro': release / 'HomeNX-Loader.nro',
 +}
-+for folder in ('fonts', 'icons', 'shaders', 'certs'):
++for folder in ('fonts', 'icons', 'shaders', 'certs', 'boot'):
 +    base = root / 'build/cards-romfs' / folder
 +    if not base.is_dir():
 +        raise SystemExit(f'Missing CardsNX assets: {base}')
@@ -1785,3 +2465,53 @@ index 0000000..b4872a4
 +    z.writestr('switch/SwitchU/dashboard360-build.json', manifest_text)
 +    z.write(root / 'README-360.md', 'INSTALL-360.md')
 +print('Packaged preview NRO and HomeNX update:', output)
+diff --git a/tools/prepare_startup360.py b/tools/prepare_startup360.py
+new file mode 100644
+index 0000000..086c445
+--- /dev/null
++++ b/tools/prepare_startup360.py
+@@ -0,0 +1,44 @@
++#!/usr/bin/env python3
++"""Preserve a startup recording as lossless WebP frames plus PCM sound."""
++import argparse,hashlib,io,json,struct,subprocess,tempfile
++from pathlib import Path
++from PIL import Image
++p=argparse.ArgumentParser(description=__doc__)
++p.add_argument('input',type=Path);p.add_argument('output',type=Path)
++a=p.parse_args()
++info=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(a.input)]))
++v=next(s for s in info['streams'] if s['codec_type']=='video')
++num,den=map(int,v['avg_frame_rate'].split('/'))
++width,height=1280,720
++with tempfile.TemporaryDirectory() as tmp:
++ wav=Path(tmp)/'audio.wav'
++ subprocess.run(['ffmpeg','-v','error','-i',str(a.input),'-vn','-ar','44100','-ac','2','-c:a','pcm_s16le','-y',str(wav)],check=True)
++ command=['ffmpeg','-v','error','-i',str(a.input),'-map','0:v:0','-vf','scale=1280:720:flags=lanczos','-vsync','0','-pix_fmt','rgb24','-f','rawvideo','pipe:1']
++ child=subprocess.Popen(command,stdout=subprocess.PIPE)
++ hashes=[];frames=[]
++ try:
++  while True:
++   raw=child.stdout.read(width*height*3)
++   if not raw:break
++   if len(raw)!=width*height*3:raise ValueError('Truncated video frame')
++   image=Image.frombytes('RGB',(width,height),raw)
++   blob=io.BytesIO();image.save(blob,format='WEBP',lossless=True,method=3)
++   data=blob.getvalue()
++   # Verify every encoded frame against the resized source pixels.
++   if Image.open(io.BytesIO(data)).convert('RGB').tobytes()!=raw:raise ValueError('Lossless frame verification failed')
++   frames.append(data);hashes.append(hashlib.sha256(raw).hexdigest())
++  if child.wait()!=0:raise ValueError('Video decoder failed')
++ finally:
++  if child.poll() is None:child.kill();child.wait()
++ audio=wav.read_bytes();offset=40+(len(frames)+1)*4+len(audio)
++ offsets=[offset]
++ for f in frames:offset+=len(f);offsets.append(offset)
++ duration=round(float(info['format']['duration'])*1000000)
++ header=struct.pack('<8s8I',b'NXBOOT1\0',width,height,num,den,len(frames),duration,len(audio),offsets[0])
++ a.output.parent.mkdir(parents=True,exist_ok=True)
++ with a.output.open('wb') as out:
++  out.write(header);out.write(struct.pack('<'+'I'*len(offsets),*offsets));out.write(audio)
++  for f in frames:out.write(f)
++ report={'source_sha256':hashlib.sha256(a.input.read_bytes()).hexdigest(),'source_size':[v['width'],v['height']],'playback_size':[width,height],'frame_rate':[num,den],'frames':len(frames),'duration_us':duration,'resampling':'Lanczos to Switch logical 1280x720; no cropping or overlays','frame_encoding':'lossless WebP; every decoded frame compared with resized source RGB','audio':'PCM 16-bit stereo 44100 Hz','bank_sha256':hashlib.sha256(a.output.read_bytes()).hexdigest(),'frame_rgb_sha256':hashes}
++ a.output.with_suffix('.json').write_text(json.dumps(report,indent=2)+'\n')
++ print('Verified',len(frames),'lossless frames;',a.output.stat().st_size,'bytes')

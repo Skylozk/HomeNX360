@@ -754,6 +754,8 @@ bool CardsActivity::onCreate() {
         return out;
     });
     m_retryIn = 1.2f; // the shelf is covered by degrees, starting right away
+    if (m_dashBoot>0.f && m_settings.motion) m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
+    else m_dashBoot=0.f;
     m_intro = m_settings.motion ? 0.f : 1.f; // the cards rise in (the game's picture lets go first: see onUpdate)
 #ifdef SWITCHU_MENU
     if (m_atBoot && m_settings.lockScreen) lock();
@@ -828,6 +830,7 @@ void CardsActivity::perfLine(const std::string& line) {
 }
 
 void CardsActivity::onDestroy() {
+    m_bootClip.stop();
     m_jobsStop = true; // the network jobs stop early: closing must not wait them out
     {
         std::lock_guard<std::mutex> lk(m_mu);
@@ -2052,7 +2055,7 @@ void CardsActivity::comeBack() {
     m_leaveT = 0.f;
     m_leaveThen = nullptr;
     m_intro = std::min(m_intro, 0.6f); // the cards rise back in
-    m_audio.setMusic(homeMusic(), m_settings.musicVolume);
+    m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
 }
 
 void CardsActivity::play() {
@@ -4684,7 +4687,7 @@ void CardsActivity::quickChange(int row, int delta) {
     takeFacts(true);
     if (row == kQMusic) {
         m_settings.musicVolume = std::clamp(m_settings.musicVolume + delta * 10, 0, 100);
-        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
+        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
     } else if (row == kQSounds) {
         m_settings.soundVolume = std::clamp(m_settings.soundVolume + delta * 10, 0, 100);
         m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
@@ -4887,7 +4890,7 @@ void CardsActivity::updateMusic() {
             spotifyDo(Spotify::Cmd::Volume, std::clamp(std::max(0, m_sp.volume) + (right ? 5 : -5), 0, 100));
         } else if (left || right) {
             m_settings.musicVolume = std::clamp(m_settings.musicVolume + (right ? 5 : -5), 0, 100);
-            m_audio.setMusic(homeMusic(), m_settings.musicVolume);
+            m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
             m_settings.save();
         }
     } else {
@@ -5071,7 +5074,7 @@ void CardsActivity::updateSpotifyQr() {
     if (state == Spotify::Login::Done) {
         m_spQrOpen = false;
         m_settings.spotify = true; // signed in: the music player shows it
-        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
+        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
         m_settings.save();
         m_audio.play("activation");
         say("Signed in: Spotify is in the music player now");
@@ -5649,7 +5652,7 @@ void CardsActivity::buildSettings() {
     Section sound{"Sound", "music", {}};
     sound.rows.push_back(toggle("Music", [this]() { return m_settings.music; }, [this, save]() {
         m_settings.music = !m_settings.music;
-        m_audio.setMusic(homeMusic(), m_settings.musicVolume);
+        m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
         save();
     }, "HomeNX's HOME music"));
     sound.rows.push_back(slider("Music volume", [this]() { return m_settings.musicVolume; }, [this, save](int v) {
@@ -7754,13 +7757,13 @@ void CardsActivity::onUpdate(float dt) {
     // song were a stall on frames 2-3) at 1.5 s, the avatar at 3 s, and the
     // icons decoded on a thread meanwhile.
     if (m_startStage < 3) {
-        if (m_startStage < 2 && m_time > 1.5f) {
+        if (m_startStage < 2 && (m_time > 1.5f || m_dashBoot>0.f)) {
             m_startStage = 2;
             m_audio.start();
             m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
             m_audio.setShuffle(m_settings.shuffle);
             m_audio.setRepeat(m_settings.repeat);
-            m_audio.setMusic(homeMusic(), m_settings.musicVolume);
+            m_audio.setMusic(m_dashBoot>0.f ? false : homeMusic(), m_settings.musicVolume);
         } else if (m_startStage == 2 && m_time > 3.f) {
             m_startStage = 3;
             loadAvatar();
@@ -7804,8 +7807,7 @@ void CardsActivity::onUpdate(float dt) {
         app().gpu().endTextureUploadBatch();
     }
     m_time += dt;
-    if (!m_settings.motion) m_dashBoot = 0.f;
-    if (m_dashBoot > 0.f) m_dashBoot = std::max(0.f, m_dashBoot - std::min(dt, 1.f/30.f));
+
     updateNotices(dt);
     updateStorage();
     perfMark("start-up");
@@ -7825,6 +7827,12 @@ void CardsActivity::onUpdate(float dt) {
     }
     perfMark("pictures");
     m_audio.update();
+    if (m_dashBoot>0.f && !m_settings.motion) m_bootClip.stop();
+    const bool bootActive=m_bootClip.update(app().gpu(),app().renderer(),m_audio.ready(),m_settings.sounds,m_settings.soundVolume);
+    if (m_dashBoot>0.f && (!bootActive || !m_settings.motion)) {
+        m_dashBoot=0.f;
+        m_audio.setMusic(homeMusic(),m_settings.musicVolume);
+    }
     perfMark("music");
     const bool motion = m_settings.motion;
     // A lagged frame doesn't skip through the animations: they take real time
@@ -8358,7 +8366,9 @@ void CardsActivity::onUpdate(float dt) {
 
     perfMark("HomeNX's screens, leaving");
     if (m_dashBoot > 0.f) {
-        if (app().input().isDown(nxui::Button::A) || app().input().isDown(nxui::Button::B)) m_dashBoot=0.f;
+        if (app().input().isDown(nxui::Button::A) || app().input().isDown(nxui::Button::B)) {
+            m_bootClip.stop();m_dashBoot=0.f;m_audio.setMusic(homeMusic(),m_settings.musicVolume);
+        }
         return;
     }
     if (updateLock(dt)) return;

@@ -1,10 +1,11 @@
-NXE preview validation:
-- Full build and publish workflow 42218935324 passed for frontend source f4484c290790d68883eb8cb687fcdbb1b1545203 in the original development repository.
-- The standalone app, HOME frontend and matching daemon were built from pinned upstream source 94f2bd56698fed40f2897131ea09463775840767.
-- Host checks passed for controller navigation, empty and long libraries, projected touch targets and transition easing.
-- Published update ZIP CRC, executable signatures, frontend selection and every manifest SHA-256 were checked.
-- The dedicated repository imports the same eight release files using pinned SHA-256 digests, including corresponding source with upstream header aliases.
-- This repository move does not change the native frontend or daemon.
+Original Xbox 360 startup update validation:
+- Inspected original-era MP4 and WebM recordings, a later startup WebM, and the previously supplied Metro clip. References and access limits are in STARTUP-REFERENCES.md.
+- Selected 1920x1080, 288-frame, 30 fps original-era recording. Source SHA-256 and Git blob are recorded.
+- Every lossless WebP frame decoded identically to its Lanczos-resized 1280x720 source RGB pixels; per-frame hashes are included.
+- Recorded sound converted to stereo 44.1 kHz PCM, duration 9.613061 seconds; video bank duration 9.612993 seconds.
+- Host startup parser/timing tests passed, including corrupted magic, invalid frame counts, zero frame-rate denominator, invalid frame ranges and truncated data.
+- Standalone NRO and HOME frontend compiled locally. The complete verified startup bank is embedded in the standalone NRO; HOME reads its copy from the SD assets.
+- Code patch reverse check and workflow YAML parse passed.
 
-Not performed: physical Switch testing, visual capture or FPS measurement on Switch. Atmosphere 1.12.1 / system 22.5.0 remains unverified.
-External NXE video streams were inaccessible; no motion timing claims are based on watching them.
+Not performed: physical Switch testing, visual capture, display calibration, FPS measurement or exact audiovisual latency measurement on Switch. Atmosphere 1.12.1 / system 22.5.0 remains unverified.
+The clip matches the selected recording; no claim of exhaustive video discovery or perfect equivalence to every original console capture is made.

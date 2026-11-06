@@ -187,7 +187,7 @@ target("SwitchU")
     add_includedirs("projects/manager/src", {public = false})
     -- CardsNX as HOME (NXToggle > Home screen): its screen, built in; its files
     -- (fonts, icons, the GameTDB index) ship in switch/SwitchU/cards/.
-    add_files("projects/cards/src/Audio.cpp", "projects/cards/src/CardsActivity.cpp", "projects/cards/src/Library.cpp",
+    add_files("projects/cards/src/BootClip.cpp", "projects/cards/src/Audio.cpp", "projects/cards/src/CardsActivity.cpp", "projects/cards/src/Library.cpp",
               "projects/cards/src/Mtp.cpp", "projects/cards/src/Spotify.cpp")
     add_files("projects/updater/src/Catalog.cpp") -- homebrew updates, as the Homebrew Manager finds them
     add_includedirs("projects/cards/src", {public = false})
@@ -417,6 +417,7 @@ target("CardsNX")
         local romfs_dir = path.join(os.projectdir(), "build/cards-romfs")
         os.mkdir(path.join(romfs_dir, "fonts"))
         os.mkdir(path.join(romfs_dir, "icons"))
+        os.cp(path.join(os.projectdir(), "projects/cards/romfs/boot"), romfs_dir)
         os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/*.ttf"), path.join(romfs_dir, "fonts"))
         os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/Selawik-OFL.txt"), path.join(romfs_dir, "fonts"))
         os.cp(path.join(os.projectdir(), "projects/cards/romfs/icons/*.png"), path.join(romfs_dir, "icons"))

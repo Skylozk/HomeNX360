@@ -5,7 +5,7 @@ License: GPL-3.0, with the upstream credits and third-party notices retained.
 
 This changes CardsNX, including CardsNX running as the HomeNX HOME screen, into
 an experimental 2008 NXE-inspired dashboard: vertical channels, overlapping
-cards, reflections, a Guide and an original skippable startup. Game artwork and
+cards, reflections, a Guide and a skippable recorded Xbox 360 startup. Game artwork and
 names come from the Switch's library. Existing HomeNX dialogs remain available.
 The startup runs inside HomeNX; it does not replace the console bootloader.
 See [the reference log](NXE-REFERENCES.md) for the evidence and remaining gaps.

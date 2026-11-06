@@ -5,13 +5,16 @@ inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 
 - Vertical channels and overlapping cards with a reflective floor.
 - Animated card focus and vertical channel switching; respects Animations settings.
-- A skippable, original HomeNX startup and a compact Guide.
+- The recorded original NXE-era Xbox 360 startup and a compact Guide.
 - Real Switch games, homebrew, friends, media and settings actions.
 
 This is an NXE-inspired adaptation, not an exact reproduction of every Xbox
 screen. Existing HomeNX dialogs and Nintendo applets retain their interfaces.
-No Xbox Live services, Xbox firmware, proprietary startup video or audio are bundled.
-[Research sources and access limitations](homenx360/NXE-REFERENCES.md).
+The startup uses recorded Xbox media, credited separately from the GPL code.
+Xbox Live services and Xbox firmware are not included.
+[Startup recording, analysis and fidelity limits](homenx360/STARTUP-REFERENCES.md).
+[Dashboard reference research](homenx360/NXE-REFERENCES.md).
+[Startup media notice](homenx360/overlay/media/STARTUP-MEDIA-NOTICE.md).
 
 ## Download
 
@@ -44,7 +47,8 @@ from **Actions → Build HomeNX 360 → Run workflow**, with an optional tag suc
 checksums and the complete prepared source tree with populated submodules.
 
 The readable modified files are in [the overlay](homenx360/overlay/), with a
-[patch](homenx360/HomeNX360.patch). Upstream HomeNX is pinned to
+[code patch](homenx360/HomeNX360.patch). Startup media is supplied separately
+in the overlay. Upstream HomeNX is pinned to
 `94f2bd56698fed40f2897131ea09463775840767`.
 
 With devkitPro devkitA64, its Switch packages, xmake 3.1.2, CMake and Python 3:

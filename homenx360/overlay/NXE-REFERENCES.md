@@ -40,15 +40,20 @@ redirects were broken or blocked. This list is not exhaustive.
 - Continuous card focus/scrolling, a 0.30-second vertical channel transition,
   controller repeat and matching trapezoid touch targets. These timings are
   design choices, not measurements of inaccessible videos.
-- An original 3.2-second procedural HomeNX startup with green orbiting ribbons;
-  A/B skips it, returning HOME does not replay it, and disabling Animations
-  removes it. It runs inside HomeNX, after the system boot process.
+- Startup playback is now covered in [the startup reference analysis](STARTUP-REFERENCES.md).
+  It runs inside HomeNX, after the system boot process.
 - A compact Guide with real Switch library, friends, search, settings and power
   actions. Libraries scroll beyond the old ten-item page.
 
 This is an NXE-inspired adaptation, not an exact reproduction of every screen.
 Existing HomeNX settings dialogs remain available. Xbox Live, Marketplace,
-Netflix, 3D Xbox avatars, achievements and the proprietary Xbox startup audio
-are not recreated. No third-party videos, extracted assets or Xbox firmware
-are distributed in the update. Additional uploaded NXE clips can supply actual
+Netflix, 3D Xbox avatars and Xbox achievements are not recreated.
+The original startup recording is credited separately from the GPL code;
+Xbox firmware is not distributed in the update. Additional uploaded NXE clips can supply actual
 frame-by-frame motion evidence for later refinement.
+
+## Startup update
+
+The recorded original-era startup supersedes the earlier procedural introduction.
+See [startup research](STARTUP-REFERENCES.md) for the downloaded recordings,
+frame verification and remaining hardware limits.

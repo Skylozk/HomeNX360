@@ -70,3 +70,6 @@ Selawik Light, Copyright 2015 Microsoft Corporation. Licensed under the SIL
 Open Font License 1.1. The unmodified font is from Microsoft/Selawik release
 1.01. The complete license accompanies it in
 `projects/cards/romfs/fonts/Selawik-OFL.txt` and the packaged font assets.
+
+Xbox 360 startup footage and sound are Microsoft material, separate from the
+GPL code. See media/STARTUP-MEDIA-NOTICE.md for the source recording and hashes.
