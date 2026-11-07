@@ -1,31 +1,29 @@
-# HomeNX360 NXE Settings preview
+# HomeNX360 Discord Friends preview
 
-Replaces the floating settings sheet with full-screen original NXE-style
-settings: green circular background, slate-blue panel, silver category icons,
-green selection bar, descriptions/current values on the right, and A/B prompts.
-The eight original Console Settings categories open working submenus.
+Adds a Friends blade to the NXE Guide with Discord direct and group DMs,
+unread markers, and paging through the full inbox. A or touch opens a
+conversation using HomeNX's existing chat reader; A/X in chat opens the reply
+keyboard. B returns to the DM list and then the Guide. X in Friends opens
+Discord sign-in/account controls. Quick Launch Friends and Messages route here.
 
-All 23 pages are connected to real HomeNX controls: display/brightness, audio,
-language, clock, startup/sleep, controllers, memory/software transfer, network
-and USB MTP. HomeNX Preferences preserves the additional tools. The existing
-recorded startup and five-blade Guide are retained.
+This view hides server navigation and restricts conversations to DMs. The
+ordinary Discord entry elsewhere in HomeNX retains its server navigation.
+Replies check the account, connection and destination again when submitted.
+Empty/canceled replies enqueue nothing. Existing sending/failed indicators are
+retained. The recorded startup and full-screen NXE settings are unchanged.
 
-Includes animated focus, scrolling, page transitions and opening/closing.
-Up/Down selects, A opens or changes, Left/Right adjusts values, B returns to the
-previous page and row, and Plus closes. Touch category links and value controls
-are supported. A first touch on a different value only focuses it.
+**Install HomeNX360-update.zip for this feature**, following INSTALL.md and
+backing up your existing installation first. Integrated Discord requires the
+HOME frontend. The standalone preview NRO shows the HOME requirement and an
+external Discord app shortcut; it does not embed the Discord backend.
 
-Host tests exercise the production page builder and controller/touch handlers
-in preview and HOME configurations, including every page route, callback
-ownership, shared saved values and scrolling bounds.
+Host tests cover the production Guide routing and DM helpers in both app/HOME
+configurations: paging, unread/group DMs, stable selection, removed conversations,
+account changes, server exclusion, and explicit keyboard-submit routing.
+All six blades and their touch targets are checked. No live account was accessed
+and no test messages were sent. Source, checksums and DISCORD-GUIDE.md are included.
 
-Try `HomeNX360-preview.nro` first. Read `INSTALL.md` before installing
-`HomeNX360-update.zip` over an existing HomeNX installation. Source, checksums
-and research notes are included.
-
-This is a Switch adaptation. Xbox LIVE Vision, Xbox disc auto-play and Xbox LIVE
-services cannot operate on Switch; their limitations are shown explicitly.
-Fonts, vector icons/background/orb and animation timing are approximations.
-Nintendo applets and existing HomeNX tool dialogs retain their own interfaces.
-Physical Switch behavior and Atmosphere 1.12.1 / system 22.5.0 remain unverified.
-See `SETTINGS-REFERENCES.md` for inspected references and the full action mapping.
+Live login/delivery and physical Switch behavior remain unverified here.
+The added sixth Friends blade is a requested extension to the NXE Guide.
+Chat/sign-in use HomeNX's existing Discord interface. Fonts and animation
+fidelity limits from earlier releases still apply.

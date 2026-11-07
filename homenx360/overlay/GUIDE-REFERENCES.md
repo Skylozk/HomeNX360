@@ -2,6 +2,10 @@
 
 The user requested the original NXE-era Xbox 360 Guide. This update replaces the
 previous tall left-hand shortcut panel with the centered five-blade layout.
+The Discord update adds a sixth Friends blade at the user's request; see
+[Discord Guide](DISCORD-GUIDE.md). The reference measurements below describe the
+original five-blade target. The extended layout spans x271–1009, with Profile
+at x347, while retaining the original active-panel dimensions and row spacing.
 
 ## Images inspected
 
@@ -44,15 +48,16 @@ account and hardware values. Marketplace entries route to Nintendo eShop or
 installed media apps and say so. Xbox LIVE shows an unavailable message;
 no Xbox sign-in, friends, party service or gamerscore is fabricated.
 
-Quick Launch gives access to games, homebrew, pins, search, friends and
-notifications. The Games blade opens existing HomeNX library and achievement
+Quick Launch gives access to games, homebrew, pins, search and Discord Friends/DMs.
+The Games blade opens existing HomeNX library and achievement
 features. Media controls operate HomeNX's actual music player. Settings routes
 to profile, preferences, system, storage, audio, network and power functions.
 These action labels and destinations adapt the Guide to Switch capabilities;
 not every original Xbox service or submenu is reproduced.
 
 Y opens the Guide; inside it, Left/Right or L/R changes blades, Up/Down moves,
-A selects, B returns/closes, X opens Switch profiles and Y returns to the
+A selects, B returns/closes, X opens Discord on Friends or Switch profiles on
+other blades, and Y returns to the
 Dashboard. Plus also closes the Guide. Touch follows the same animated panel
 positions and row/blade rectangles.
 

@@ -38,6 +38,7 @@
 #include <algorithm>
 #include <cctype>
 #include <iterator>
+#include <limits>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -2389,7 +2390,7 @@ void CardsActivity::ensureHxFonts() {
 }
 #endif
 
-void CardsActivity::openDiscord() {
+void CardsActivity::openDiscord(bool directMessagesOnly) {
 #ifdef SWITCHU_MENU
     ensureHxFonts();
     if (!m_discordPanel) {
@@ -2402,8 +2403,14 @@ void CardsActivity::openDiscord() {
         DiscordPanel::Callbacks cb;
         cb.onClosed = [this]() { m_audio.play("hide_modal"); };
         cb.onReply = [this](Snowflake channelId, const std::string& name) {
-            enterText(trf("Message {name}", {name}), std::string(), std::string(), 2000, [this, channelId](const std::string& text) {
-                if (!text.empty()) m_discord.send(channelId, text);
+            const homenx::dmview::Draft draft{m_discord.currentAccount(),channelId,m_discordPanel->directMessagesOnly()};
+            enterText(trf("Message {name}", {name}), std::string(), std::string(), 2000, [this, draft](const std::string& text) {
+                const auto result=homenx::dmview::submit(draft,m_discord.currentAccount(),
+                    m_discord.state()==DiscordService::State::Ready,
+                    draft.directOnly?m_discord.dms(std::numeric_limits<size_t>::max()):std::vector<DiscordService::Dm>{},text,
+                    [this](std::uint64_t channel,const std::string& body){m_discord.send(channel,body);});
+                if(result!=homenx::dmview::Submit::Empty && result!=homenx::dmview::Submit::Queued)
+                    say("Discord account or connection changed. Reopen this conversation before sending.");
             }, m_discordPanel.get());
         };
         cb.onUserTokenLogin = [this]() { m_discordTokenEntryPending = true; }; // (after the panel's input returns)
@@ -2412,11 +2419,13 @@ void CardsActivity::openDiscord() {
         m_discordPanel->setCallbacks(std::move(cb));
         rootBox().addChild(m_discordPanel);
     }
+    m_discordPanel->setDirectMessagesOnly(directMessagesOnly);
     if (m_discordPanel->isActive()) return;
     m_audio.play("show_modal");
     m_discordPanel->show();
     focusManager().setFocus(m_discordPanel.get());
 #else
+    (void)directMessagesOnly;
     std::string path = findNro("switchcord");
     if (path.empty()) path = findNro("discord");
     if (!path.empty()) {
@@ -9889,6 +9898,8 @@ void CardsActivity::updateStorage() {
 
 #include "Dashboard360.inc"
 #include "Guide360.inc"
+// The Guide's Friends blade shares HomeNX's DM service and reply keyboard.
+#include "GuideDiscord.inc"
 #include "Settings360.inc"
 
 } // namespace cards

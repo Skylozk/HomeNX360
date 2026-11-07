@@ -148,7 +148,11 @@ bool CardsActivity::dashInput(float dt) {
         if (m_guideClosing) return true;
         if (in.isDown(B::B)) { guideBack();return true; }
         if (in.isDown(B::Y)) { closeGuide(false);dashTab(1);return true; }
-        if (in.isDown(B::X)) { closeGuide(false);openUsers();return true; }
+        if (in.isDown(B::X)) {
+            if(m_guideTab==guide360::Friends) openDiscord(true);
+            else {closeGuide(false);openUsers();}
+            return true;
+        }
         if (in.isDown(B::Plus)) { closeGuide(true);return true; }
         if (in.isDown(B::L)) guideTab(-1);
         if (in.isDown(B::R)) guideTab(1);
@@ -201,11 +205,14 @@ bool CardsActivity::dashTouch() {
             const float local=x-body.x;
             if (local<108) dashGuideActivate();
             else if(local<204) guideBack();
-            else if(local<340) { closeGuide(false);openUsers(); }
+            else if(local<340) {
+                if(m_guideTab==guide360::Friends) openDiscord(true);
+                else {closeGuide(false);openUsers();}
+            }
             else { closeGuide(false);dashTab(1); }
             return true;
         }
-        if (x<286 || x>986 || gy<146 || gy>560) closeGuide(true);
+        if (x<guide360::left || x>guide360::right || gy<146 || gy>560) closeGuide(true);
         return true;
     }
     if (y<85 && x>1050) { openUsers(); return true; }

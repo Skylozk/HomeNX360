@@ -1,3 +1,11 @@
+Discord Friends validation (v0.6.0-preview.1):
+- Six-blade geometry, seven-row bounds, all row/blade touch targets and wrapping passed.
+- Production GuideDiscord.inc compiled against an in-memory service in both app/HOME configurations. DM selection uses the rendered channel ID across service reorder; deleted conversations and account changes do not open another destination. Sign-in, paging and HOME-only/external-app routing passed.
+- Production DirectMessageView.hpp checks passed for empty/connecting/failed states, 241 conversations, unread/group DMs, stable ordering, duplicate/removed channels, account reset and server exclusion.
+- Explicit-submit routing checks passed: empty/canceled, offline, account-changed and non-DM destinations never invoke enqueue. Valid direct/group replies reach the requested ID. The ordinary Discord entry retains server capability.
+- Final standalone NRO and HOME frontend compiled locally, including the modified DiscordPanel. Source bytes matched the UI overlay; expected Discord/Guide strings were verified in both executables. Build configuration was restored.
+- No live account was accessed and no test messages were sent. Live login, delivery and physical Switch behavior remain unverified.
+
 NXE settings validation (v0.5.0-preview.1):
 - Original blue/slate System Settings and Console Settings screenshots inspected; video references located but blocked streams were not claimed as viewed. Layout measurements and function mappings are recorded in SETTINGS-REFERENCES.md.
 - All 23 settings pages are reachable through production callbacks in preview and HOME configurations. Every original root/console category route and return selection passed.
@@ -16,4 +24,4 @@ NXE Guide and streaming startup validation:
 - Final standalone NRO and HOME frontend compiled locally. Both executables contain the new Guide and streaming player code.
 - Corresponding code patch reverse check and workflow YAML parse passed.
 
-Hardware: the user reported the v0.3.0 preview startup working. This new settings build has not been physically tested. Host callback fixtures do not test real console services. Exact pixel matching, font equivalence, frame pacing and audiovisual latency remain unverified. Selawik is a font substitute; settings/Guide animation timings and vector graphics are approximations. Xbox LIVE Vision and Xbox disc auto-play are explicitly unavailable on Switch.
+Hardware: the user reported the v0.3.0 preview startup working. This new Discord build has not been physically tested. Host callback fixtures do not test real console services. Exact pixel matching, font equivalence, frame pacing and audiovisual latency remain unverified. Selawik is a font substitute; settings/Guide animation timings and vector graphics are approximations. Xbox LIVE Vision and Xbox disc auto-play are explicitly unavailable on Switch.

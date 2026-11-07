@@ -5,6 +5,8 @@
 #include "Mtp.hpp"
 #include "Settings.hpp"
 #include "SettingsLayout.hpp"
+#include "GuideLayout.hpp"
+#include "../../menu/src/social/DirectMessageView.hpp"
 #include "Spotify.hpp"
 
 #include <nxui/Activity.hpp>
@@ -76,7 +78,7 @@ private:
     int m_dashPrevTile = 0, m_dashPrevPage = 0, m_dashGuideRow = 0;
     bool m_dashGuide = false;
     int m_guideTab=2,m_guideView=0;
-    std::array<int,5> m_guideSels{};
+    std::array<int,guide360::Count> m_guideSels{};
     float m_guideIn=0.f,m_guideTabIn=1.f,m_guideRowAt=0.f,m_guidePos=2.f,m_guideFrom=2.f;
     bool m_guideClosing=false;
     std::string m_guideName="Player",m_guideNote;
@@ -84,6 +86,12 @@ private:
     TTF_Font* m_guideTtf=nullptr;
     std::unordered_map<std::string,std::unique_ptr<nxui::Texture>> m_guideLabels;
     std::vector<std::string> guideRows();
+    homenx::dmview::Inbox m_guideInbox;
+    std::vector<homenx::dmview::Row> m_guideDmRows;
+    homenx::dmview::State m_guideDmState=homenx::dmview::State::HomeRequired;
+    float m_guideDmRefresh=-1.f;
+    void refreshGuideDms(bool force=false);
+    void activateGuideDm();
     void openGuide();
     void closeGuide(bool animate);
     void guideTab(int delta);
@@ -284,7 +292,7 @@ private:
     void launchGame(const Game& g);
     void openNro(const std::string& path);
     void openNintendo(const Game& g);
-    void openDiscord();
+    void openDiscord(bool directMessagesOnly=false);
     void openBrowser();
     std::string findNro(const char* nameHas);
     // The launch: the card grows to fill the screen, the rest falls away, then

@@ -1,13 +1,88 @@
+diff --git a/DISCORD-GUIDE.md b/DISCORD-GUIDE.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..2fbccd29178db15308d29639c603ed6c6d496ea1
+--- /dev/null
++++ b/DISCORD-GUIDE.md
+@@ -0,0 +1,65 @@
++# Discord DMs in the Guide
++
++## Using Friends
++
++1. Install the **HOME frontend** using `HomeNX360-update.zip` and `INSTALL.md`.
++2. Press **Y** to open the Guide, then use **Left/Right or L/R** to select **Friends**.
++3. If signed out, choose **Sign in to Discord**. This opens HomeNX's existing
++   Discord sign-in/account interface on the console. Existing saved accounts
++   are reused. No new login system or credential storage is introduced.
++4. Friends shows Discord direct and group DMs. **\*** marks unread conversations.
++   **More conversations / Previous conversations** pages through the inbox;
++   there is no fixed 30/40-conversation cutoff in this view.
++5. Select a DM with **A** or touch. It opens HomeNX's existing chat reader in
++   DM-only mode. Server navigation is hidden and server channels cannot be
++   opened through this mode.
++6. In the chat, **A or X** opens the reply keyboard. Enter text and submit it
++   to queue a message. Canceling or submitting blank text sends nothing.
++   HomeNX's existing sending/failed indicators show the request's status;
++   queued does not mean the recipient has received or read the message.
++7. **B** returns from the chat to the DM list, then closes that panel back to
++   the Guide. **X in the Friends blade** also opens the DM/account panel.
++   The Guide's Quick Launch Friends and Messages shortcuts open Friends too.
++
++The list is the account's existing private conversations, not the complete
++Discord friend-relationship list. Starting a brand-new conversation by username,
++friend requests, voice calls and media composition are not added here.
++
++## Preview and ordinary Discord
++
++The standalone `.nro` does not embed HomeNX's Discord backend. Its Friends blade
++explains that HOME is required and offers the existing external Discord app
++shortcut, if SwitchCord is installed. Use the HOME update for integrated DMs.
++
++The normal Discord entry elsewhere in HomeNX keeps its server navigation.
++The added Friends mode is restricted to DMs. Nintendo's Friends entry elsewhere
++in the dashboard retains its existing behavior.
++
++## Routing and account changes
++
++The Guide caches the rendered rows by channel ID, preserving order across
++presence/unread updates so a new message cannot swap the selected person.
++Refreshing the Guide clears conversations from a different account. Opening
++a conversation rechecks the active account and DM membership. The chat panel
++returns to its list if the account changes.
++
++A reply captures its account and channel when the keyboard opens. Submission
++rechecks connection state, account identity and DM membership before calling
++HomeNX's existing send operation. A change produces an on-screen message to
++reopen the conversation. Messages are queued only by explicit keyboard submit.
++
++## Layout and validation
++
++Friends is a requested extension to the original five-blade NXE Guide. The
++Guide now has six blades within a centered 738-pixel span; the active panel
++remains 548×316, with seven-row maximum and animated blade changes. The extra
++blade is not claimed to be an original Xbox feature. Chat and sign-in retain
++HomeNX's Discord interface.
++
++Host checks exercise the production DM model, routing and explicit-submit helper,
++including empty/signed-out/failed states, 241 conversations, group DMs, unread
++updates, duplicate/removed channels, account changes and server exclusion.
++The six-blade geometry and every visible row/blade touch target are checked.
++These tests use fake identities and an in-memory enqueue callback. No real
++account was accessed and no test messages were sent. Live Discord login,
++delivery and physical Switch behavior require testing on the user's console.
 diff --git a/GUIDE-REFERENCES.md b/GUIDE-REFERENCES.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..6eb66eb75abb3a5a8ca9dd8526dad01656d1b05e
+index 0000000000000000000000000000000000000000..87ced340375ab3dcb6e167fc889867f648635c77
 --- /dev/null
 +++ b/GUIDE-REFERENCES.md
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,67 @@
 +# NXE Guide references and validation
 +
 +The user requested the original NXE-era Xbox 360 Guide. This update replaces the
 +previous tall left-hand shortcut panel with the centered five-blade layout.
++The Discord update adds a sixth Friends blade at the user's request; see
++[Discord Guide](DISCORD-GUIDE.md). The reference measurements below describe the
++original five-blade target. The extended layout spans x271–1009, with Profile
++at x347, while retaining the original active-panel dimensions and row spacing.
 +
 +## Images inspected
 +
@@ -50,15 +125,16 @@ index 0000000000000000000000000000000000000000..6eb66eb75abb3a5a8ca9dd8526dad016
 +installed media apps and say so. Xbox LIVE shows an unavailable message;
 +no Xbox sign-in, friends, party service or gamerscore is fabricated.
 +
-+Quick Launch gives access to games, homebrew, pins, search, friends and
-+notifications. The Games blade opens existing HomeNX library and achievement
++Quick Launch gives access to games, homebrew, pins, search and Discord Friends/DMs.
++The Games blade opens existing HomeNX library and achievement
 +features. Media controls operate HomeNX's actual music player. Settings routes
 +to profile, preferences, system, storage, audio, network and power functions.
 +These action labels and destinations adapt the Guide to Switch capabilities;
 +not every original Xbox service or submenu is reproduced.
 +
 +Y opens the Guide; inside it, Left/Right or L/R changes blades, Up/Down moves,
-+A selects, B returns/closes, X opens Switch profiles and Y returns to the
++A selects, B returns/closes, X opens Discord on Friends or Switch profiles on
++other blades, and Y returns to the
 +Dashboard. Plus also closes the Guide. Touch follows the same animated panel
 +positions and row/blade rectangles.
 +
@@ -133,10 +209,10 @@ index 0000000000000000000000000000000000000000..dcc2837a822c9f13990733d1e23cd86e
 +frame verification and remaining hardware limits.
 diff --git a/README-360.md b/README-360.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..169a91f96b26d1c0a1415161fa5d913ba2de44e5
+index 0000000000000000000000000000000000000000..f16d993211e94dcf9e03d9170c9b02170fc90592
 --- /dev/null
 +++ b/README-360.md
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,108 @@
 +# HomeNX 360 — experimental dashboard fork
 +
 +Based on `ad3333m/homenx` commit `94f2bd56698fed40f2897131ea09463775840767`.
@@ -237,6 +313,14 @@ index 0000000000000000000000000000000000000000..169a91f96b26d1c0a1415161fa5d913b
 +Inside the Guide, Left/Right or L/R changes blades; Up/Down moves between rows.
 +A selects, B returns/closes, X opens profiles, Y returns to Dashboard, and Plus
 +also closes it. The Media blade controls the real HomeNX music player.
++
++## Discord Friends
++
++Guide → Friends lists Discord direct and group DMs in the HOME frontend.
++A or touch opens a conversation; A/X in the chat opens the reply keyboard.
++X in Friends opens HomeNX's existing Discord sign-in and account controls.
++The standalone NRO shows the HOME requirement and an external Discord shortcut.
++Read `DISCORD-GUIDE.md` for setup, paging, controls and testing limits.
 diff --git a/SETTINGS-REFERENCES.md b/SETTINGS-REFERENCES.md
 new file mode 100644
 index 0000000000000000000000000000000000000000..1e6c7a89b18bf82ea34abf23ab1b607f0ea3205c
@@ -2668,7 +2752,7 @@ index 0000000000000000000000000000000000000000..713b4483c53815ee618fc5dc445c9e29
 +};
 +} // namespace cards::boot360
 diff --git a/projects/cards/src/CardsActivity.cpp b/projects/cards/src/CardsActivity.cpp
-index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d565c2a4036 100644
+index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f03dd4ab1 100644
 --- a/projects/cards/src/CardsActivity.cpp
 +++ b/projects/cards/src/CardsActivity.cpp
 @@ -1,4 +1,7 @@
@@ -2679,7 +2763,15 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
  
  #include "social/NotificationLog.hpp"
  
-@@ -499,6 +502,7 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
+@@ -35,6 +38,7 @@
+ #include <algorithm>
+ #include <cctype>
+ #include <iterator>
++#include <limits>
+ #include <chrono>
+ #include <cmath>
+ #include <cstdio>
+@@ -499,6 +503,7 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
      m_startSuspended = suspendedId;
      m_startRunning = appRunning;
      m_atBoot = atBoot;
@@ -2687,7 +2779,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      m_fromApplet = fromApplet;
  #else
      (void)suspendedId;
-@@ -535,6 +539,8 @@ bool CardsActivity::onCreate() {
+@@ -535,6 +540,8 @@ bool CardsActivity::onCreate() {
      nxui::GpuDevice::setImageBudget(std::clamp<u64>(total / 4, 64ull << 20, 160ull << 20));
  
      m_settings.load();
@@ -2696,7 +2788,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      setLanguage(m_settings.language);
      m_boxArt = m_settings.boxArt;
      m_titleArt = m_settings.titlePics;
-@@ -582,7 +588,9 @@ bool CardsActivity::onCreate() {
+@@ -582,7 +589,9 @@ bool CardsActivity::onCreate() {
      const std::string f5 = fonts + "Inter-500.ttf", f6 = fonts + "Inter-600.ttf", f7 = fonts + "Inter-700.ttf";
      if (!m_fTitle.load(gpu, ren, f7, 30) || !m_fPlay.load(gpu, ren, f7, 24) || !m_fLabel.load(gpu, ren, f6, 22)
          || !m_fPill.load(gpu, ren, f6, 19) || !m_fBody.load(gpu, ren, f5, 17) || !m_fBadge.load(gpu, ren, f7, 15)
@@ -2707,7 +2799,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
          return false;
      const std::uint64_t tIcons = armGetSystemTick();
      // The buttons' icons: read and decoded off the screen's thread (a first-draw read
-@@ -694,7 +702,7 @@ bool CardsActivity::onCreate() {
+@@ -694,7 +703,7 @@ bool CardsActivity::onCreate() {
  
      // Always the first card on the list, in the sort you chose (it was put back to Title here
      // at every start, so Last Played never stuck).
@@ -2716,7 +2808,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      sortGames(m_settings.sort, false);
      for (int& s : m_sels) s = 0;
      m_scroll = 0.f;
-@@ -749,6 +757,8 @@ bool CardsActivity::onCreate() {
+@@ -749,6 +758,8 @@ bool CardsActivity::onCreate() {
          return out;
      });
      m_retryIn = 1.2f; // the shelf is covered by degrees, starting right away
@@ -2725,7 +2817,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      m_intro = m_settings.motion ? 0.f : 1.f; // the cards rise in (the game's picture lets go first: see onUpdate)
  #ifdef SWITCHU_MENU
      if (m_atBoot && m_settings.lockScreen) lock();
-@@ -823,6 +833,9 @@ void CardsActivity::perfLine(const std::string& line) {
+@@ -823,6 +834,9 @@ void CardsActivity::perfLine(const std::string& line) {
  }
  
  void CardsActivity::onDestroy() {
@@ -2735,7 +2827,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      m_jobsStop = true; // the network jobs stop early: closing must not wait them out
      {
          std::lock_guard<std::mutex> lk(m_mu);
-@@ -904,7 +917,7 @@ const Game* CardsActivity::current() {
+@@ -904,7 +918,7 @@ const Game* CardsActivity::current() {
  
  void CardsActivity::applyTheme() {
      m_theme = nxui::Theme::dark();
@@ -2744,7 +2836,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      m_theme.panelBorder = nxui::Color(1.f, 1.f, 1.f, 0.16f);
      m_theme.panelHighlight = nxui::Color(1.f, 1.f, 1.f, 0.05f);
      m_theme.iconDefault = nxui::Color(1.f, 1.f, 1.f, 0.06f);
-@@ -915,7 +928,7 @@ void CardsActivity::applyTheme() {
+@@ -915,7 +929,7 @@ void CardsActivity::applyTheme() {
  }
  
  nxui::Color CardsActivity::accent(float a) const {
@@ -2753,7 +2845,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
  }
  
  nxui::Color CardsActivity::glassTint(float a) const {
-@@ -955,6 +968,10 @@ void CardsActivity::loadAvatar() {
+@@ -955,6 +969,10 @@ void CardsActivity::loadAvatar() {
          Pixels out;
          AccountProfile profile{};
          if (accountUidIsValid(&uid) && R_SUCCEEDED(accountGetProfile(&profile, uid))) {
@@ -2764,7 +2856,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
              u32 size = 0;
              if (R_SUCCEEDED(accountProfileGetImageSize(&profile, &size)) && size > 0) {
                  std::vector<std::uint8_t> jpeg(size);
-@@ -1288,6 +1305,8 @@ void CardsActivity::wantArt() {
+@@ -1288,6 +1306,8 @@ void CardsActivity::wantArt() {
          jobs.push_back({page[(size_t)i], what, m_artGen});
      };
      const int s = sel();
@@ -2773,7 +2865,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      add(s, kCard);
      add(s, kBackground);
      add(s, kIcon); // (a title picture can mean a search online: after the pictures you see)
-@@ -1631,6 +1650,9 @@ void CardsActivity::goToPage(int page, int dir) {
+@@ -1631,6 +1651,9 @@ void CardsActivity::goToPage(int page, int dir) {
      if (m_moving) finishMove(true);
      if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
      m_page = page;
@@ -2783,7 +2875,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      m_pageDir = dir > 0 ? 1 : -1;
      m_pageIn = m_settings.motion ? 0.f : 1.f;
      m_detailIn = m_pageIn;
-@@ -2042,7 +2064,7 @@ void CardsActivity::comeBack() {
+@@ -2042,7 +2065,7 @@ void CardsActivity::comeBack() {
      m_leaveT = 0.f;
      m_leaveThen = nullptr;
      m_intro = std::min(m_intro, 0.6f); // the cards rise back in
@@ -2792,7 +2884,47 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
  }
  
  void CardsActivity::play() {
-@@ -4674,7 +4696,7 @@ void CardsActivity::quickChange(int row, int delta) {
+@@ -2367,7 +2390,7 @@ void CardsActivity::ensureHxFonts() {
+ }
+ #endif
+ 
+-void CardsActivity::openDiscord() {
++void CardsActivity::openDiscord(bool directMessagesOnly) {
+ #ifdef SWITCHU_MENU
+     ensureHxFonts();
+     if (!m_discordPanel) {
+@@ -2380,8 +2403,14 @@ void CardsActivity::openDiscord() {
+         DiscordPanel::Callbacks cb;
+         cb.onClosed = [this]() { m_audio.play("hide_modal"); };
+         cb.onReply = [this](Snowflake channelId, const std::string& name) {
+-            enterText(trf("Message {name}", {name}), std::string(), std::string(), 2000, [this, channelId](const std::string& text) {
+-                if (!text.empty()) m_discord.send(channelId, text);
++            const homenx::dmview::Draft draft{m_discord.currentAccount(),channelId,m_discordPanel->directMessagesOnly()};
++            enterText(trf("Message {name}", {name}), std::string(), std::string(), 2000, [this, draft](const std::string& text) {
++                const auto result=homenx::dmview::submit(draft,m_discord.currentAccount(),
++                    m_discord.state()==DiscordService::State::Ready,
++                    draft.directOnly?m_discord.dms(std::numeric_limits<size_t>::max()):std::vector<DiscordService::Dm>{},text,
++                    [this](std::uint64_t channel,const std::string& body){m_discord.send(channel,body);});
++                if(result!=homenx::dmview::Submit::Empty && result!=homenx::dmview::Submit::Queued)
++                    say("Discord account or connection changed. Reopen this conversation before sending.");
+             }, m_discordPanel.get());
+         };
+         cb.onUserTokenLogin = [this]() { m_discordTokenEntryPending = true; }; // (after the panel's input returns)
+@@ -2390,11 +2419,13 @@ void CardsActivity::openDiscord() {
+         m_discordPanel->setCallbacks(std::move(cb));
+         rootBox().addChild(m_discordPanel);
+     }
++    m_discordPanel->setDirectMessagesOnly(directMessagesOnly);
+     if (m_discordPanel->isActive()) return;
+     m_audio.play("show_modal");
+     m_discordPanel->show();
+     focusManager().setFocus(m_discordPanel.get());
+ #else
++    (void)directMessagesOnly;
+     std::string path = findNro("switchcord");
+     if (path.empty()) path = findNro("discord");
+     if (!path.empty()) {
+@@ -4674,7 +4705,7 @@ void CardsActivity::quickChange(int row, int delta) {
      takeFacts(true);
      if (row == kQMusic) {
          m_settings.musicVolume = std::clamp(m_settings.musicVolume + delta * 10, 0, 100);
@@ -2801,7 +2933,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      } else if (row == kQSounds) {
          m_settings.soundVolume = std::clamp(m_settings.soundVolume + delta * 10, 0, 100);
          m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
-@@ -4877,7 +4899,7 @@ void CardsActivity::updateMusic() {
+@@ -4877,7 +4908,7 @@ void CardsActivity::updateMusic() {
              spotifyDo(Spotify::Cmd::Volume, std::clamp(std::max(0, m_sp.volume) + (right ? 5 : -5), 0, 100));
          } else if (left || right) {
              m_settings.musicVolume = std::clamp(m_settings.musicVolume + (right ? 5 : -5), 0, 100);
@@ -2810,7 +2942,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
              m_settings.save();
          }
      } else {
-@@ -5061,7 +5083,7 @@ void CardsActivity::updateSpotifyQr() {
+@@ -5061,7 +5092,7 @@ void CardsActivity::updateSpotifyQr() {
      if (state == Spotify::Login::Done) {
          m_spQrOpen = false;
          m_settings.spotify = true; // signed in: the music player shows it
@@ -2819,7 +2951,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
          m_settings.save();
          m_audio.play("activation");
          say("Signed in: Spotify is in the music player now");
-@@ -5567,6 +5589,13 @@ void CardsActivity::buildSettings() {
+@@ -5567,6 +5598,13 @@ void CardsActivity::buildSettings() {
          [this, save]() { m_settings.players = !m_settings.players; save(); }, "Green dots on games played online now"));
      look.rows.push_back(toggle("Animations", [this]() { return m_settings.motion; },
          [this, save]() { m_settings.motion = !m_settings.motion; save(); }));
@@ -2833,7 +2965,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      m_sheet.push_back(std::move(look));
  
      // The lock screen: its own tab (HomeNX's lock screen shares the password and the picture).
-@@ -5639,7 +5668,7 @@ void CardsActivity::buildSettings() {
+@@ -5639,7 +5677,7 @@ void CardsActivity::buildSettings() {
      Section sound{"Sound", "music", {}};
      sound.rows.push_back(toggle("Music", [this]() { return m_settings.music; }, [this, save]() {
          m_settings.music = !m_settings.music;
@@ -2842,7 +2974,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
          save();
      }, "HomeNX's HOME music"));
      sound.rows.push_back(slider("Music volume", [this]() { return m_settings.musicVolume; }, [this, save](int v) {
-@@ -6024,28 +6053,7 @@ void CardsActivity::buildSettings() {
+@@ -6024,28 +6062,7 @@ void CardsActivity::buildSettings() {
      }));
  #endif
      m_sheet.push_back(std::move(about));
@@ -2872,7 +3004,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
  }
  
  void CardsActivity::saveAllPictures(bool quiet) {
-@@ -6620,7 +6628,9 @@ void CardsActivity::openSettings(int section) {
+@@ -6620,7 +6637,9 @@ void CardsActivity::openSettings(int section) {
      m_sheetOpen = true;
      m_sheetSec = std::clamp(section, 0, static_cast<int>(m_sheet.size()) - 1);
      m_sheetRow = 0;
@@ -2883,7 +3015,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      m_sheetScroll = 0.f;
      m_sheetIn = m_settings.motion ? 0.f : 1.f;
      m_sheetRowsIn = 1.f;
-@@ -7242,7 +7252,7 @@ void CardsActivity::keepTextCachesSmall() {
+@@ -7242,7 +7261,7 @@ void CardsActivity::keepTextCachesSmall() {
          s_lastTrim = now;
          f.trimCache(124, 3u << 20); // (trimCache scales its byte limit too)
      };
@@ -2892,7 +3024,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
  #ifdef SWITCHU_MENU
      // Discord, Social and the keyboard draw with HomeNX's font: nothing trimmed
      // its cache, and once full no new channel names or messages showed.
-@@ -7304,83 +7314,6 @@ void CardsActivity::listInput(std::vector<MenuItem>& items, int& sel, const std:
+@@ -7304,83 +7323,6 @@ void CardsActivity::listInput(std::vector<MenuItem>& items, int& sel, const std:
      }
  }
  
@@ -2976,7 +3108,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
  
  // ---------------------------------------------------------------- touch
  
-@@ -7431,35 +7364,7 @@ bool CardsActivity::handleTouch() {
+@@ -7431,35 +7373,7 @@ bool CardsActivity::handleTouch() {
      }
      if (m_sheetOpen) {
          if (!in.touchUp()) return in.isTouching();
@@ -3013,7 +3145,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      }
      if (m_quickOpen) return quickTouch();
      if (m_powerOpen) return powerTouch();
-@@ -7644,6 +7549,8 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7644,6 +7558,8 @@ void CardsActivity::onUpdate(float dt) {
          m_reopenSec = -1;
          openSettings(sec);
          m_sheetRow = std::clamp(m_reopenRow, 0, std::max(0, static_cast<int>(m_sheet[(size_t)m_sheetSec].rows.size()) - 1));
@@ -3022,7 +3154,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
          m_sheetOnRows = true;
          m_sheetIn = 1.f;
      }
-@@ -7744,13 +7651,13 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7744,13 +7660,13 @@ void CardsActivity::onUpdate(float dt) {
      // song were a stall on frames 2-3) at 1.5 s, the avatar at 3 s, and the
      // icons decoded on a thread meanwhile.
      if (m_startStage < 3) {
@@ -3038,7 +3170,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
          } else if (m_startStage == 2 && m_time > 3.f) {
              m_startStage = 3;
              loadAvatar();
-@@ -7758,6 +7665,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7758,6 +7674,7 @@ void CardsActivity::onUpdate(float dt) {
      }
      if (m_avatarJob.valid() && m_avatarJob.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
          const Pixels px = m_avatarJob.get();
@@ -3046,7 +3178,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
          auto tex = std::make_unique<nxui::Texture>();
          if (!px.rgba.empty() && tex->loadFromPixels(app().gpu(), app().renderer(), px.rgba.data(), px.w, px.h))
              m_avatar = std::move(tex);
-@@ -7794,6 +7702,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7794,6 +7711,7 @@ void CardsActivity::onUpdate(float dt) {
          app().gpu().endTextureUploadBatch();
      }
      m_time += dt;
@@ -3054,7 +3186,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      updateNotices(dt);
      updateStorage();
      perfMark("start-up");
-@@ -7813,6 +7722,16 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7813,6 +7731,16 @@ void CardsActivity::onUpdate(float dt) {
      }
      perfMark("pictures");
      m_audio.update();
@@ -3071,7 +3203,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      perfMark("music");
      const bool motion = m_settings.motion;
      // A lagged frame doesn't skip through the animations: they take real time
-@@ -7823,6 +7742,18 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7823,6 +7751,18 @@ void CardsActivity::onUpdate(float dt) {
      // rise hidden behind a still frame.
      if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
      step(m_pageIn, 0.38f);
@@ -3090,7 +3222,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      step(m_detailIn, 0.25f);
      step(m_sheen, 0.8f);
      step(m_menuIn, 0.2f);
-@@ -7830,8 +7761,17 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7830,8 +7770,17 @@ void CardsActivity::onUpdate(float dt) {
      step(m_logIn, 0.2f);
      step(m_pressT, 0.22f);
      step(m_bgFade, 0.45f);
@@ -3109,7 +3241,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      step(m_quickIn, 0.22f);
      step(m_powerIn, 0.28f);
      step(m_dotsIn, 0.26f);
-@@ -8341,6 +8281,14 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8341,6 +8290,14 @@ void CardsActivity::onUpdate(float dt) {
      }
  
      perfMark("HomeNX's screens, leaving");
@@ -3124,7 +3256,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      if (updateLock(dt)) return;
      perfMark("lock screen");
      if (!m_settings.introDone && !m_introOpen && m_time > 0.8f && !m_leaving) { // the first time
-@@ -8370,7 +8318,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8370,7 +8327,7 @@ void CardsActivity::onUpdate(float dt) {
          updateTask();
          return;
      }
@@ -3133,7 +3265,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
  
      if (m_pickOpen) { // (over Settings too)
          updatePicker();
-@@ -8425,6 +8373,8 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8425,6 +8382,8 @@ void CardsActivity::onUpdate(float dt) {
          return;
      }
  
@@ -3142,7 +3274,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      // Left / right: repeating while held.
      const bool left = in.isHeld(B::DLeft) || in.isHeld(B::LStickL) || in.isHeld(B::RStickL);
      const bool right = in.isHeld(B::DRight) || in.isHeld(B::LStickR) || in.isHeld(B::RStickR);
-@@ -8527,51 +8477,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
+@@ -8527,51 +8486,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
      m_drawMarkTick = armGetSystemTick();
      m_drawMarkMs = 0.f;
      m_drawMarkName = "";
@@ -3197,7 +3329,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      drawStep("draw: the menus");
      drawSheet(r);
      drawPopup(r); // (over Settings)
-@@ -8621,8 +8529,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
+@@ -8621,8 +8538,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
  }
  
  void CardsActivity::frost(nxui::Renderer& r, const nxui::Rect& rect, float radius, const nxui::Color& tint) {
@@ -3208,7 +3340,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
  }
  
  void CardsActivity::glassCircle(nxui::Renderer& r, float cx, float cy, float d, bool focused, const char* name,
-@@ -8783,6 +8691,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
+@@ -8783,6 +8700,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
  }
  
  bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
@@ -3226,7 +3358,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      const float rel = static_cast<float>(index) - m_scroll;
      // A page switch slides the row in from the side.
      float slide = (1.f - easeOut(m_pageIn)) * 160.f * static_cast<float>(m_pageDir);
-@@ -9310,7 +9229,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
+@@ -9310,7 +9238,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
      // The control on the right, and the room it leaves for the label.
      const float right = row.x + row.width - 18.f;
      float control = 0.f;
@@ -3235,7 +3367,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
      switch (item.kind) {
          case MenuItem::Toggle: {
              const float on = item.level ? item.level() : 0.f;
-@@ -9603,75 +9522,6 @@ void CardsActivity::drawQuick(nxui::Renderer& r) {
+@@ -9603,75 +9531,6 @@ void CardsActivity::drawQuick(nxui::Renderer& r) {
  }
  
  // Settings: a glass sheet, its sections on the left and their rows on the right.
@@ -3311,20 +3443,22 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..68dc3cd61ed0d1bb853dc7055c6b6d56
  
  void CardsActivity::openPagePicker() {
      std::vector<MenuItem> items;
-@@ -10037,4 +9887,8 @@ void CardsActivity::updateStorage() {
+@@ -10037,4 +9896,10 @@ void CardsActivity::updateStorage() {
      }
  }
  
 +#include "Dashboard360.inc"
 +#include "Guide360.inc"
++// The Guide's Friends blade shares HomeNX's DM service and reply keyboard.
++#include "GuideDiscord.inc"
 +#include "Settings360.inc"
 +
  } // namespace cards
 diff --git a/projects/cards/src/CardsActivity.hpp b/projects/cards/src/CardsActivity.hpp
-index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..74c8c10e9d9724f29130bd5fbe4f5230efac04dc 100644
+index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..571ca5d368c1e5db442bfbe05c8b2669744c71ce 100644
 --- a/projects/cards/src/CardsActivity.hpp
 +++ b/projects/cards/src/CardsActivity.hpp
-@@ -1,8 +1,10 @@
+@@ -1,8 +1,12 @@
  #pragma once
  #include "Audio.hpp"
 +#include "BootClip.hpp"
@@ -3332,10 +3466,12 @@ index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..74c8c10e9d9724f29130bd5fbe4f5230
  #include "Mtp.hpp"
  #include "Settings.hpp"
 +#include "SettingsLayout.hpp"
++#include "GuideLayout.hpp"
++#include "../../menu/src/social/DirectMessageView.hpp"
  #include "Spotify.hpp"
  
  #include <nxui/Activity.hpp>
-@@ -63,6 +65,53 @@ public:
+@@ -63,6 +67,59 @@ public:
      nxui::Widget* focusRoot() override; // HomeNX's screens when one is open; else it reads the buttons itself
  
  private:
@@ -3350,7 +3486,7 @@ index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..74c8c10e9d9724f29130bd5fbe4f5230
 +    int m_dashPrevTile = 0, m_dashPrevPage = 0, m_dashGuideRow = 0;
 +    bool m_dashGuide = false;
 +    int m_guideTab=2,m_guideView=0;
-+    std::array<int,5> m_guideSels{};
++    std::array<int,guide360::Count> m_guideSels{};
 +    float m_guideIn=0.f,m_guideTabIn=1.f,m_guideRowAt=0.f,m_guidePos=2.f,m_guideFrom=2.f;
 +    bool m_guideClosing=false;
 +    std::string m_guideName="Player",m_guideNote;
@@ -3358,6 +3494,12 @@ index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..74c8c10e9d9724f29130bd5fbe4f5230
 +    TTF_Font* m_guideTtf=nullptr;
 +    std::unordered_map<std::string,std::unique_ptr<nxui::Texture>> m_guideLabels;
 +    std::vector<std::string> guideRows();
++    homenx::dmview::Inbox m_guideInbox;
++    std::vector<homenx::dmview::Row> m_guideDmRows;
++    homenx::dmview::State m_guideDmState=homenx::dmview::State::HomeRequired;
++    float m_guideDmRefresh=-1.f;
++    void refreshGuideDms(bool force=false);
++    void activateGuideDm();
 +    void openGuide();
 +    void closeGuide(bool animate);
 +    void guideTab(int delta);
@@ -3389,7 +3531,16 @@ index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..74c8c10e9d9724f29130bd5fbe4f5230
      enum class Zone { Top, Cards, Bottom };
      enum Page { kGames, kHomebrew, kNintendo, kMedia, kPageCount };
      int pageCount() const { return kPageCount + static_cast<int>(m_settings.customPages.size()); }
-@@ -260,6 +309,7 @@ private:
+@@ -235,7 +292,7 @@ private:
+     void launchGame(const Game& g);
+     void openNro(const std::string& path);
+     void openNintendo(const Game& g);
+-    void openDiscord();
++    void openDiscord(bool directMessagesOnly=false);
+     void openBrowser();
+     std::string findNro(const char* nameHas);
+     // The launch: the card grows to fill the screen, the rest falls away, then
+@@ -260,6 +317,7 @@ private:
      struct Pixels {
          std::vector<std::uint8_t> rgba;
          int w = 0, h = 0;
@@ -3397,7 +3548,7 @@ index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..74c8c10e9d9724f29130bd5fbe4f5230
      };
      std::unique_ptr<nxui::Texture> m_wallTex;
      std::future<Pixels> m_wallJob;
-@@ -752,6 +802,9 @@ private:
+@@ -752,6 +810,9 @@ private:
      bool m_sheetOpen = false, m_sheetOnRows = false;
      int m_sheetSec = 0, m_sheetRow = 0;
      float m_sheetIn = 0.f, m_sheetRowsIn = 1.f, m_sheetScroll = 0.f;
@@ -3463,10 +3614,10 @@ index 0000000000000000000000000000000000000000..4c5e39208cb7bba0aafc9b6b894e0c07
 +} // namespace cards::dash360
 diff --git a/projects/cards/src/Dashboard360.inc b/projects/cards/src/Dashboard360.inc
 new file mode 100644
-index 0000000000000000000000000000000000000000..29d0c867a0ed3d7553bbe226e0f0acd2b42fc2c4
+index 0000000000000000000000000000000000000000..1b6d90ac8b2829b7156fcb1a356daf9ed55f0900
 --- /dev/null
 +++ b/projects/cards/src/Dashboard360.inc
-@@ -0,0 +1,364 @@
+@@ -0,0 +1,371 @@
 +// Included inside namespace cards, after CardsActivity's drawing helpers.
 +bool CardsActivity::dashLibrary() const {
 +    return m_dashTab == 3 || m_dashTab == 4 || m_dashTab == 6;
@@ -3617,7 +3768,11 @@ index 0000000000000000000000000000000000000000..29d0c867a0ed3d7553bbe226e0f0acd2
 +        if (m_guideClosing) return true;
 +        if (in.isDown(B::B)) { guideBack();return true; }
 +        if (in.isDown(B::Y)) { closeGuide(false);dashTab(1);return true; }
-+        if (in.isDown(B::X)) { closeGuide(false);openUsers();return true; }
++        if (in.isDown(B::X)) {
++            if(m_guideTab==guide360::Friends) openDiscord(true);
++            else {closeGuide(false);openUsers();}
++            return true;
++        }
 +        if (in.isDown(B::Plus)) { closeGuide(true);return true; }
 +        if (in.isDown(B::L)) guideTab(-1);
 +        if (in.isDown(B::R)) guideTab(1);
@@ -3670,11 +3825,14 @@ index 0000000000000000000000000000000000000000..29d0c867a0ed3d7553bbe226e0f0acd2
 +            const float local=x-body.x;
 +            if (local<108) dashGuideActivate();
 +            else if(local<204) guideBack();
-+            else if(local<340) { closeGuide(false);openUsers(); }
++            else if(local<340) {
++                if(m_guideTab==guide360::Friends) openDiscord(true);
++                else {closeGuide(false);openUsers();}
++            }
 +            else { closeGuide(false);dashTab(1); }
 +            return true;
 +        }
-+        if (x<286 || x>986 || gy<146 || gy>560) closeGuide(true);
++        if (x<guide360::left || x>guide360::right || gy<146 || gy>560) closeGuide(true);
 +        return true;
 +    }
 +    if (y<85 && x>1050) { openUsers(); return true; }
@@ -3833,24 +3991,31 @@ index 0000000000000000000000000000000000000000..29d0c867a0ed3d7553bbe226e0f0acd2
 +}
 diff --git a/projects/cards/src/Guide360.inc b/projects/cards/src/Guide360.inc
 new file mode 100644
-index 0000000000000000000000000000000000000000..250135b31c01d32b7d6db1295dc8f21c84344d21
+index 0000000000000000000000000000000000000000..5107093e8634bd14f3e0924c0ef679b1eade9010
 --- /dev/null
 +++ b/projects/cards/src/Guide360.inc
-@@ -0,0 +1,182 @@
-+// The original NXE Guide's centered, five-blade overlay. Actions use Switch services.
+@@ -0,0 +1,203 @@
++// The centered NXE Guide, extended with a Discord Friends blade.
 +std::vector<std::string> CardsActivity::guideRows() {
 +    if (m_guideView==1) return {"My Games","My Apps","My Pins","Search","Friends","Messages"};
++    if(m_guideTab==guide360::Friends) {
++        std::vector<std::string> labels;
++        for(const auto& row:m_guideDmRows) labels.push_back(row.label);
++        return labels;
++    }
 +    switch (m_guideTab) {
 +        case 0: return {"Game Marketplace","Video Marketplace"};
 +        case 1: return {"Achievements","Quick Launch","My Games","My Apps","My Pins"};
 +        case 2: return {"Xbox Dashboard","Quick Launch","Connect to Xbox LIVE",current()?"Play "+current()->name:"Game Library"};
-+        case 3: return {"Music Player","Picture Library","Video Library","Previous Track","Play / Pause","Next Track"};
++        case guide360::Media: return {"Music Player","Picture Library","Video Library","Previous Track","Play / Pause","Next Track"};
 +        default: return {"Profile","Preferences","System Settings","Storage","Audio","Network","Turn Off Console"};
 +    }
 +}
 +void CardsActivity::openGuide() {
 +    m_dashGuide=true;m_guideClosing=false;m_guideIn=m_settings.motion?0.f:1.f;
 +    m_guideTab=2;m_guideView=0;m_guidePos=m_guideFrom=2.f;m_guideTabIn=1.f;m_dashGuideRow=0;m_guideRowAt=0.f;m_guideNote.clear();
++    m_guideInbox={};m_guideDmRows.clear();m_guideDmRefresh=-1;
++    m_guideSels[guide360::Friends]=0;
 +    m_audio.play("show_modal");
 +}
 +void CardsActivity::closeGuide(bool animate) {
@@ -3864,6 +4029,12 @@ index 0000000000000000000000000000000000000000..250135b31c01d32b7d6db1295dc8f21c
 +    m_guideTab=guide360::wrap(m_guideTab+delta);m_guideView=0;
 +    m_dashGuideRow=m_guideSels[m_guideTab];m_guideRowAt=static_cast<float>(m_dashGuideRow);
 +    m_guideNote.clear();m_guideTabIn=m_settings.motion?0.f:1.f;
++    if(m_guideTab==guide360::Friends) {
++#ifdef SWITCHU_MENU
++        m_discord.activate();m_discordStarted=true;
++#endif
++        refreshGuideDms(true);m_guideRowAt=float(m_dashGuideRow);
++    }
 +    m_audio.play("tab_transition");
 +}
 +void CardsActivity::guideBack() {
@@ -3876,16 +4047,16 @@ index 0000000000000000000000000000000000000000..250135b31c01d32b7d6db1295dc8f21c
 +void CardsActivity::dashGuideActivate() {
 +    m_audio.play("activation");
 +    const int row=m_dashGuideRow;
++    if(m_guideTab==guide360::Friends && !m_guideView) {activateGuideDm();return;}
 +    auto quick=[&]() { m_guideSels[m_guideTab]=row;m_guideView=1;m_dashGuideRow=0;m_guideRowAt=0; };
 +    if (m_guideView==1) {
++        if(row==4 || row==5) {guideTab(guide360::Friends-m_guideTab);return;}
 +        closeGuide(false);
 +        switch(row) {
 +            case 0:dashTab(3);break;
 +            case 1:dashTab(6);break;
 +            case 2:openPagePicker();break;
 +            case 3:dashSearch();break;
-+            case 4:dashTab(2);m_dashTile=0;dashActivate();break;
-+            case 5:openNotifications();break;
 +        }
 +    } else if (m_guideTab==0) {
 +        closeGuide(false);
@@ -3905,7 +4076,7 @@ index 0000000000000000000000000000000000000000..250135b31c01d32b7d6db1295dc8f21c
 +        closeGuide(false);
 +        if (row==0) dashTab(1);
 +        else if (current()) play(); else dashTab(3);
-+    } else if (m_guideTab==3) {
++    } else if (m_guideTab==guide360::Media) {
 +        if (row>=3) {
 +            if (row==3) m_audio.skip(-1);
 +            else if(row==4) m_audio.togglePause(); else m_audio.skip(1);
@@ -3951,17 +4122,18 @@ index 0000000000000000000000000000000000000000..250135b31c01d32b7d6db1295dc8f21c
 +    }
 +}
 +void CardsActivity::drawGuide(nxui::Renderer& r) {
++    if(m_guideTab==guide360::Friends && !m_guideView) refreshGuideDms();
 +    const float a=nxe::ease(m_guideIn),shift=(1.f-a)*18.f;
 +    const auto white=nxui::Color(0.95f,0.97f,0.98f,a);
 +    const auto dark=nxui::Color(0.27f,0.31f,0.32f,a);
 +    r.drawRect({0,0,1280,720},{0,0,0,0.80f*a});
 +    auto body=guide360::blade(m_guideTab,m_guideTab);
 +    const float horizontal=(m_guidePos-m_guideTab)*38.f;body.x+=horizontal;
-+    r.drawRoundedRect({286,212+shift,700,292},{0.76f,0.82f,0.83f,a},5);
++    r.drawRoundedRect({guide360::left,212+shift,guide360::width,292},{0.76f,0.82f,0.83f,a},5);
 +    // Draw the furthest blades first, then the active dark body.
-+    for(int distance=4;distance>=1;--distance) for(int sign:{-1,1}) {
++    for(int distance=guide360::Count-1;distance>=1;--distance) for(int sign:{-1,1}) {
 +        const int i=m_guideTab+distance*sign;
-+        if(i<0 || i>=5) continue;
++        if(i<0 || i>=guide360::Count) continue;
 +        auto b=guide360::blade(i,m_guideTab);b.y+=shift;
 +        r.drawRoundedRect({b.x,b.y+3,b.w,b.h},{0,0,0,0.25f*a},5);
 +        r.drawRoundedRect({b.x,b.y,b.w,b.h},{201/255.f,215/255.f,218/255.f,a},5);
@@ -3989,6 +4161,8 @@ index 0000000000000000000000000000000000000000..250135b31c01d32b7d6db1295dc8f21c
 +    auto rows=guideRows();
 +    m_dashGuideRow=std::clamp(m_dashGuideRow,0,std::max(0,int(rows.size())-1));
 +    if(m_guideView) textMid(r,m_fBody,"Quick Launch",body.x+61,185+shift,white,0.95f);
++    if(m_guideTab==guide360::Friends && !m_guideView)
++        textMid(r,m_fBody,"Discord Direct Messages",body.x+61,185+shift,white,0.95f);
 +    const float rowOpacity=a*(0.65f+0.35f*nxe::ease(m_guideTabIn));
 +    auto chosen=guide360::row(0,m_guideTab);chosen.x+=horizontal;chosen.y+=m_guideRowAt*43.f+shift;
 +    r.drawRoundedRect({chosen.x,chosen.y,chosen.w,chosen.h},{90/255.f,155/255.f,3/255.f,rowOpacity},3);
@@ -4004,12 +4178,17 @@ index 0000000000000000000000000000000000000000..250135b31c01d32b7d6db1295dc8f21c
 +            if(art!=m_thumbs.end() && art->second.tex) r.drawTexture(art->second.tex.get(),{box.x+box.w-42,box.y+4,32,32},white);
 +        }
 +    }
-+    if(m_guideTab==3 && !m_audio.trackName().empty())
++    if(m_guideTab==guide360::Media && !m_audio.trackName().empty())
 +        textMid(r,m_fBadge,fit(m_fBadge,m_audio.trackName(),460,1.f),body.x+61,493+shift,white,1.f);
-+    if(!m_guideNote.empty()) textMid(r,m_fBadge,fit(m_fBadge,m_guideNote,460,1.f),body.x+61,493+shift,white,1.f);
++    if(!m_guideNote.empty()) textMid(r,m_fBadge,fit(m_fBadge,m_guideNote,460,1.f),body.x+61,(m_guideTab==guide360::Friends?575.f:493.f)+shift,white,1.f);
 +    if(m_guideTab==0 && m_guideNote.empty()) textMid(r,m_fBadge,m_dashGuideRow==0?"Opens Nintendo eShop":"Opens installed media apps",body.x+61,493+shift,white,1.f);
++    if(m_guideTab==guide360::Friends && m_guideNote.empty()) {
++        const auto note=m_guideDmState==homenx::dmview::State::Ready?
++            "DMs "+std::to_string(m_guideInbox.conversations.size())+"  |  Page "+std::to_string(m_guideInbox.page+1)+"/"+std::to_string(m_guideInbox.pages())+"  |  * Unread":"X  Open Discord";
++        textMid(r,m_fBadge,note,body.x+61,575+shift,white,0.9f);
++    }
 +    const char* buttons[]={"A","B","X","Y"};
-+    const char* labels[]={"Select","Back","Profile","Xbox Dashboard"};
++    const char* labels[]={"Select","Back",m_guideTab==guide360::Friends?"Discord":"Profile","Xbox Dashboard"};
 +    const float x[]={22,130,226,362};
 +    const nxui::Color colors[]={{0.44f,0.69f,0.08f,a},{0.68f,0.08f,0.08f,a},{0.08f,0.35f,0.69f,a},{0.83f,0.86f,0.08f,a}};
 +    for(int i=0;i<4;++i) {
@@ -4019,12 +4198,81 @@ index 0000000000000000000000000000000000000000..250135b31c01d32b7d6db1295dc8f21c
 +        textMid(r,m_fPill,labels[i],cx+13,cy,white,0.95f);
 +    }
 +}
+diff --git a/projects/cards/src/GuideDiscord.inc b/projects/cards/src/GuideDiscord.inc
+new file mode 100644
+index 0000000000000000000000000000000000000000..df51049fd0162f458e52bdb1288a021b51a82d74
+--- /dev/null
++++ b/projects/cards/src/GuideDiscord.inc
+@@ -0,0 +1,63 @@
++// Guide DM rows are refreshed during rendering, after this frame's input.
++// Activation therefore always refers to the rows the player last saw.
++void CardsActivity::refreshGuideDms(bool force) {
++    if(!force && m_time<m_guideDmRefresh) return;
++    m_guideDmRefresh=m_time+0.3f;
++    const std::uint64_t keep=m_dashGuideRow>=0 && m_dashGuideRow<int(m_guideDmRows.size())?
++        m_guideDmRows[m_dashGuideRow].channelId:0;
++#ifdef SWITCHU_MENU
++    using State=homenx::dmview::State;
++    switch(m_discord.state()) {
++        case DiscordService::State::Ready:m_guideDmState=State::Ready;break;
++        case DiscordService::State::Connecting:m_guideDmState=State::Connecting;break;
++        case DiscordService::State::Failed:m_guideDmState=State::Failed;break;
++        default:m_guideDmState=State::SignedOut;break;
++    }
++    std::vector<homenx::dmview::Conversation> incoming;
++    if(m_guideDmState==State::Ready) for(const auto& dm:m_discord.dms(std::numeric_limits<size_t>::max()))
++        incoming.push_back({dm.channelId,plain(dm.name),dm.avatarUrl,dm.status,dm.unread,dm.mentions,dm.members});
++    m_guideInbox.update(m_discord.currentAccount(),std::move(incoming));
++#else
++    m_guideDmState=homenx::dmview::State::HomeRequired;
++#endif
++    m_guideDmRows=m_guideInbox.rows(m_guideDmState);
++    if(keep) {
++        const auto it=std::find_if(m_guideDmRows.begin(),m_guideDmRows.end(),[&](const auto& row){return row.channelId==keep;});
++        if(it!=m_guideDmRows.end()) m_dashGuideRow=int(it-m_guideDmRows.begin());
++    }
++    m_dashGuideRow=std::clamp(m_dashGuideRow,0,std::max(0,int(m_guideDmRows.size())-1));
++}
++void CardsActivity::activateGuideDm() {
++    if(m_dashGuideRow<0 || m_dashGuideRow>=int(m_guideDmRows.size())) return;
++    const auto row=m_guideDmRows[m_dashGuideRow];
++    using Action=homenx::dmview::Action;
++    if(row.action==Action::Info) {
++        m_guideNote=m_guideDmState==homenx::dmview::State::HomeRequired?
++            "Install the HOME frontend for built-in Discord DMs.":
++            "X opens Discord sign-in, accounts and direct messages.";
++        return;
++    }
++    if(row.action==Action::Previous || row.action==Action::Next) {
++        m_guideInbox.move(row.action==Action::Next?1:-1);
++        m_guideDmRows=m_guideInbox.rows(m_guideDmState);
++        m_dashGuideRow=0;m_guideRowAt=0;m_audio.play("tab_transition");return;
++    }
++    if(row.action==Action::OpenDiscord) {
++#ifndef SWITCHU_MENU
++        closeGuide(false);
++#endif
++        openDiscord(true);return;
++    }
++#ifdef SWITCHU_MENU
++    const auto dms=m_discord.dms(std::numeric_limits<size_t>::max());
++    if(m_discord.state()!=DiscordService::State::Ready || m_discord.currentAccount()!=m_guideInbox.account
++        || !homenx::dmview::contains(dms,row.channelId)) {
++        m_guideNote="Conversation changed. Select it again after reconnecting.";
++        refreshGuideDms(true);return;
++    }
++    const auto found=std::find_if(dms.begin(),dms.end(),[&](const auto& dm){return dm.channelId==row.channelId;});
++    openDiscord(true);
++    if(m_discordPanel && m_discordPanel->isOpen())
++        m_discordPanel->openChat(found->channelId,0,found->name,found->avatarUrl);
++#endif
++}
 diff --git a/projects/cards/src/GuideLayout.hpp b/projects/cards/src/GuideLayout.hpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..d042a3cb91f9531772c0104a6f846d206f50d769
+index 0000000000000000000000000000000000000000..0aa999372d3e6acaed7e7bb3499853977dae5d81
 --- /dev/null
 +++ b/projects/cards/src/GuideLayout.hpp
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,28 @@
 +#pragma once
 +#include <algorithm>
 +#include <array>
@@ -4034,16 +4282,18 @@ index 0000000000000000000000000000000000000000..d042a3cb91f9531772c0104a6f846d20
 +    float x,y,w,h;
 +    bool contains(float px,float py) const { return px>=x && px<x+w && py>=y && py<y+h; }
 +};
-+inline constexpr std::array<const char*,5> names={"Marketplace","Games","Profile","Media","Settings"};
-+inline int wrap(int tab) { return (tab%5+5)%5; }
++enum Tab {Marketplace,Games,Profile,Friends,Media,Settings,Count};
++inline constexpr std::array<const char*,Count> names={"Marketplace","Games","Profile","Friends","Media","Settings"};
++inline constexpr float left=271.f,width=738.f,right=left+width;
++inline int wrap(int tab) { return (tab%Count+Count)%Count; }
 +inline Box blade(int index,int selected) {
-+    const float x=286.f+index*38.f+(index>selected?510.f:0.f);
++    const float x=left+index*38.f+(index>selected?510.f:0.f);
 +    const float inset=6.f*std::abs(index-selected);
 +    return {x,200.f+inset,index==selected?548.f:38.f,316.f-2.f*inset};
 +}
 +inline Box row(int index,int selected) { return {blade(selected,selected).x+59.f,212.f+index*43.f,472.f,41.f}; }
 +inline int hitBlade(float x,float y,int selected) {
-+    for(int i=0;i<5;++i) if(i!=selected && blade(i,selected).contains(x,y)) return i;
++    for(int i=0;i<Count;++i) if(i!=selected && blade(i,selected).contains(x,y)) return i;
 +    return -1;
 +}
 +inline int hitRow(float x,float y,int selected,int count) {
@@ -4576,6 +4826,227 @@ index 0000000000000000000000000000000000000000..adf9ae22285a2637cc7ffc98eeeb0447
 +    }
 +}
 +} // namespace cards::settings360
+diff --git a/projects/menu/src/social/DirectMessageView.hpp b/projects/menu/src/social/DirectMessageView.hpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..465a506ce36c1ac776a04a8dbb4865574bb51c91
+--- /dev/null
++++ b/projects/menu/src/social/DirectMessageView.hpp
+@@ -0,0 +1,72 @@
++#pragma once
++#include <algorithm>
++#include <cstdint>
++#include <string>
++#include <vector>
++
++namespace homenx::dmview {
++struct Conversation {
++    std::uint64_t channelId=0;
++    std::string name{},avatarUrl{},status{};
++    bool unread=false;
++    int mentions=0,members=0;
++};
++enum class State {HomeRequired,SignedOut,Connecting,Ready,Failed};
++enum class Action {Conversation,Previous,Next,OpenDiscord,Info};
++struct Row {Action action=Action::Info;std::string label;std::uint64_t channelId=0;};
++template<class Channels> bool contains(const Channels& channels,std::uint64_t id) {
++    return id && std::any_of(channels.begin(),channels.end(),[&](const auto& channel){return channel.channelId==id;});
++}
++template<class Channels> bool allowChat(bool directOnly,std::uint64_t channel,std::uint64_t guild,const Channels& dms) {
++    return channel && (!directOnly || (!guild && contains(dms,channel)));
++}
++struct Draft {std::string account;std::uint64_t channel=0;bool directOnly=false;};
++enum class Submit {Empty,AccountChanged,Unavailable,NotADm,Queued};
++// The caller supplies the existing service's enqueue operation. This never
++// sends during list refresh, navigation, or merely opening a conversation.
++template<class Channels,class Enqueue> Submit submit(const Draft& draft,const std::string& current,
++        bool ready,const Channels& dms,const std::string& text,Enqueue enqueue) {
++    if(text.find_first_not_of(" \t\r\n\v\f")==std::string::npos) return Submit::Empty;
++    if(draft.account.empty() || current!=draft.account) return Submit::AccountChanged;
++    if(!ready || !draft.channel) return Submit::Unavailable;
++    if(draft.directOnly && !contains(dms,draft.channel)) return Submit::NotADm;
++    enqueue(draft.channel,text);return Submit::Queued;
++}
++struct Inbox {
++    static constexpr std::size_t perPage=5;
++    std::string account;
++    std::vector<Conversation> conversations;
++    std::size_t page=0;
++    void update(std::string identity,std::vector<Conversation> incoming) {
++        if(identity!=account){conversations.clear();page=0;account=std::move(identity);}
++        // Keep visible conversations in place across presence/unread updates.
++        // New conversations append until this Guide session is reopened.
++        std::vector<Conversation> updated;
++        for(const auto& old:conversations) {
++            auto it=std::find_if(incoming.begin(),incoming.end(),[&](const auto& dm){return dm.channelId==old.channelId;});
++            if(it!=incoming.end() && it->channelId){updated.push_back(std::move(*it));it->channelId=0;}
++        }
++        for(auto& dm:incoming) if(dm.channelId && !contains(updated,dm.channelId)) updated.push_back(std::move(dm));
++        conversations=std::move(updated);
++        page=std::min(page,pages()-1);
++    }
++    std::size_t pages()const{return std::max(std::size_t(1),(conversations.size()+perPage-1)/perPage);}
++    void move(int delta){page=static_cast<std::size_t>(std::clamp(static_cast<long long>(page)+delta,0LL,static_cast<long long>(pages()-1)));}
++    std::vector<Row> rows(State state)const {
++        if(state==State::HomeRequired)return {{Action::Info,"Discord DMs require HOME"},{Action::OpenDiscord,"Open external Discord app"}};
++        if(state==State::SignedOut)return {{Action::OpenDiscord,"Sign in to Discord"}};
++        if(state==State::Connecting)return {{Action::Info,"Connecting to Discord..."},{Action::OpenDiscord,"Open Discord"}};
++        if(state==State::Failed)return {{Action::Info,"Discord connection unavailable"},{Action::OpenDiscord,"Reconnect / sign in"}};
++        if(conversations.empty())return {{Action::Info,"No direct messages yet"},{Action::OpenDiscord,"Open Discord"}};
++        std::vector<Row> out;
++        if(page)out.push_back({Action::Previous,"Previous conversations"});
++        const auto end=std::min(conversations.size(),(page+1)*perPage);
++        for(std::size_t i=page*perPage;i<end;++i) {
++            const auto& dm=conversations[i];
++            out.push_back({Action::Conversation,(dm.unread?"* ":"")+(dm.name.empty()?"Direct Message":dm.name),dm.channelId});
++        }
++        if(page+1<pages())out.push_back({Action::Next,"More conversations"});
++        return out;
++    }
++};
++} // namespace homenx::dmview
+diff --git a/projects/menu/src/widgets/DiscordPanel.cpp b/projects/menu/src/widgets/DiscordPanel.cpp
+index 6cbe533925dba469158e581a55431f7a3e6d04ef..f63c19a7c5d2a9be0f56533b5770e378a083ae69 100644
+--- a/projects/menu/src/widgets/DiscordPanel.cpp
++++ b/projects/menu/src/widgets/DiscordPanel.cpp
+@@ -1,4 +1,5 @@
+ #include "widgets/DiscordPanel.hpp"
++#include "social/DirectMessageView.hpp"
+ #include <nxui/third_party/stb/stb_image.h>
+ #include <switch.h>
+ #include <switchu/fancy_text.hpp>
+@@ -17,6 +18,7 @@
+ #include <algorithm>
+ #include <cctype>
+ #include <cmath>
++#include <limits>
+ 
+ namespace {
+ 
+@@ -235,10 +237,22 @@ DiscordPanel::DiscordPanel() {
+     setVisible(false);
+ }
+ 
++void DiscordPanel::setDirectMessagesOnly(bool enabled) {
++    if(m_directOnly==enabled) return;
++    m_directOnly=enabled;
++    if(enabled) {
++        m_guild=0;m_servers.clear();m_column=1;
++        if(m_chatIsChannel){m_view=View::Home;m_chat=0;m_chatIsChannel=false;}
++    }
++    m_builtVersion=~0ull;m_builtState=-1;
++}
++
+ void DiscordPanel::show() {
+     m_active = true;
+     m_view = View::Home;
+     m_chat = 0;
++    m_chatAccount.clear();
++    if(m_directOnly){m_guild=0;m_servers.clear();m_column=1;}
+     m_sel = -1;
+     m_scroll = 0.f;
+     m_followSel = true;
+@@ -253,9 +267,12 @@ void DiscordPanel::show() {
+ void DiscordPanel::openChat(Snowflake channelId, Snowflake guildId, const std::string& name,
+                             const std::string& avatarUrl) {
+     if (!m_active || !m_service || !channelId) return;
++    if(!homenx::dmview::allowChat(m_directOnly,channelId,guildId,
++        m_directOnly?m_service->dms(std::numeric_limits<size_t>::max()):std::vector<DiscordService::Dm>{})) return;
+     m_guild = guildId;
+     m_view = View::Chat;
+     m_chat = channelId;
++    m_chatAccount=m_service->currentAccount();
+     m_chatName = clean(name);
+     m_chatIsChannel = guildId != 0;
+     m_chatAvatar = m_chatIsChannel ? std::string() : avatarUrl;
+@@ -321,12 +338,13 @@ void DiscordPanel::openAccounts() {
+ }
+ 
+ bool DiscordPanel::railShown() const {
+-    if (!m_service || m_view != View::Home) return false;
++    if (m_directOnly || !m_service || m_view != View::Home) return false;
+     const auto st = m_service->state();
+     return st == DiscordService::State::Ready || st == DiscordService::State::Connecting;
+ }
+ 
+ void DiscordPanel::moveRail(int dir) {
++    if(m_directOnly) return;
+     int cur = 0;
+     for (size_t i = 0; i < m_servers.size(); ++i)
+         if (m_servers[i].id == m_guild) cur = (int)i + 1;
+@@ -395,8 +413,11 @@ void DiscordPanel::activateRow() {
+     switch (r.kind) {
+         case Row::Dm:
+         case Row::Channel:
++            if(!homenx::dmview::allowChat(m_directOnly,r.channelId,r.kind==Row::Channel?m_guild:0,
++                m_directOnly?m_service->dms(std::numeric_limits<size_t>::max()):std::vector<DiscordService::Dm>{})) return;
+             m_view = View::Chat;
+             m_chat = r.channelId;
++            m_chatAccount=m_service->currentAccount();
+             m_chatName = r.text;
+             m_chatIsChannel = r.kind == Row::Channel;
+             m_chatAvatar = m_chatIsChannel ? std::string() : r.avatarUrl;
+@@ -481,6 +502,12 @@ void DiscordPanel::rebuildRows() {
+     auto& i18n = nxui::I18n::instance();
+     using S = DiscordService::State;
+     const S st = m_service->state();
++    if(m_directOnly) {
++        m_guild=0;
++        if(m_view==View::Chat && m_chatAccount!=m_service->currentAccount()) {
++            m_view=View::Home;m_chat=0;m_sel=-1;m_builtVersion=~0ull;
++        }
++    }
+     const uint64_t version = m_service->version();
+     if ((int)st == m_builtState && version == m_builtVersion && m_view == m_builtView && m_guild == m_builtGuild)
+         return;
+@@ -491,7 +518,7 @@ void DiscordPanel::rebuildRows() {
+     m_builtState = (int)st;
+     m_builtVersion = version;
+     m_builtView = m_view;
+-    if (st == S::Ready) {
++    if (st == S::Ready && !m_directOnly) {
+         m_servers = m_service->servers();
+         if (m_guild && std::none_of(m_servers.begin(), m_servers.end(),
+                                     [this](const auto& s) { return s.id == m_guild; }))
+@@ -573,7 +600,7 @@ void DiscordPanel::rebuildRows() {
+             if (m_rows.empty())
+                 info(Row::Info, i18n.tr("discord.no_channels", "There are no channels here you can read."));
+         } else {
+-            for (const auto& d : m_service->dms(40)) {
++            for (const auto& d : m_service->dms(m_directOnly?std::numeric_limits<size_t>::max():40)) {
+                 Row r;
+                 r.kind = Row::Dm;
+                 r.text = clean(d.name);
+@@ -986,7 +1013,7 @@ void DiscordPanel::drawTopBar(nxui::Renderer& ren, const nxui::Rect& p, float a)
+         else
+             ren.drawCircle({tx + 14.f, p.y + 28.f}, 14.f, blurple(a), 28);
+         tx += 40.f;
+-        title = "Discord";
++        title = m_directOnly?"Discord DMs":"Discord";
+         hint = i18n.tr("discord.hint_close", "B  Close");
+     }
+     const float hintW = m_smallFont->measure(hint).x * 0.72f;
+diff --git a/projects/menu/src/widgets/DiscordPanel.hpp b/projects/menu/src/widgets/DiscordPanel.hpp
+index ecb0ea0e523bc872f033dc12f88b8219b6812399..26084fa5995fb70c9a0b8a1e618989f0490d5ea2 100644
+--- a/projects/menu/src/widgets/DiscordPanel.hpp
++++ b/projects/menu/src/widgets/DiscordPanel.hpp
+@@ -35,6 +35,8 @@ public:
+     void setLogoPath(std::string path) { m_logoPath = std::move(path); }
+     void setService(DiscordService* s) { m_service = s; }
+     void setCallbacks(Callbacks cb) { m_cb = std::move(cb); }
++    void setDirectMessagesOnly(bool enabled);
++    bool directMessagesOnly() const { return m_directOnly; }
+ 
+     void show();
+     void hide();
+@@ -137,6 +139,8 @@ private:
+     Snowflake m_chat = 0;
+     std::string m_chatName, m_chatAvatar, m_chatStatus;
+     bool m_chatIsChannel = false; // a server channel ("#name") rather than a DM
++    bool m_directOnly=false;
++    std::string m_chatAccount;
+ 
+     // The server bar: 0 = Direct Messages, else a server's id.
+     std::vector<DiscordService::Server> m_servers;
 diff --git a/tests/dashboard360_test.cpp b/tests/dashboard360_test.cpp
 new file mode 100644
 index 0000000000000000000000000000000000000000..0ef30566502b9d52c2cf7fb4c18e7f3e01d9e4f4
@@ -4636,24 +5107,25 @@ index 0000000000000000000000000000000000000000..0ef30566502b9d52c2cf7fb4c18e7f3e
 +}
 diff --git a/tests/guide360_test.cpp b/tests/guide360_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..6256a8948dea2bae800b6d70f3105adfb50466f3
+index 0000000000000000000000000000000000000000..4af308c6aadd55366cf1276f2127326a72edf733
 --- /dev/null
 +++ b/tests/guide360_test.cpp
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,26 @@
 +#include "../projects/cards/src/GuideLayout.hpp"
 +#include <cassert>
 +#include <iostream>
 +int main() {
 +    using namespace cards::guide360;
-+    assert(wrap(-1)==4 && wrap(5)==0);
-+    for(int selected=0;selected<5;++selected) {
++    assert(wrap(-1)==Settings && wrap(Count)==0);
++    assert(std::string(names[Friends])=="Friends");
++    for(int selected=0;selected<Count;++selected) {
 +        const auto body=blade(selected,selected);
 +        assert(body.y==200 && body.h==316);
-+        for(int i=0;i<5;++i) {
++        for(int i=0;i<Count;++i) {
 +            const auto box=blade(i,selected);
-+            assert(box.x>=286 && box.x+box.w<=986);
++            assert(box.x>=left && box.x+box.w<=right);
 +            if(i!=selected) assert(hitBlade(box.x+box.w/2,box.y+box.h/2,selected)==i);
-+            for(int j=i+1;j<5;++j) {const auto other=blade(j,selected);assert(box.x+box.w<=other.x);}
++            for(int j=i+1;j<Count;++j) {const auto other=blade(j,selected);assert(box.x+box.w<=other.x);}
 +        }
 +        for(int count=1;count<=7;++count) for(int i=0;i<count;++i) {
 +            const auto box=row(i,selected);
@@ -4664,6 +5136,144 @@ index 0000000000000000000000000000000000000000..6256a8948dea2bae800b6d70f3105adf
 +        }
 +    }
 +    std::cout << "Guide blade bounds, seven-row layouts, touch targets and tab wrapping passed\n";
++}
+diff --git a/tests/guide_discord360_test.cpp b/tests/guide_discord360_test.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..d94bd37dcf7ff007a214f40a3be516396be7549d
+--- /dev/null
++++ b/tests/guide_discord360_test.cpp
+@@ -0,0 +1,132 @@
++#include "../projects/menu/src/social/DirectMessageView.hpp"
++#include <cassert>
++#include <iostream>
++#include <limits>
++#include <memory>
++#include <set>
++
++// Exercise the production Guide methods with an in-memory Discord service.
++class DiscordService {
++public:
++    enum class State {SignedOut,QrLogin,Connecting,Ready,Failed,TokenLogin};
++    State current=State::Ready;std::string identity="account-a";
++    std::vector<homenx::dmview::Conversation> channels;
++    State state()const{return current;}
++    const std::string& currentAccount()const{return identity;}
++    auto dms(std::size_t)const{return channels;}
++};
++struct DiscordPanel {
++    int opened=0;std::uint64_t channel=0,guild=0;
++    bool isOpen()const{return true;}
++    void openChat(std::uint64_t id,std::uint64_t group,const std::string&,const std::string&){++opened;channel=id;guild=group;}
++};
++namespace cards {
++inline std::string plain(const std::string& s){return s;}
++class CardsActivity {
++public:
++    float m_time=1,m_guideDmRefresh=-1,m_guideRowAt=0;
++    int m_dashGuideRow=0,openedDiscord=0;bool directOnly=false,closed=false;
++    std::string m_guideNote;
++    homenx::dmview::Inbox m_guideInbox;
++    std::vector<homenx::dmview::Row> m_guideDmRows;
++    homenx::dmview::State m_guideDmState=homenx::dmview::State::HomeRequired;
++    DiscordService m_discord;
++    std::shared_ptr<DiscordPanel> m_discordPanel=std::make_shared<DiscordPanel>();
++    struct {void play(const char*){}} m_audio;
++    void closeGuide(bool){closed=true;}
++    void openDiscord(bool only){++openedDiscord;directOnly=only;}
++    void refreshGuideDms(bool force=false);
++    void activateGuideDm();
++};
++#include "../projects/cards/src/GuideDiscord.inc"
++}
++
++int main() {
++    using namespace homenx::dmview;
++    Inbox inbox;
++    for(const auto state:{State::HomeRequired,State::SignedOut,State::Connecting,State::Ready,State::Failed}) {
++        const auto rows=inbox.rows(state);assert(!rows.empty() && rows.size()<=7);
++        for(const auto& row:rows) assert(row.action!=Action::Conversation && row.channelId==0);
++    }
++    for(int count:{0,1,5,6,10,11,40,241}) {
++        std::vector<Conversation> dms;
++        for(int i=0;i<count;++i)dms.push_back({std::uint64_t(100+i),"Friend "+std::to_string(i),{},"online",i==0,0,i==2?3:0});
++        inbox={};inbox.update("account-a",dms);std::set<std::uint64_t> seen;
++        for(std::size_t page=0;page<inbox.pages();++page) {
++            inbox.page=page;const auto rows=inbox.rows(State::Ready);assert(rows.size()<=7);
++            for(const auto& row:rows) if(row.action==Action::Conversation) {
++                assert(contains(dms,row.channelId));assert(seen.insert(row.channelId).second);
++            }
++            if(count) {
++                assert((rows.front().action==Action::Previous)==(page>0));
++                assert((rows.back().action==Action::Next)==(page+1<inbox.pages()));
++            }
++        }
++        assert(seen.size()==std::size_t(count));
++        inbox.move(10000);assert(inbox.page==inbox.pages()-1);inbox.move(-10000);assert(inbox.page==0);
++        if(count) assert(inbox.rows(State::Ready).front().label.rfind("* ",0)==0);
++    }
++    inbox={};inbox.update("account-a",{{11,"Alice"},{22,"Bob"},{33,"Group DM"}});
++    // Presence/unread events and new recent messages cannot swap the selected
++    // person merely because Discord reordered its most-recent-DM list.
++    inbox.update("account-a",{{22,"Bob",{},"idle",true},{44,"New DM"},{11,"Alice"},{33,"Group DM"}});
++    assert(inbox.conversations[0].channelId==11 && inbox.conversations[1].channelId==22);
++    assert(inbox.conversations[1].unread && inbox.conversations[1].status=="idle");
++    assert(inbox.conversations.back().channelId==44);
++    inbox.update("account-a",{{22,"Bob"},{22,"Duplicate"},{0,"Invalid"}});
++    assert(inbox.conversations.size()==1 && inbox.conversations.front().channelId==22);
++    inbox.update("account-b",{{99,"Other account"}});
++    assert(inbox.account=="account-b" && inbox.conversations.size()==1 && inbox.conversations.front().channelId==99);
++    assert(!contains(inbox.conversations,22));
++    const std::vector<Conversation> dms={{11,"Alice"},{33,"Group"}};
++    assert(allowChat(true,11,0,dms));assert(allowChat(true,33,0,dms));
++    assert(!allowChat(true,11,555,dms));assert(!allowChat(true,999,0,dms));
++    assert(!allowChat(true,0,0,dms));assert(allowChat(false,999,555,dms));
++    int enqueued=0;std::uint64_t destination=0;std::string body;
++    const auto send=[&](std::uint64_t channel,const std::string& text){++enqueued;destination=channel;body=text;};
++    Draft draft{"account-a",11,true};
++    for(const auto& empty:{""," ","\t\n\r"})assert(submit(draft,"account-a",true,dms,empty,send)==Submit::Empty);
++    assert(submit(draft,"account-b",true,dms,"hello",send)==Submit::AccountChanged);
++    assert(submit(draft,"account-a",false,dms,"hello",send)==Submit::Unavailable);
++    assert(submit({"account-a",999,true},"account-a",true,dms,"hello",send)==Submit::NotADm);
++    assert(submit({"account-a",0,true},"account-a",true,dms,"hello",send)==Submit::Unavailable);
++    assert(enqueued==0);
++    assert(submit(draft,"account-a",true,dms,"hello",send)==Submit::Queued);
++    assert(enqueued==1 && destination==11 && body=="hello");
++    assert(submit({"account-a",33,true},"account-a",true,dms,"group reply",send)==Submit::Queued);
++    assert(enqueued==2 && destination==33);
++    // The ordinary Discord entry keeps its existing server-chat capability.
++    assert(submit({"account-a",999,false},"account-a",true,dms,"server reply",send)==Submit::Queued);
++    assert(enqueued==3 && destination==999);
++    cards::CardsActivity guide;
++    guide.m_discord.channels={{11,"Alice"},{22,"Bob"},{33,"Group DM"}};
++    guide.refreshGuideDms(true);
++#ifdef SWITCHU_MENU
++    assert(guide.m_guideDmRows.size()==3);
++    // Discord can change its order between a rendered frame and activation.
++    // The visible Alice row must still open Alice, with guild ID zero.
++    guide.m_discord.channels={{22,"Bob"},{33,"Group DM"},{11,"Alice"}};
++    guide.activateGuideDm();assert(guide.directOnly && guide.m_discordPanel->channel==11 && guide.m_discordPanel->guild==0);
++    guide.m_discord.channels={{22,"Bob"},{33,"Group DM"}};
++    const int wasOpened=guide.m_discordPanel->opened;
++    guide.activateGuideDm();assert(guide.m_discordPanel->opened==wasOpened && !guide.m_guideNote.empty());
++    guide.m_discord.identity="account-b";
++    guide.activateGuideDm();assert(guide.m_discordPanel->opened==wasOpened);
++    guide.m_discord.channels={{88,"New account DM"}};guide.refreshGuideDms(true);
++    assert(guide.m_guideInbox.account=="account-b" && guide.m_guideDmRows[0].channelId==88);
++    guide.m_dashGuideRow=0;guide.activateGuideDm();assert(guide.m_discordPanel->channel==88);
++    guide.m_discord.channels.clear();
++    for(int i=0;i<13;++i)guide.m_discord.channels.push_back({std::uint64_t(100+i),"DM"});
++    guide.refreshGuideDms(true);guide.m_dashGuideRow=5;guide.activateGuideDm();
++    assert(guide.m_guideInbox.page==1 && guide.m_guideDmRows.front().action==Action::Previous);
++    guide.activateGuideDm();assert(guide.m_guideInbox.page==0);
++    guide.m_discord.current=DiscordService::State::SignedOut;guide.refreshGuideDms(true);
++    guide.m_dashGuideRow=0;const int beforeSignIn=guide.openedDiscord;guide.activateGuideDm();
++    assert(guide.openedDiscord==beforeSignIn+1 && guide.directOnly && !guide.closed);
++#else
++    assert(guide.m_guideDmState==State::HomeRequired);
++    guide.m_dashGuideRow=0;guide.activateGuideDm();assert(guide.openedDiscord==0 && !guide.m_guideNote.empty());
++    guide.m_dashGuideRow=1;guide.activateGuideDm();assert(guide.openedDiscord==1 && guide.directOnly && guide.closed);
++#endif
++    std::cout<<"DM paging, stable IDs, unread/group DMs, account changes, server exclusion and explicit-submit routing passed; no network messages sent\n";
 +}
 diff --git a/tests/settings360_test.cpp b/tests/settings360_test.cpp
 new file mode 100644

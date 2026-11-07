@@ -6,7 +6,7 @@ inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 - Vertical channels and overlapping cards with a reflective floor.
 - Animated card focus and vertical channel switching; respects Animations settings.
 - The recorded original NXE-era Xbox 360 startup.
-- A centered NXE Guide with five blades, profile/clock, green selection and animated navigation.
+- A centered NXE Guide with animated blades, profile/clock, green selection and an added Discord Friends blade.
 - Full-screen NXE settings with the original Console Settings categories, animated submenus and real HomeNX controls.
 - Real Switch games, homebrew, friends, media and settings actions.
 
@@ -18,6 +18,7 @@ Xbox Live services and Xbox firmware are not included.
 [Dashboard reference research](homenx360/NXE-REFERENCES.md).
 [Guide references and action mapping](homenx360/GUIDE-REFERENCES.md).
 [Settings references, controls and functional mapping](homenx360/SETTINGS-REFERENCES.md).
+[Discord Friends setup and controls](homenx360/DISCORD-GUIDE.md).
 [Startup media notice](homenx360/overlay/media/STARTUP-MEDIA-NOTICE.md).
 
 ## Download
@@ -48,6 +49,11 @@ System Settings opens the full-screen NXE menu. Up/Down selects, A opens or
 changes a setting, Left/Right adjusts values, B returns to the previous page,
 and Plus closes settings. HomeNX Preferences retains the additional tools.
 Startup controls also appear under Console Settings → Startup and Shutdown.
+
+In the HOME frontend, Guide → Friends lists Discord DMs. A opens a conversation;
+A/X in the chat opens the reply keyboard. X on Friends opens Discord sign-in and
+accounts. This view hides server channels; the normal Discord entry retains them.
+The standalone NRO shows the HOME requirement and an external Discord shortcut.
 
 ## Builds and release publishing
 

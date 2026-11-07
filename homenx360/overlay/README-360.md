@@ -98,3 +98,11 @@ workflow. The source overlay is in `homenx360/overlay/`.
 Inside the Guide, Left/Right or L/R changes blades; Up/Down moves between rows.
 A selects, B returns/closes, X opens profiles, Y returns to Dashboard, and Plus
 also closes it. The Media blade controls the real HomeNX music player.
+
+## Discord Friends
+
+Guide → Friends lists Discord direct and group DMs in the HOME frontend.
+A or touch opens a conversation; A/X in the chat opens the reply keyboard.
+X in Friends opens HomeNX's existing Discord sign-in and account controls.
+The standalone NRO shows the HOME requirement and an external Discord shortcut.
+Read `DISCORD-GUIDE.md` for setup, paging, controls and testing limits.
