@@ -1,4 +1,10 @@
-# HomeNX360 full-body avatar preview
+# HomeNX360 full-body avatar preview 2
+
+Preview 2 corrects stale HOME shader packaging found during download verification.
+The tested native binaries and avatar media are unchanged; the HOME shader copies
+now match the shaders embedded in the NRO. The manifest records both frontend and
+packaging revisions. Future builds always compile shaders from the checked-out
+GLSL and reject mismatched shader sets before packaging.
 
 Adds full-body Xbox 360 avatars to an NXE-style profile sign-in screen, using
 real Switch profile names and launch identities. Six face/body starters, mixed

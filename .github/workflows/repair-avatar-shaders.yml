@@ -1,0 +1,35 @@
+name: Repair avatar shader package
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: HomeNX360-experimental
+          run-id: 42374452112
+          github-token: ${{ github.token }}
+          path: artifacts
+      - name: Verify unchanged native inputs and repair HOME shader copies
+        run: python3 homenx360/overlay/tools/repair_avatar_shaders360.py artifacts . --packaging-revision "$PACKAGING_REVISION"
+        env:
+          PACKAGING_REVISION: ${{ github.sha }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HomeNX360-avatar-shaders-verified
+          path: artifacts/*
+      - name: Publish verified prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: gh release create v0.7.0-preview.2 artifacts/* --target "$RELEASE_COMMIT" --prerelease --title "HomeNX360 v0.7.0-preview.2" --notes-file artifacts/RELEASE-NOTES.md

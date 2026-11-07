@@ -47,6 +47,12 @@ for p, offset, magic in (
         f.seek(offset)
         if f.read(4) != magic:
             raise SystemExit(f'Unexpected executable format: {p}')
+# A fresh upstream checkout includes precompiled shaders. Never publish a HOME
+# package whose shader set differs from the NRO/cards build of the same source.
+for shader in (root / 'build/cards-romfs/shaders').glob('*.dksh'):
+    home_shader = root / 'romfs/shaders' / shader.name
+    if not home_shader.is_file() or shader.read_bytes() != home_shader.read_bytes():
+        raise SystemExit(f'HOME/cards shader mismatch: {shader.name}; rebuild shaders from GLSL')
 if not any(n.startswith('switch/SwitchU/shaders/') for n in files):
     raise SystemExit('The rebuilt frontend shaders are missing')
 
