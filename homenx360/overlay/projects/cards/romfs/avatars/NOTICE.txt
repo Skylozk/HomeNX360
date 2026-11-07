@@ -1,0 +1,4 @@
+Xbox 360 avatar artwork and animation: Microsoft.
+Exported through 360sona by Ezra Kruger: https://360sona.com/
+Media are separate from the HomeNX code's GPL license.
+See media/avatars/AVATAR-MEDIA-NOTICE.md and AVATAR-GUIDE.md in the source.

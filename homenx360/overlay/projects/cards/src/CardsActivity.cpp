@@ -503,6 +503,7 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
     m_startSuspended = suspendedId;
     m_startRunning = appRunning;
     m_atBoot = atBoot;
+    m_profileStartup=atBoot && !appRunning && !suspendedId && !fromApplet;
     if (!atBoot) m_dashBoot = 0.f;
     m_fromApplet = fromApplet;
 #else
@@ -540,6 +541,7 @@ bool CardsActivity::onCreate() {
     nxui::GpuDevice::setImageBudget(std::clamp<u64>(total / 4, 64ull << 20, 160ull << 20));
 
     m_settings.load();
+    m_profilePending=m_profileStartup && m_settings.profileSignIn;
     m_settings.introDone = true;
     m_settings.launchStyle = 0;
     setLanguage(m_settings.language);
@@ -853,6 +855,9 @@ void CardsActivity::onDestroy() {
     if (m_sdTestJob.valid()) m_sdTestJob.wait(); // (it stops early: m_jobsStop)
     if (m_changesJob.valid()) m_changesJob.wait();
     if (m_avatarJob.valid()) m_avatarJob.wait();
+    if (m_profileJob.valid()) m_profileJob.wait();
+    if (m_profileAssetJob.valid()) m_profileAssetJob.wait();
+    m_profileAssets.releaseTextures();
     if (m_wallJob.valid()) m_wallJob.wait();
     if (m_lockJob.valid()) m_lockJob.wait();
     if (m_storageJob.valid()) m_storageJob.wait();
@@ -1293,6 +1298,7 @@ bool CardsActivity::reserveArtwork(std::uint64_t bytes) {
 }
 
 void CardsActivity::wantArt() {
+    if(m_profiles.open())return;
     auto& page = games();
     std::vector<Job> jobs;
     auto add = [&](int i, int what) {
@@ -5309,7 +5315,7 @@ void CardsActivity::drawMusic(nxui::Renderer& r) {
 }
 
 // The pill's picture: who games start as; add or remove users.
-void CardsActivity::openUsers() {
+void CardsActivity::openUserTools() {
     std::vector<User> users = listUsers();
     app().gpu().waitIdle(); // the last popup's pictures may still be drawing
     m_userPictures.clear();
@@ -5601,6 +5607,9 @@ void CardsActivity::buildSettings() {
     look.rows.push_back(toggle("Startup animation", [this]() { return m_settings.startupClip; },
         [this, save]() { m_settings.startupClip=!m_settings.startupClip;save(); },
         "Play the original Xbox 360 startup when the app starts"));
+    look.rows.push_back(toggle("Sign-in at startup",[this](){return m_settings.profileSignIn;},
+        [this,save](){m_settings.profileSignIn=!m_settings.profileSignIn;save();},
+        "Show full-body avatars and choose a Switch profile after startup"));
     look.rows.push_back(action("Preview startup", [this]() {
         m_bootClip.stop();m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
         m_dashBoot=1.f;m_bootSkip={};m_bootPreview=true;m_audio.setMusic(false,m_settings.musicVolume);
@@ -7545,6 +7554,7 @@ void CardsActivity::onUpdate(float dt) {
     // Either stick moves through the games and every CardsNX menu (HomeNX's screens
     // in CardsNX already read their buttons before this).
     app().input().mergeRightStick();
+    pollProfileJobs(); // collect completed loads even if B closed the picker
     updateSpotify();
 #ifdef SWITCHU_MENU
     switchu::timebudget::poll(); // the clock, once the time service has a session to spare
@@ -8311,6 +8321,9 @@ void CardsActivity::onUpdate(float dt) {
         return;
     }
 
+    if(m_profilePending)openProfiles(true);
+    if(m_profiles.open()){updateProfiles(dt);return;}
+
     auto& in = app().input();
     using B = nxui::Button;
     const bool aDown = in.isDown(B::A), bDown = in.isDown(B::B);
@@ -8488,6 +8501,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
     m_drawMarkName = "";
     m_frosted = false;
     if (m_dashBoot > 0.f) { drawDashBoot(r); return; }
+    if(m_profiles.open()){
+        drawProfiles(r);drawMessage(r);drawLock(r);drawNotificationCard(r);return;
+    }
     drawDashboard(r);
     drawStep("draw: the menus");
     drawSheet(r);
@@ -9901,5 +9917,6 @@ void CardsActivity::updateStorage() {
 // The Guide's Friends blade shares HomeNX's DM service and reply keyboard.
 #include "GuideDiscord.inc"
 #include "Settings360.inc"
+#include "Profiles360.inc" // Native profiles with clothing-fitted full-body avatars
 
 } // namespace cards

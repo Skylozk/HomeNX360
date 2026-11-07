@@ -8,11 +8,14 @@ inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 - The recorded original NXE-era Xbox 360 startup.
 - A centered NXE Guide with animated blades, profile/clock, green selection and an added Discord Friends blade.
 - Full-screen NXE settings with the original Console Settings categories, animated submenus and real HomeNX controls.
+- Full-body Xbox 360 avatars, an NXE-style profile sign-in row and a custom per-profile creator.
 - Real Switch games, homebrew, friends, media and settings actions.
 
 This is an NXE-inspired adaptation, not an exact reproduction of every Xbox
 screen. Existing HomeNX dialogs and Nintendo applets retain their interfaces.
 The startup uses recorded Xbox media, credited separately from the GPL code.
+Avatar meshes and animations are also Microsoft media exported through 360sona;
+see [the avatar guide](homenx360/AVATAR-GUIDE.md) for controls and fidelity limits.
 Xbox Live services and Xbox firmware are not included.
 [Startup recording, analysis and fidelity limits](homenx360/STARTUP-REFERENCES.md).
 [Dashboard reference research](homenx360/NXE-REFERENCES.md).

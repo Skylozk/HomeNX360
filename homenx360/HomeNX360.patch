@@ -1,3 +1,65 @@
+diff --git a/AVATAR-GUIDE.md b/AVATAR-GUIDE.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..5da834ce9af19ce6d458faf06792ae5640322c96
+--- /dev/null
++++ b/AVATAR-GUIDE.md
+@@ -0,0 +1,56 @@
++# Full-body profiles and avatar creator
++
++Open Profiles from My Xbox or the Guide. Each real Switch profile has a
++full-body Xbox 360 avatar and its Nintendo profile name on the gray NXE-style
++sign-in floor. A selects the profile used to launch games and shows its greeting.
++Left/Right changes selection; X edits that profile's avatar; Y opens the existing
++Nintendo user-management tools; B returns. The row scrolls for up to eight users.
++Touch a character to select it, then touch again to sign in, or swipe the row.
++
++The profile picker also follows the recorded startup on a fresh app launch or
++console boot. Returning HOME from a running game keeps the current account.
++Console Settings → Startup and Shutdown → Sign-in at startup controls this.
++
++## Creator controls
++
++Up/Down selects a feature, Left/Right or A changes it, L/R rotates the full-body
++preview, Y randomizes, X saves, and B cancels the draft. Touch the row's left or
++right side to change it; drag the character to rotate. Footer buttons work by
++touch too. Saving an avatar for another profile does not sign into that profile.
++
++Six original-style face/body presets are included. Hair, top, trousers and shoes
++can be combined within each of the two body families; accessories can be toggled,
++and hair colour and height/build adjusted. Hair colour offers Original, Black,
++Brown, Blonde, Ginger and Silver. This is a compact custom creator, not Microsoft's
++entire avatar catalog or every facial slider. Preset names identify the exported
++starter wardrobes. Actual profile names always come from the Switch.
++Hat-cut hairstyles keep their matching cap; the accessories switch controls
++the starter's glasses, watch and earrings.
++
++Appearances are stored per full Nintendo account UID in CardsNX's existing
++settings under `profileAvatars`. They do not overwrite Nintendo profile pictures,
++Miis, account names or saved games. Back up `config/CardsNX/` to preserve them.
++
++## Artwork and rendering
++
++These are Xbox 360 avatar meshes, skin weights, textures and animations exported
++through the public demo of [360sona](https://360sona.com/), by Ezra Kruger.
++[About 360sona](https://360sona.com/about.html) describes the original artwork and
++export capability. No account or online renderer is required inside HomeNX360.
++Microsoft owns the original avatar artwork and animations; the GPL code license
++does not grant rights to those media. See `media/avatars/AVATAR-MEDIA-NOTICE.md`.
++
++The native renderer retains the original mesh detail and uses baked lighting,
++384-pixel maximum textures and animation sampled at 15 Hz with interpolation.
++It holds the relaxed standing pose between idle gestures and plays the original
++greeting after sign-in. The exact four faces/outfits in the user's screenshot
++are not all included. Lighting, font metrics and the Switch controls also differ;
++this release does not claim a pixel-identical screenshot recreation.
++Original hair colour retains the exported surface; optional dyes use a native
++colour shader and are approximations of the console's colour treatment. Some
++mixed wardrobe/hairstyle combinations may still intersect.
++
++The converter, unchanged exports, native banks and hashes accompany the source.
++Reference previews use the native CPU skinning/projection with a software depth
++buffer; they are not photos or captures from Switch hardware. Both native builds
++and host checks can be verified here; physical Switch rendering remains untested.
 diff --git a/DISCORD-GUIDE.md b/DISCORD-GUIDE.md
 new file mode 100644
 index 0000000000000000000000000000000000000000..2fbccd29178db15308d29639c603ed6c6d496ea1
@@ -209,10 +271,10 @@ index 0000000000000000000000000000000000000000..dcc2837a822c9f13990733d1e23cd86e
 +frame verification and remaining hardware limits.
 diff --git a/README-360.md b/README-360.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..f16d993211e94dcf9e03d9170c9b02170fc90592
+index 0000000000000000000000000000000000000000..1cdca601781187e933bb3b0dba4a3072d402ffc8
 --- /dev/null
 +++ b/README-360.md
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,123 @@
 +# HomeNX 360 — experimental dashboard fork
 +
 +Based on `ad3333m/homenx` commit `94f2bd56698fed40f2897131ea09463775840767`.
@@ -223,6 +285,8 @@ index 0000000000000000000000000000000000000000..f16d993211e94dcf9e03d9170c9b0217
 +cards, reflections, a Guide, full-screen NXE settings and a skippable recorded Xbox 360 startup. Game artwork and
 +names come from the Switch's library. Existing HomeNX dialogs remain available.
 +The startup runs inside HomeNX; it does not replace the console bootloader.
++Profiles now show original-style full-body Xbox 360 avatars with a per-profile
++creator. See `AVATAR-GUIDE.md` for controls, media credits and fidelity limits.
 +See [the reference log](NXE-REFERENCES.md) for the evidence and remaining gaps.
 +
 +## Your console
@@ -295,6 +359,19 @@ index 0000000000000000000000000000000000000000..f16d993211e94dcf9e03d9170c9b0217
 +the eight NXE category names. Xbox camera, disc auto-play and LIVE features are
 +explicitly unavailable. Console date/time and Nintendo network configuration
 +require the HOME frontend. See `SETTINGS-REFERENCES.md` for the complete mapping.
++
++## Avatar profiles
++
++Profiles opens the NXE-style sign-in row. Left/Right selects a Switch profile,
++A signs in, X customizes its full-body avatar, Y opens the existing user tools,
++and B returns. In the creator use Up/Down for features, Left/Right to change,
++L/R to rotate, Y to randomize, X to save and B to cancel. The creator saves only
++the appearance for that Nintendo account UID. It never changes Miis or names.
++
++Sign-in follows startup by default. Console Settings → Startup and Shutdown →
++Sign-in at startup disables it. Returning HOME from a game keeps your profile.
++The NRO embeds avatar assets; the HOME update also needs the complete
++`switch/SwitchU/cards/avatars/` folder from the ZIP. Read `AVATAR-GUIDE.md`.
 +
 +## Undo
 +
@@ -486,10 +563,10 @@ index 0000000000000000000000000000000000000000..8693ff9efb1f81f6088ce88f2271a26f
 +launch remains recommended. Playback errors are reported rather than silently
 +skipping. Settings > Look > Preview startup allows an immediate playback check.
 diff --git a/THIRD_PARTY_NOTICES.md b/THIRD_PARTY_NOTICES.md
-index 67af324719cf48a2bcf20f6211eeebe6f84be449..653b30c6d3de6cf92ca82b28bdc240566e08713e 100644
+index 67af324719cf48a2bcf20f6211eeebe6f84be449..ad9041db4147d57e6b99775fe343c63d628858f8 100644
 --- a/THIRD_PARTY_NOTICES.md
 +++ b/THIRD_PARTY_NOTICES.md
-@@ -62,3 +62,14 @@ Wii U sounds and music are Nintendo's.
+@@ -62,3 +62,19 @@ Wii U sounds and music are Nintendo's.
  
  - **PowerCmptr**: the HomeNX lock screen and Discord token sign-in
    ([ad3333m/homenx#5](https://github.com/ad3333m/homenx/pull/5)).
@@ -504,6 +581,149 @@ index 67af324719cf48a2bcf20f6211eeebe6f84be449..653b30c6d3de6cf92ca82b28bdc24056
 +
 +Xbox 360 startup footage and sound are Microsoft material, separate from the
 +GPL code. See media/STARTUP-MEDIA-NOTICE.md for the source recording and hashes.
++
++Xbox 360 avatar meshes, textures and animations are also Microsoft material,
++exported through the public 360sona editor by Ezra Kruger. These assets are
++separate from the GPL code. See media/avatars/AVATAR-MEDIA-NOTICE.md and the six
++source/bank hash reports in projects/cards/romfs/avatars/.
+diff --git a/lib/nxui/include/nxui/core/Renderer.hpp b/lib/nxui/include/nxui/core/Renderer.hpp
+index 2c647ff87a3df71b7ad352f4508fb494b468ffb1..fdc80cff6b537b62a442fd13163dff65a0f5cec3 100644
+--- a/lib/nxui/include/nxui/core/Renderer.hpp
++++ b/lib/nxui/include/nxui/core/Renderer.hpp
+@@ -105,6 +105,13 @@ public:
+                           const Color& highlight, float radius, float opacity = 1.f);
+     void drawCircle(const Vec2& center, float radius, const Color& c, int segments = 32);
+     void drawTriangle(const Vec2& p1, const Vec2& p2, const Vec2& p3, const Color& c);
++    // A depth-tested indexed stream for CPU-skinned avatar geometry. Vertex2D
++    // stores projected depth in sx, with rad=-1 identifying the 3D vertex.
++    // Its buffers are separate from the small, append-only 2D UI stream.
++    void beginAvatarPass();
++    bool drawAvatarMesh(const Texture* texture,const std::vector<Vertex2D>& vertices,
++                        const std::vector<uint32_t>& indices,bool translucent=false);
++    void endAvatarPass();
+     void drawLine(const Vec2& from, const Vec2& to, const Color& c, float thickness = 1.f);
+     void drawGradientRect(const Rect& r, const Color& top, const Color& bottom);
+     void drawTexture(const Texture* tex, const Rect& dest, const Color& tint = Color::white());
+@@ -211,6 +218,9 @@ private:
+     static constexpr int SHADER_COUNT = (int)ShaderProgram::Count;
+     dk::Shader m_vertShaders[SHADER_COUNT];
+     dk::Shader m_fragShaders[SHADER_COUNT];
++    static constexpr uint32_t AVATAR_STREAM_SIZE=4u*1024u*1024u;
++    dk::UniqueMemBlock m_avatarStream[GpuDevice::NUM_FB];
++    uint32_t m_avatarUsed=0;
+     ShaderProgram m_curShader = ShaderProgram::Basic;
+ #endif
+ 
+diff --git a/lib/nxui/src/core/GpuDevice.cpp b/lib/nxui/src/core/GpuDevice.cpp
+index 4c220ae5d5ff624a23ae0b06c7f1093ab75032e8..b807d1f6c11ccdc1ad5d9618f412fa0255c3393d 100644
+--- a/lib/nxui/src/core/GpuDevice.cpp
++++ b/lib/nxui/src/core/GpuDevice.cpp
+@@ -109,7 +109,7 @@ void GpuDevice::createDepthStencil() {
+     dk::ImageLayout dsLayout;
+     dk::ImageLayoutMaker{m_dev}
+         .setFlags(DkImageFlags_UsageRender | DkImageFlags_HwCompression)
+-        .setFormat(DkImageFormat_S8)
++        .setFormat(DkImageFormat_Z24S8)
+         .setDimensions(static_cast<uint32_t>(m_fbW), static_cast<uint32_t>(m_fbH))
+         .initialize(dsLayout);
+ 
+diff --git a/lib/nxui/src/core/Renderer.cpp b/lib/nxui/src/core/Renderer.cpp
+index 0a81cb44893f448ed586b7ee20a223d3fc1d1620..7bad5318043cc9bb459de27315df4cf52872a100 100644
+--- a/lib/nxui/src/core/Renderer.cpp
++++ b/lib/nxui/src/core/Renderer.cpp
+@@ -25,7 +25,8 @@ Renderer::Renderer(GpuDevice& gpu) : m_gpu(gpu) {
+ }
+ Renderer::~Renderer() {
+     // Pixels still waiting to be freed: once the GPU is done, before the device goes.
+-    if (!m_deferredImages.empty()) {
++    bool avatarBuffers=false;for(const auto& buffer:m_avatarStream)avatarBuffers|=bool(buffer);
++    if (!m_deferredImages.empty() || avatarBuffers) {
+         m_gpu.waitIdle();
+         releaseDeferredImages(true);
+     }
+@@ -307,6 +308,7 @@ void Renderer::beginFrame() {
+     m_vtxBase  = static_cast<Vertex2D*>(m_gpu.vtxCpuAddr(slot));
+     m_vtxCount = 0;
+     m_vtxBatchStart = 0;
++    m_avatarUsed = 0;
+     m_curTexSlot = -1;
+     m_texturing  = false;
+     m_curShader  = ShaderProgram::Basic;
+@@ -810,6 +812,49 @@ void Renderer::drawTriangle(const Vec2& p1, const Vec2& p2, const Vec2& p3, cons
+     addVertex(p3.x, p3.y, 0, 0, c);
+ }
+ 
++void Renderer::beginAvatarPass() {
++    flush();
++    useShader(ShaderProgram::Basic);
++    auto cmd=m_gpu.cmdBuf();
++    cmd.clearDepthStencil(true,1.f,0,0);
++    cmd.bindDepthStencilState(dk::DepthStencilState{}.setDepthTestEnable(true)
++        .setDepthWriteEnable(true).setDepthCompareOp(DkCompareOp_Lequal));
++}
++
++bool Renderer::drawAvatarMesh(const Texture* texture,const std::vector<Vertex2D>& vertices,
++                              const std::vector<uint32_t>& indices,bool translucent) {
++    if(!texture || !texture->valid() || vertices.empty() || indices.empty() || indices.size()%3) return false;
++    const uint32_t vertexBytes=vertices.size()*sizeof(Vertex2D),indexBytes=indices.size()*sizeof(uint32_t);
++    const uint32_t vo=(m_avatarUsed+255u)&~255u,io=(vo+vertexBytes+255u)&~255u;
++    if(io>AVATAR_STREAM_SIZE || indexBytes>AVATAR_STREAM_SIZE-io)return false;
++    flush();
++    const int slot=m_gpu.slot();auto& buffer=m_avatarStream[slot];
++    if(!buffer)buffer=dk::MemBlockMaker{m_gpu.device(),AVATAR_STREAM_SIZE}
++        .setFlags(DkMemBlockFlags_CpuUncached|DkMemBlockFlags_GpuCached).create();
++    if(!buffer)return false;
++    auto* cpu=static_cast<uint8_t*>(buffer.getCpuAddr());
++    std::memcpy(cpu+vo,vertices.data(),vertexBytes);std::memcpy(cpu+io,indices.data(),indexBytes);
++    m_avatarUsed=io+indexBytes;
++    auto cmd=m_gpu.cmdBuf();
++    cmd.bindDepthStencilState(dk::DepthStencilState{}.setDepthTestEnable(true)
++        .setDepthWriteEnable(!translucent).setDepthCompareOp(DkCompareOp_Lequal));
++    if(m_descDirty){cmd.barrier(DkBarrier_None,DkInvalidateFlags_Descriptors);m_descDirty=false;}
++    FsUniforms fs{};fs.useTexture=1;
++    auto addr=m_gpu.nextFsUboGpuAddr(slot);
++    cmd.pushConstants(addr,GpuDevice::FS_UBO_SIZE,0,sizeof(int32_t)*4,&fs);
++    cmd.bindUniformBuffer(DkStage_Fragment,1,addr,GpuDevice::FS_UBO_SIZE);
++    cmd.bindTextures(DkStage_Fragment,0,dkMakeTextureHandle(texture->descriptorSlot(),0));
++    cmd.bindVtxBuffer(0,buffer.getGpuAddr()+vo,vertexBytes);
++    cmd.bindIdxBuffer(DkIdxFormat_Uint32,buffer.getGpuAddr()+io);
++    cmd.drawIndexed(DkPrimitive_Triangles,indices.size(),1,0,0,0);
++    return true;
++}
++
++void Renderer::endAvatarPass() {
++    flush();
++    m_gpu.cmdBuf().bindDepthStencilState(dk::DepthStencilState{}.setDepthTestEnable(false));
++}
++
+ void Renderer::drawLine(const Vec2& from, const Vec2& to, const Color& c, float thickness) {
+     Vec2 d = (to - from).normalized();
+     Vec2 n = {-d.y, d.x};
+diff --git a/lib/nxui/src/core/Renderer_sdl2.cpp b/lib/nxui/src/core/Renderer_sdl2.cpp
+index 85fb9fe1ef511a6c8fbd2087035ba1484893c8f1..560e087a0632a48a9c31cc8bc22ac5c2d2a59183 100644
+--- a/lib/nxui/src/core/Renderer_sdl2.cpp
++++ b/lib/nxui/src/core/Renderer_sdl2.cpp
+@@ -9,6 +9,20 @@
+ 
+ namespace nxui {
+ 
++// The desktop backend has no depth attachment. Native Switch rendering uses
++// deko3d; desktop reference previews use the shared CPU geometry and a z-buffer.
++void Renderer::beginAvatarPass(){flush();}
++void Renderer::endAvatarPass(){flush();}
++bool Renderer::drawAvatarMesh(const Texture* texture,const std::vector<Vertex2D>& vertices,
++                              const std::vector<uint32_t>& indices,bool translucent){
++    (void)translucent;
++    if(!texture || !texture->valid())return false;
++    flush();std::vector<SDL_Vertex> out;out.reserve(vertices.size());
++    for(const auto& v:vertices)out.push_back({{v.x,v.y},{uint8_t(v.r*255),uint8_t(v.g*255),uint8_t(v.b*255),uint8_t(v.a*255)},{v.u,v.v}});
++    std::vector<int> idx(indices.begin(),indices.end());
++    return SDL_RenderGeometry(m_gpu.sdlRenderer(),texture->sdlTexture(),out.data(),out.size(),idx.data(),idx.size())==0;
++}
++
+ Renderer::Renderer(GpuDevice& gpu) : m_gpu(gpu) {
+     m_clipStack.reserve(8);
+     m_vtxBuf.resize(GpuDevice::MAX_VERTICES);
 diff --git a/media/STARTUP-MEDIA-NOTICE.md b/media/STARTUP-MEDIA-NOTICE.md
 new file mode 100644
 index 0000000000000000000000000000000000000000..5049317808f81c5c4544be04ca6b551305d282a9
@@ -525,6 +745,35 @@ index 0000000000000000000000000000000000000000..5049317808f81c5c4544be04ca6b5513
 +`projects/cards/romfs/boot/nxe360.bin` contains derived lossless 720p frames and
 +PCM sound. The conversion script and complete per-frame verification report
 +are included. Nintendo and Microsoft do not endorse this project.
+diff --git a/media/avatars/AVATAR-MEDIA-NOTICE.md b/media/avatars/AVATAR-MEDIA-NOTICE.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..cd5fabfff68d3d1de0ce91f74abd56d9cffec6ac
+--- /dev/null
++++ b/media/avatars/AVATAR-MEDIA-NOTICE.md
+@@ -0,0 +1,23 @@
++# Xbox 360 avatar artwork
++
++Original avatar meshes, textures, rigs and animations are Microsoft material.
++They are separate from the project's GPL-3.0 source-code license. Nintendo,
++Microsoft and 360sona do not endorse this fork.
++
++Source: https://360sona.com/ (public Try the editor demo → starter avatar →
++Export a 3D model). Export generator credit: “Made with 360sona,
++https://360sona.com”. 360sona is by Ezra Kruger; its viewer code is closed source
++and is not copied into HomeNX360. Background: https://360sona.com/about.html.
++
++`xbox-*.glb` are the unchanged six clothed starter exports, with baked lighting,
++embedded PNG surfaces, humanoid bone names and animations. `body-*.glb` are
++unchanged exports of the same starters with top/trousers/shoes removed using the
++editor's ordinary controls, to retain the complete underlying body geometry.
++
++`tools/prepare_avatar360.py` converts the exports for native rendering.
++`tools/prepare_avatar_wardrobe.py` combines clothing-fitted body meshes within each compatible rig family, transfers
++body UVs to the selected starter's skin surface, and retains complete calf geometry
++for shorts. It retains original meshes and skin appearance,
++resamples textures to at most 384 pixels, and samples idle/greeting bone motion
++at 15 Hz. The six reports in `projects/cards/romfs/avatars/` contain source and
++bank SHA-256 hashes. The software renderer and profile UI are original code.
 diff --git a/packages/s/switch-pkg/xmake.lua b/packages/s/switch-pkg/xmake.lua
 new file mode 100644
 index 0000000000000000000000000000000000000000..72a4895a814fda2c8e6b37075626d8c250e8d3d6
@@ -581,6 +830,268 @@ index 0000000000000000000000000000000000000000..72a4895a814fda2c8e6b37075626d8c2
 +        raise("Install devkitPro package '%s' in your SDK before building", package:data("pkgname"))
 +    end)
 +package_end()
+diff --git a/projects/cards/romfs/avatars/NOTICE.txt b/projects/cards/romfs/avatars/NOTICE.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..2986e0aaf02792c83c7c94c83c7fd8645dbc07e4
+--- /dev/null
++++ b/projects/cards/romfs/avatars/NOTICE.txt
+@@ -0,0 +1,4 @@
++Xbox 360 avatar artwork and animation: Microsoft.
++Exported through 360sona by Ezra Kruger: https://360sona.com/
++Media are separate from the HomeNX code's GPL license.
++See media/avatars/AVATAR-MEDIA-NOTICE.md and AVATAR-GUIDE.md in the source.
+diff --git a/projects/cards/romfs/avatars/fan.json b/projects/cards/romfs/avatars/fan.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..8c13a443dad2d8f28a063b339f9c667263c850ed
+--- /dev/null
++++ b/projects/cards/romfs/avatars/fan.json
+@@ -0,0 +1,36 @@
++{
++  "source": "xbox-fan.glb",
++  "source_sha256": "d750559754cd3c691c4c85bd84d39940dedca2aa828412b36f6c1b37f13a07ab",
++  "bank_sha256": "89f9068976edce700eb7c0ff0db9b724dff3c9899081104fb54f2c4a1aeaf5d5",
++  "joints": 71,
++  "parts": 16,
++  "vertices": 9256,
++  "triangles": 8400,
++  "textures": 10,
++  "texture_max_side": 384,
++  "animations": [
++    {
++      "name": "Just... standing around",
++      "duration": 4.8333330154418945,
++      "frames": 74
++    },
++    {
++      "name": "Hello there!",
++      "duration": 5.333333492279053,
++      "frames": 82
++    }
++  ],
++  "artwork": "Microsoft; exported through the public 360sona editor demo",
++  "export_generator": {
++    "version": "2.0",
++    "generator": "360sona",
++    "copyright": "Made with 360sona, https://360sona.com",
++    "extras": {
++      "madeWith": "360sona",
++      "url": "https://360sona.com"
++    }
++  },
++  "body_visibility": "Original clothing-fitted body meshes, body UV transfer within each compatible rig family, and complete calf geometry for shorts",
++  "body_source": "body-fan.glb",
++  "body_source_sha256": "25a1c857feb11142d95052efa77dddffa93aef071fb4689a56b6ef4c55091cd2"
++}
+diff --git a/projects/cards/romfs/avatars/night.json b/projects/cards/romfs/avatars/night.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..044aa6126334a1e5d43099579ad584c386a5c324
+--- /dev/null
++++ b/projects/cards/romfs/avatars/night.json
+@@ -0,0 +1,36 @@
++{
++  "source": "xbox-night.glb",
++  "source_sha256": "068961272265871266470b2ded471143837a5e58859a04640de3918dc242876f",
++  "bank_sha256": "d1bca7afb010cf74338c5996710653dbacaa1ac862cae4428548030ffe9c975f",
++  "joints": 71,
++  "parts": 16,
++  "vertices": 11759,
++  "triangles": 8836,
++  "textures": 12,
++  "texture_max_side": 384,
++  "animations": [
++    {
++      "name": "Just... standing around",
++      "duration": 4.8333330154418945,
++      "frames": 74
++    },
++    {
++      "name": "Hello there!",
++      "duration": 5.333333492279053,
++      "frames": 82
++    }
++  ],
++  "artwork": "Microsoft; exported through the public 360sona editor demo",
++  "export_generator": {
++    "version": "2.0",
++    "generator": "360sona",
++    "copyright": "Made with 360sona, https://360sona.com",
++    "extras": {
++      "madeWith": "360sona",
++      "url": "https://360sona.com"
++    }
++  },
++  "body_visibility": "Original clothing-fitted body meshes, body UV transfer within each compatible rig family, and complete calf geometry for shorts",
++  "body_source": "body-night.glb",
++  "body_source_sha256": "0a2e32bca7f7dc84cd7c3f506bebdc73a2a6e42aaaccaf562487bc0878ac5e3f"
++}
+diff --git a/projects/cards/romfs/avatars/player.json b/projects/cards/romfs/avatars/player.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..58942d81c37da3f37827c1829eb4b22e9657f057
+--- /dev/null
++++ b/projects/cards/romfs/avatars/player.json
+@@ -0,0 +1,36 @@
++{
++  "source": "xbox-player.glb",
++  "source_sha256": "f0cc6f41a2ad16b842a848908c97e4d46a4ad25542d1ca7269f229bbc40b6b1a",
++  "bank_sha256": "f831124aeb7b048f341798166e161ebd4c87b6324d5c16e86ea2fb2e4bdb01a9",
++  "joints": 71,
++  "parts": 14,
++  "vertices": 9421,
++  "triangles": 8376,
++  "textures": 10,
++  "texture_max_side": 384,
++  "animations": [
++    {
++      "name": "Just... standing around",
++      "duration": 4.8333330154418945,
++      "frames": 74
++    },
++    {
++      "name": "Hello there!",
++      "duration": 5.333333492279053,
++      "frames": 82
++    }
++  ],
++  "artwork": "Microsoft; exported through the public 360sona editor demo",
++  "export_generator": {
++    "version": "2.0",
++    "generator": "360sona",
++    "copyright": "Made with 360sona, https://360sona.com",
++    "extras": {
++      "madeWith": "360sona",
++      "url": "https://360sona.com"
++    }
++  },
++  "body_visibility": "Original clothing-fitted body meshes, body UV transfer within each compatible rig family, and complete calf geometry for shorts",
++  "body_source": "body-player.glb",
++  "body_source_sha256": "32e1a73fb94079583d6db55a69940a1aec7da3aa222b71722a98e8f5412ff147"
++}
+diff --git a/projects/cards/romfs/avatars/regular.json b/projects/cards/romfs/avatars/regular.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..ff225b12df4e097f16d46a11546aca272bd32bb7
+--- /dev/null
++++ b/projects/cards/romfs/avatars/regular.json
+@@ -0,0 +1,36 @@
++{
++  "source": "xbox-regular.glb",
++  "source_sha256": "4f440c729ff3862e20de7d10990489c1cbc69b61bcd4b19cc1f8604aa7ae0fc2",
++  "bank_sha256": "35bcee2fb099544d78caaf2a229191b4aa10bad30c4ade896f76cb741180320a",
++  "joints": 71,
++  "parts": 16,
++  "vertices": 9869,
++  "triangles": 8318,
++  "textures": 10,
++  "texture_max_side": 384,
++  "animations": [
++    {
++      "name": "Just... standing around",
++      "duration": 4.8333330154418945,
++      "frames": 74
++    },
++    {
++      "name": "Hello there!",
++      "duration": 5.333333492279053,
++      "frames": 82
++    }
++  ],
++  "artwork": "Microsoft; exported through the public 360sona editor demo",
++  "export_generator": {
++    "version": "2.0",
++    "generator": "360sona",
++    "copyright": "Made with 360sona, https://360sona.com",
++    "extras": {
++      "madeWith": "360sona",
++      "url": "https://360sona.com"
++    }
++  },
++  "body_visibility": "Original clothing-fitted body meshes, body UV transfer within each compatible rig family, and complete calf geometry for shorts",
++  "body_source": "body-regular.glb",
++  "body_source_sha256": "cd6b5cd09e21f5e2072e08e8071fe6c2948aef10ac9e4837b1b597106141a935"
++}
+diff --git a/projects/cards/romfs/avatars/smart.json b/projects/cards/romfs/avatars/smart.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..5b9de262b59e08226a3f79ab01f80fb2308bf49c
+--- /dev/null
++++ b/projects/cards/romfs/avatars/smart.json
+@@ -0,0 +1,36 @@
++{
++  "source": "xbox-smart.glb",
++  "source_sha256": "105aa354c5346892bfd5a67c585496913977aa4fe137b70226fb6886499c284c",
++  "bank_sha256": "680194488d10137e6669c923e9bc956f501532c0b7f76d9201f84496bd032cca",
++  "joints": 71,
++  "parts": 18,
++  "vertices": 10568,
++  "triangles": 9283,
++  "textures": 12,
++  "texture_max_side": 384,
++  "animations": [
++    {
++      "name": "Just... standing around",
++      "duration": 4.8333330154418945,
++      "frames": 74
++    },
++    {
++      "name": "Hello there!",
++      "duration": 5.333333492279053,
++      "frames": 82
++    }
++  ],
++  "artwork": "Microsoft; exported through the public 360sona editor demo",
++  "export_generator": {
++    "version": "2.0",
++    "generator": "360sona",
++    "copyright": "Made with 360sona, https://360sona.com",
++    "extras": {
++      "madeWith": "360sona",
++      "url": "https://360sona.com"
++    }
++  },
++  "body_visibility": "Original clothing-fitted body meshes, body UV transfer within each compatible rig family, and complete calf geometry for shorts",
++  "body_source": "body-smart.glb",
++  "body_source_sha256": "9e1fd1357425691977955a38f047bfd132f480579a6650bb4897b28db7cdf4c8"
++}
+diff --git a/projects/cards/romfs/avatars/street.json b/projects/cards/romfs/avatars/street.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..a08824e8937769d412a1f34af72aeabcaf45299e
+--- /dev/null
++++ b/projects/cards/romfs/avatars/street.json
+@@ -0,0 +1,36 @@
++{
++  "source": "xbox-street.glb",
++  "source_sha256": "99ac901d52fd197d35507f22145b7672bc30b6b8b60a80a47aa181ee5e0d1875",
++  "bank_sha256": "d3400b903384cf447f22c04a6c890491924d6f33abcee18f8b8a88df8bbcc810",
++  "joints": 71,
++  "parts": 14,
++  "vertices": 10386,
++  "triangles": 8550,
++  "textures": 10,
++  "texture_max_side": 384,
++  "animations": [
++    {
++      "name": "Just... standing around",
++      "duration": 4.8333330154418945,
++      "frames": 74
++    },
++    {
++      "name": "Hello there!",
++      "duration": 5.333333492279053,
++      "frames": 82
++    }
++  ],
++  "artwork": "Microsoft; exported through the public 360sona editor demo",
++  "export_generator": {
++    "version": "2.0",
++    "generator": "360sona",
++    "copyright": "Made with 360sona, https://360sona.com",
++    "extras": {
++      "madeWith": "360sona",
++      "url": "https://360sona.com"
++    }
++  },
++  "body_visibility": "Original clothing-fitted body meshes, body UV transfer within each compatible rig family, and complete calf geometry for shorts",
++  "body_source": "body-street.glb",
++  "body_source_sha256": "ac64c9616b6579188100dc5cab53316d0adaf4914c85524ea2248b51c1f59a75"
++}
 diff --git a/projects/cards/romfs/boot/STARTUP-MEDIA-NOTICE.md b/projects/cards/romfs/boot/STARTUP-MEDIA-NOTICE.md
 new file mode 100644
 index 0000000000000000000000000000000000000000..5049317808f81c5c4544be04ca6b551305d282a9
@@ -2526,6 +3037,344 @@ index cd6ec695a7d2303eb5d01e962a200b270d82b18e..ea90cbfb8838c28f55880b6c22ada41b
      void stop();
      void update();                      // the next track once one ends
      void setMusic(bool on, int volume); // volume 0..100
+diff --git a/projects/cards/src/Avatar360.hpp b/projects/cards/src/Avatar360.hpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..f31370572387a351c84cdd52eb686b980c3f43a8
+--- /dev/null
++++ b/projects/cards/src/Avatar360.hpp
+@@ -0,0 +1,123 @@
++#pragma once
++#include <algorithm>
++#include <array>
++#include <cstdint>
++#include <map>
++#include <optional>
++#include <string>
++#include <vector>
++
++namespace cards::avatar360 {
++enum Feature {Character,Hair,HairColour,Top,Bottom,Shoes,Accessories,Height,Build,FeatureCount};
++inline constexpr std::array<const char*,FeatureCount> featureNames={
++    "Face & body","Hairstyle","Hair colour","Top","Bottoms","Shoes","Accessories","Height","Build"
++};
++inline constexpr std::array<int,FeatureCount> choices={6,4,6,3,3,3,2,5,5};
++inline constexpr std::array<std::array<float,3>,6> hairTints={{{1,1,1},{.055f,.047f,.04f},{.29f,.15f,.065f},{.90f,.74f,.32f},{.67f,.24f,.07f},{.78f,.79f,.80f}}};
++inline constexpr std::array<const char*,6> presets={"The regular","The player","The fan","The street","The smart one","The night owl"};
++inline constexpr std::array<const char*,6> modelFiles={"regular","player","fan","street","smart","night"};
++// Each starter uses its original body family. Wardrobe parts only mix within
++// that family; choosing a face/body resets the wardrobe to its matching set.
++inline int donor(int character,int variation){return (character%2)+2*((character/2+variation)%3);}
++struct Look {
++    std::array<int,FeatureCount> value={0,0,0,0,0,0,1,2,2};
++    void normalize(){for(int i=0;i<FeatureCount;++i)value[i]=std::clamp(value[i],0,choices[i]-1);}
++    void cycle(int field,int delta){if(field>=0 && field<FeatureCount){const auto n=choices[field];value[field]=((value[field]+delta)%n+n)%n;if(field==Character)for(int k=Hair;k<=Shoes;++k)value[k]=0;}}
++    bool operator==(const Look&)const=default;
++};
++inline int partSource(const Look& look,int slot){
++    const auto& v=look.value;const int main=v[Character];
++    switch(slot){
++        case 2:return v[Hair]==3?-1:donor(main,v[Hair]);
++        case 3:return donor(main,v[Top]);
++        case 4:return donor(main,v[Bottom]);
++        case 5:return donor(main,v[Shoes]);
++        case 6:return v[Accessories]?main:-1;
++        case 7:return v[Hair]!=3?donor(main,v[Hair]):-1; // hat-cut hair keeps its matching hat
++        default:return main;
++    }
++}
++inline bool partEnabled(const Look& look,int slot,int source){
++    if(slot<8)return partSource(look,slot)==source;
++    if(source!=look.value[Character])return false;
++    if(slot==17)return source%2==0 && donor(source,look.value[Bottom])==2;
++    if(slot>16)return false;
++    const int region=(slot-8)/3,feature=region==0?Top:region==1?Bottom:Shoes;
++    return (slot-8)%3==donor(source,look.value[feature])/2;
++}
++inline std::uint32_t hash(const std::string& id){std::uint32_t h=2166136261u;for(unsigned char c:id){h^=c;h*=16777619u;}return h;}
++inline Look randomLook(std::uint32_t seed){
++    Look look;auto next=[&](){seed^=seed<<13;seed^=seed>>17;seed^=seed<<5;return seed;};
++    if(!seed)seed=0x360360u;
++    for(int i=0;i<FeatureCount;++i)look.value[i]=int(next()%choices[i]);
++    return look;
++}
++inline bool validId(const std::string& id){
++    return id.size()==32 && id.find_first_not_of("0123456789ABCDEF")==std::string::npos
++        && id.find_first_not_of('0')!=std::string::npos;
++}
++using Wardrobe=std::map<std::string,Look>;
++inline Look forProfile(const Wardrobe& wardrobe,const std::string& id){
++    const auto it=wardrobe.find(id);Look defaults;defaults.value[Character]=hash(id)%6;auto look=it==wardrobe.end()?defaults:it->second;look.normalize();return look;
++}
++inline std::string featureValue(const Look& look,int field){
++    if(field<0 || field>=FeatureCount)return {};
++    const int v=std::clamp(look.value[field],0,choices[field]-1);
++    switch(field){
++        case Character:return presets[v];
++        case Hair:{static const char* names[]={"Short and spiky","Ponytail","High and tight + cap","A-line bob + cap","Left parting","Bob with fringe"};return v==3?"No hair":names[donor(look.value[Character],v)];}
++        case HairColour:{static const char* names[]={"Original","Black","Brown","Blonde","Ginger","Silver"};return names[v];}
++        case Top:{static const char* names[]={"Graphic tee","Halo tee","Basketball jersey","Trefoil tee","Blue button shirt","Band tee"};return names[donor(look.value[Character],v)];}
++        case Bottom:{static const char* names[]={"Khaki chinos","Skinny jeans","Cargo shorts","Cuffed jeans","Khaki chinos","Dark flares"};return names[donor(look.value[Character],v)];}
++        case Shoes:{static const char* names[]={"Casual sneakers","Neon high-tops","Lakers sneakers","Sports trainers","Casual sneakers","Goth boots"};return names[donor(look.value[Character],v)];}
++        case Accessories:return v?"On":"Off";
++        default:return std::to_string(v+1)+" / 5";
++    }
++}
++
++struct Profile {std::string id,name;};
++enum class Screen {Closed,Loading,Picker,Editor,Welcome};
++struct Session {
++    Screen screen=Screen::Closed;
++    std::vector<Profile> profiles;
++    int selected=0,field=0;
++    Look draft;
++    std::string editingId;
++    float welcomeTime=0,yaw=0;
++    bool atStartup=false;
++    bool open()const{return screen!=Screen::Closed;}
++    const Profile* current()const{return selected>=0 && selected<int(profiles.size())?&profiles[selected]:nullptr;}
++    void begin(bool startup){screen=Screen::Loading;atStartup=startup;selected=0;field=0;profiles.clear();editingId.clear();}
++    void loaded(std::vector<Profile> available,const std::string& active){
++        if(screen!=Screen::Loading)return;
++        profiles.clear();for(auto& profile:available)if(validId(profile.id) &&
++            std::none_of(profiles.begin(),profiles.end(),[&](const auto& old){return old.id==profile.id;}))profiles.push_back(std::move(profile));
++        selected=0;for(int i=0;i<int(profiles.size());++i)if(profiles[i].id==active)selected=i;
++        screen=Screen::Picker;
++    }
++    void move(int delta){if(screen==Screen::Picker)selected=std::clamp(selected+delta,0,std::max(0,int(profiles.size())-1));}
++    void edit(const Wardrobe& wardrobe){
++        const auto* profile=current();if(screen!=Screen::Picker || !profile)return;
++        editingId=profile->id;draft=forProfile(wardrobe,editingId);field=0;yaw=0;screen=Screen::Editor;
++    }
++    bool save(Wardrobe& wardrobe){
++        if(screen!=Screen::Editor || !validId(editingId))return false;
++        draft.normalize();wardrobe[editingId]=draft;editingId.clear();screen=Screen::Picker;return true;
++    }
++    void back(){
++        if(screen==Screen::Editor){editingId.clear();screen=Screen::Picker;}
++        else screen=Screen::Closed;
++    }
++    std::optional<Profile> signIn(){
++        const auto* profile=current();if(screen!=Screen::Picker || !profile)return std::nullopt;
++        return *profile;
++    }
++    void signedIn(){if(screen==Screen::Picker && current()){screen=Screen::Welcome;welcomeTime=0;}}
++    void tick(float dt){if(screen==Screen::Welcome && (welcomeTime+=std::max(0.f,dt))>=5.5f)screen=Screen::Closed;}
++};
++inline int firstVisible(int selected,int count){return std::clamp(selected-1,0,std::max(0,count-4));}
++struct Box {float x,y,w,h;bool contains(float px,float py)const{return px>=x && px<x+w && py>=y && py<y+h;}};
++inline Box profileBox(int index,float scroll){return {85.f+(index-scroll)*335.f,140,210,480};}
++inline int editorTop(int selected){return std::clamp(selected-7,0,std::max(0,FeatureCount-8));}
++inline Box editorRow(int index,int top){return {650,140.f+(index-top)*44.f,520,42};}
++} // namespace cards::avatar360
+diff --git a/projects/cards/src/AvatarModel.hpp b/projects/cards/src/AvatarModel.hpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..d1197afb0aaa19765f4e051a3cb60a4ee0bc8773
+--- /dev/null
++++ b/projects/cards/src/AvatarModel.hpp
+@@ -0,0 +1,142 @@
++#pragma once
++#include <algorithm>
++#include <array>
++#include <bit>
++#include <cmath>
++#include <cstdint>
++#include <cstring>
++#include <fstream>
++#include <limits>
++#include <string>
++#include <vector>
++
++// Native, bounded counterpart of tools/prepare_avatar360.py. This contains no
++// Microsoft renderer code; meshes and media retain their separate attribution.
++namespace cards::avatar360 {
++struct V3 {float x=0,y=0,z=0;V3 operator+(V3 b)const{return{x+b.x,y+b.y,z+b.z};}V3 operator*(float f)const{return{x*f,y*f,z*f};}};
++struct Matrix {
++    std::array<float,12> m{}; // row-major affine 3x4
++    V3 point(V3 p)const{return {m[0]*p.x+m[1]*p.y+m[2]*p.z+m[3],m[4]*p.x+m[5]*p.y+m[6]*p.z+m[7],m[8]*p.x+m[9]*p.y+m[10]*p.z+m[11]};}
++};
++inline Matrix multiply(const Matrix& a,const Matrix& b){
++    Matrix out;
++    for(int r=0;r<3;++r)for(int c=0;c<4;++c){
++        float v=c==3?a.m[r*4+3]:0;
++        for(int k=0;k<3;++k)v+=a.m[r*4+k]*b.m[k*4+c];
++        out.m[r*4+c]=v;
++    }
++    return out;
++}
++struct SkinVertex {V3 position;float u,v;std::array<float,4> weights;std::array<uint8_t,4> joints;};
++static_assert(sizeof(SkinVertex)==40);
++struct Part {uint32_t slot=0,texture=0,blend=0;std::vector<SkinVertex> vertices;std::vector<uint32_t> indices;};
++struct Clip {uint32_t id=0,frames=0;float duration=0;std::vector<Matrix> world;};
++struct Model {
++    std::vector<uint32_t> bones;
++    std::vector<Matrix> inverse;
++    std::vector<Part> parts;
++    std::vector<std::vector<uint8_t>> images;
++    std::vector<Clip> clips;
++    bool valid()const{return !bones.empty() && !parts.empty() && clips.size()==2;}
++    std::vector<Matrix> pose(float seconds,bool wave)const{
++        if(!valid())return {};
++        const auto& clip=clips[wave?1:0];
++        // Hold the original relaxed standing pose between idle gestures, as
++        // the NXE profile picker does, instead of fidgeting continuously.
++        const float cycle=std::fmod(std::max(0.f,seconds),clip.duration+12.f);
++        const float t=wave?std::clamp(seconds,0.f,clip.duration):std::max(0.f,cycle-12.f);
++        const float at=t/clip.duration*(clip.frames-1);const auto lo=std::min(uint32_t(at),clip.frames-1),hi=std::min(lo+1,clip.frames-1);const float u=at-lo;
++        std::vector<Matrix> result(bones.size());
++        for(size_t j=0;j<bones.size();++j)for(int k=0;k<12;++k){const auto a=clip.world[lo*bones.size()+j].m[k],b=clip.world[hi*bones.size()+j].m[k];result[j].m[k]=a+(b-a)*u;}
++        return result;
++    }
++};
++class BankReader {
++    const uint8_t* p;size_t left;
++public:
++    explicit BankReader(const std::vector<uint8_t>& data):p(data.data()),left(data.size()){}
++    bool bytes(void* dst,size_t n){if(n>left)return false;if(n)std::memcpy(dst,p,n);p+=n;left-=n;return true;}
++    template<class T> bool number(T& out){return bytes(&out,sizeof(T));}
++    size_t remaining()const{return left;}
++};
++inline bool decodeModel(const std::vector<uint8_t>& data,Model& model){
++    if(data.size()>8*1024*1024)return false;
++    BankReader r(data);char magic[8];uint32_t joints=0,parts=0,images=0,clips=0;
++    if(!r.bytes(magic,8) || std::memcmp(magic,"NXAVTR1\0",8) || !r.number(joints) || !r.number(parts) || !r.number(images) || !r.number(clips) || joints<1 || joints>128 || parts<1 || parts>32 || images<1 || images>32 || clips!=2)return false;
++    Model out;out.bones.resize(joints);out.inverse.resize(joints);
++    auto finite=[](const auto& values){for(float x:values)if((std::bit_cast<uint32_t>(x)&0x7f800000u)==0x7f800000u || std::abs(x)>10000)return false;return true;};
++    for(size_t j=0;j<joints;++j){
++        std::array<float,16> m;
++        if(!r.number(out.bones[j]) || !r.bytes(m.data(),sizeof(m)) || !finite(m))return false;
++        if(std::find(out.bones.begin(),out.bones.begin()+j,out.bones[j])!=out.bones.begin()+j)return false;
++        for(int row=0;row<3;++row)for(int c=0;c<4;++c)out.inverse[j].m[row*4+c]=m[c*4+row];
++    }
++    size_t totalVertices=0,totalIndices=0;
++    for(uint32_t n=0;n<parts;++n){
++        Part part;uint32_t nv=0,ni=0;
++        if(!r.number(part.slot) || !r.number(part.texture) || !r.number(nv) || !r.number(ni) || !r.number(part.blend) || part.blend>1 || part.slot>17 || part.texture>=images || nv<1 || nv>20000 || ni<3 || ni>90000 || ni%3)return false;
++        totalVertices+=nv;totalIndices+=ni;if(totalVertices>40000 || totalIndices>150000 || uint64_t(nv)*40+uint64_t(ni)*4>r.remaining())return false;
++        part.vertices.resize(nv);part.indices.resize(ni);
++        if(!r.bytes(part.vertices.data(),nv*sizeof(SkinVertex)) || !r.bytes(part.indices.data(),ni*4))return false;
++        for(const auto& v:part.vertices){
++            if(!finite(std::array<float,5>{v.position.x,v.position.y,v.position.z,v.u,v.v}) || !finite(v.weights))return false;
++            float sum=0;for(int k=0;k<4;++k){if(v.joints[k]>=joints || v.weights[k]<0 || v.weights[k]>1.001f)return false;sum+=v.weights[k];}if(std::abs(sum-1)>0.01f)return false;
++        }
++        for(auto i:part.indices)if(i>=nv)return false;
++        out.parts.push_back(std::move(part));
++    }
++    for(uint32_t n=0;n<images;++n){uint32_t size=0;
++        if(!r.number(size) || size<24 || size>1024*1024 || size>r.remaining())return false;
++        std::vector<uint8_t> png(size);if(!r.bytes(png.data(),size) || std::memcmp(png.data(),"\x89PNG\r\n\x1a\n",8))return false;
++        auto dimension=[&](size_t i){return (uint32_t(png[i])<<24)|(uint32_t(png[i+1])<<16)|(uint32_t(png[i+2])<<8)|png[i+3];};
++        if(!dimension(16) || dimension(16)>384 || !dimension(20) || dimension(20)>384)return false;
++        out.images.push_back(std::move(png));
++    }
++    for(uint32_t n=0;n<clips;++n){Clip clip;
++        if(!r.number(clip.id) || !r.number(clip.frames) || !r.number(clip.duration) || clip.id!=n || clip.frames<2 || clip.frames>901 || !finite(std::array<float,1>{clip.duration}) || clip.duration<=0 || clip.duration>60 || uint64_t(clip.frames)*joints*sizeof(Matrix)>r.remaining())return false;
++        clip.world.resize(clip.frames*joints);if(!r.bytes(clip.world.data(),clip.world.size()*sizeof(Matrix)))return false;
++        for(const auto& m:clip.world)if(!finite(m.m))return false;
++        out.clips.push_back(std::move(clip));
++    }
++    if(r.remaining())return false;
++    model=std::move(out);return true;
++}
++inline bool loadModel(const std::string& path,Model& model){
++    std::ifstream f(path,std::ios::binary|std::ios::ate);if(!f)return false;const auto size=f.tellg();
++    if(size<24 || size>8*1024*1024)return false;
++    std::vector<uint8_t> data(static_cast<size_t>(size));f.seekg(0);if(!f.read(reinterpret_cast<char*>(data.data()),size))return false;
++    return decodeModel(data,model);
++}
++inline std::vector<Matrix> retarget(const Model& source,const Model& body,const std::vector<Matrix>& world){
++    std::vector<Matrix> skin(source.bones.size());
++    for(size_t j=0;j<source.bones.size();++j){
++        const auto it=std::find(body.bones.begin(),body.bones.end(),source.bones[j]);
++        if(it==body.bones.end())return {};
++        skin[j]=multiply(world[it-body.bones.begin()],source.inverse[j]);
++    }
++    return skin;
++}
++inline V3 skinVertex(const SkinVertex& vertex,const std::vector<Matrix>& skin){
++    V3 p;for(int k=0;k<4;++k)if(vertex.weights[k]>0)p=p+skin[vertex.joints[k]].point(vertex.position)*vertex.weights[k];return p;
++}
++struct ProjectedVertex {float x,y,z,u,v;};
++inline ProjectedVertex projectVertex(const SkinVertex& v,const std::vector<Matrix>& skin,float x,float base,float scale,float yaw,float height,float build,bool portrait=false){
++    V3 p=skinVertex(v,skin);p.x*=build;p.y*=height;
++    const float co=std::cos(yaw),si=std::sin(yaw),rx=p.x*co+p.z*si,rz=-p.x*si+p.z*co;
++    // Orthographic camera matches the NXE sign-in composition. Positive model
++    // Z faces the viewer; depth zero is nearest and one is farthest.
++    return {x+rx*scale,base-(p.y-(portrait?1.32f*height:0.f))*scale,std::clamp(.5f-rz*.16f,.01f,.99f),v.u,v.v};
++}
++inline std::vector<uint32_t> visibleIndices(const Part& part,const std::vector<ProjectedVertex>& vertices){
++    std::vector<uint32_t> indices;indices.reserve(part.indices.size());
++    std::vector<std::pair<float,size_t>> triangles;
++    for(size_t i=0;i<part.indices.size();i+=3){
++        const auto a=part.indices[i],b=part.indices[i+1],c=part.indices[i+2];
++        const auto& p=vertices[a];const auto& q=vertices[b];const auto& s=vertices[c];
++        if((q.x-p.x)*(s.y-p.y)-(q.y-p.y)*(s.x-p.x)>=0)continue;
++        if(part.blend)triangles.push_back({(p.z+q.z+s.z)/3,i});else indices.insert(indices.end(),{a,b,c});
++    }
++    if(part.blend){std::stable_sort(triangles.begin(),triangles.end(),[](auto a,auto b){return a.first>b.first;});for(auto [depth,i]:triangles)indices.insert(indices.end(),part.indices.begin()+i,part.indices.begin()+i+3);}
++    return indices;
++}
++} // namespace cards::avatar360
+diff --git a/projects/cards/src/AvatarScene.hpp b/projects/cards/src/AvatarScene.hpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..8c64c318cad3788328d7db50c9a52f9c942f44a0
+--- /dev/null
++++ b/projects/cards/src/AvatarScene.hpp
+@@ -0,0 +1,55 @@
++#pragma once
++#include "Avatar360.hpp"
++#include "AvatarModel.hpp"
++#include <nxui/core/Renderer.hpp>
++#include <nxui/core/Texture.hpp>
++#include <memory>
++
++namespace cards::avatar360 {
++struct Assets {
++    std::array<Model,6> models;
++    std::array<std::vector<std::unique_ptr<nxui::Texture>>,6> textures;
++    bool ready=false;
++    // Upload at most one texture per frame. Until complete, the picker shows
++    // a loading message instead of an incomplete, untextured character.
++    bool upload(nxui::GpuDevice& gpu,nxui::Renderer& renderer){
++        if(!ready)return false;
++        for(size_t i=0;i<models.size();++i){
++            auto& model=models[i];if(!model.valid())return false;
++            auto& set=textures[i];if(set.empty())set.resize(model.images.size());
++            for(size_t j=0;j<set.size();++j)if(!set[j]){
++                auto tex=std::make_unique<nxui::Texture>();
++                if(!tex->loadFromMemory(gpu,renderer,model.images[j].data(),model.images[j].size()))return false;
++                set[j]=std::move(tex);return false;
++            }
++        }
++        return true;
++    }
++    void releaseTextures(){for(auto& set:textures)set.clear();}
++    bool available()const{if(!ready)return false;for(size_t i=0;i<models.size();++i){if(!models[i].valid() || textures[i].size()!=models[i].images.size())return false;for(const auto& t:textures[i])if(!t)return false;}return true;}
++};
++inline bool drawCharacter(Assets& assets,nxui::Renderer& renderer,Look look,float x,float base,float scale,float yaw,float time,float alpha=1,bool wave=false,bool portrait=false){
++    if(!assets.available())return false;look.normalize();const auto& values=look.value;
++    const int main=values[Character];const auto& body=assets.models[main];
++    const auto world=body.pose(time,wave);
++    renderer.beginAvatarPass();bool ok=true;
++    for(int transparent=0;transparent<2;++transparent)for(int source=0;source<6;++source){
++        const auto& model=assets.models[source];const auto skin=retarget(model,body,world);if(skin.empty()){ok=false;continue;}
++        for(const auto& part:model.parts){
++            if(int(part.blend)!=transparent)continue;
++            if(!partEnabled(look,part.slot,source) || (portrait && part.slot!=1 && part.slot!=2 && part.slot!=6))continue;
++            std::vector<ProjectedVertex> projected;projected.reserve(part.vertices.size());
++            std::vector<nxui::Vertex2D> vertices;vertices.reserve(part.vertices.size());
++            for(const auto& v:part.vertices){
++                const auto p=projectVertex(v,skin,x,base,scale,yaw,.9f+.05f*values[Height],.88f+.06f*values[Build],portrait);
++                const bool colorHair=part.slot==2 && values[HairColour]!=0;
++                const auto tint=colorHair?hairTints[values[HairColour]]:std::array<float,3>{1,1,1};
++                projected.push_back(p);vertices.push_back({p.x,p.y,p.u,p.v,tint[0],tint[1],tint[2],alpha,p.z,0,0,0,colorHair?-2.f:-1.f,0});
++            }
++            const auto indices=visibleIndices(part,projected);
++            if(!indices.empty() && !renderer.drawAvatarMesh(assets.textures[source][part.texture].get(),vertices,indices,part.blend))ok=false;
++        }
++    }
++    renderer.endAvatarPass();return ok;
++}
++} // namespace cards::avatar360
 diff --git a/projects/cards/src/BootClip.cpp b/projects/cards/src/BootClip.cpp
 new file mode 100644
 index 0000000000000000000000000000000000000000..ed1aab60243d5a47b585993d2e7b1f8e807f6649
@@ -2752,7 +3601,7 @@ index 0000000000000000000000000000000000000000..713b4483c53815ee618fc5dc445c9e29
 +};
 +} // namespace cards::boot360
 diff --git a/projects/cards/src/CardsActivity.cpp b/projects/cards/src/CardsActivity.cpp
-index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f03dd4ab1 100644
+index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..4678c60ff9411bf354ad37a2bfc0925dc74d7c4f 100644
 --- a/projects/cards/src/CardsActivity.cpp
 +++ b/projects/cards/src/CardsActivity.cpp
 @@ -1,4 +1,7 @@
@@ -2771,24 +3620,26 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  #include <chrono>
  #include <cmath>
  #include <cstdio>
-@@ -499,6 +503,7 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
+@@ -499,6 +503,8 @@ CardsActivity::CardsActivity(std::uint64_t suspendedId, bool appRunning, bool at
      m_startSuspended = suspendedId;
      m_startRunning = appRunning;
      m_atBoot = atBoot;
++    m_profileStartup=atBoot && !appRunning && !suspendedId && !fromApplet;
 +    if (!atBoot) m_dashBoot = 0.f;
      m_fromApplet = fromApplet;
  #else
      (void)suspendedId;
-@@ -535,6 +540,8 @@ bool CardsActivity::onCreate() {
+@@ -535,6 +541,9 @@ bool CardsActivity::onCreate() {
      nxui::GpuDevice::setImageBudget(std::clamp<u64>(total / 4, 64ull << 20, 160ull << 20));
  
      m_settings.load();
++    m_profilePending=m_profileStartup && m_settings.profileSignIn;
 +    m_settings.introDone = true;
 +    m_settings.launchStyle = 0;
      setLanguage(m_settings.language);
      m_boxArt = m_settings.boxArt;
      m_titleArt = m_settings.titlePics;
-@@ -582,7 +589,9 @@ bool CardsActivity::onCreate() {
+@@ -582,7 +591,9 @@ bool CardsActivity::onCreate() {
      const std::string f5 = fonts + "Inter-500.ttf", f6 = fonts + "Inter-600.ttf", f7 = fonts + "Inter-700.ttf";
      if (!m_fTitle.load(gpu, ren, f7, 30) || !m_fPlay.load(gpu, ren, f7, 24) || !m_fLabel.load(gpu, ren, f6, 22)
          || !m_fPill.load(gpu, ren, f6, 19) || !m_fBody.load(gpu, ren, f5, 17) || !m_fBadge.load(gpu, ren, f7, 15)
@@ -2799,7 +3650,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
          return false;
      const std::uint64_t tIcons = armGetSystemTick();
      // The buttons' icons: read and decoded off the screen's thread (a first-draw read
-@@ -694,7 +703,7 @@ bool CardsActivity::onCreate() {
+@@ -694,7 +705,7 @@ bool CardsActivity::onCreate() {
  
      // Always the first card on the list, in the sort you chose (it was put back to Title here
      // at every start, so Last Played never stuck).
@@ -2808,7 +3659,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      sortGames(m_settings.sort, false);
      for (int& s : m_sels) s = 0;
      m_scroll = 0.f;
-@@ -749,6 +758,8 @@ bool CardsActivity::onCreate() {
+@@ -749,6 +760,8 @@ bool CardsActivity::onCreate() {
          return out;
      });
      m_retryIn = 1.2f; // the shelf is covered by degrees, starting right away
@@ -2817,7 +3668,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      m_intro = m_settings.motion ? 0.f : 1.f; // the cards rise in (the game's picture lets go first: see onUpdate)
  #ifdef SWITCHU_MENU
      if (m_atBoot && m_settings.lockScreen) lock();
-@@ -823,6 +834,9 @@ void CardsActivity::perfLine(const std::string& line) {
+@@ -823,6 +836,9 @@ void CardsActivity::perfLine(const std::string& line) {
  }
  
  void CardsActivity::onDestroy() {
@@ -2827,7 +3678,17 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      m_jobsStop = true; // the network jobs stop early: closing must not wait them out
      {
          std::lock_guard<std::mutex> lk(m_mu);
-@@ -904,7 +918,7 @@ const Game* CardsActivity::current() {
+@@ -839,6 +855,9 @@ void CardsActivity::onDestroy() {
+     if (m_sdTestJob.valid()) m_sdTestJob.wait(); // (it stops early: m_jobsStop)
+     if (m_changesJob.valid()) m_changesJob.wait();
+     if (m_avatarJob.valid()) m_avatarJob.wait();
++    if (m_profileJob.valid()) m_profileJob.wait();
++    if (m_profileAssetJob.valid()) m_profileAssetJob.wait();
++    m_profileAssets.releaseTextures();
+     if (m_wallJob.valid()) m_wallJob.wait();
+     if (m_lockJob.valid()) m_lockJob.wait();
+     if (m_storageJob.valid()) m_storageJob.wait();
+@@ -904,7 +923,7 @@ const Game* CardsActivity::current() {
  
  void CardsActivity::applyTheme() {
      m_theme = nxui::Theme::dark();
@@ -2836,7 +3697,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      m_theme.panelBorder = nxui::Color(1.f, 1.f, 1.f, 0.16f);
      m_theme.panelHighlight = nxui::Color(1.f, 1.f, 1.f, 0.05f);
      m_theme.iconDefault = nxui::Color(1.f, 1.f, 1.f, 0.06f);
-@@ -915,7 +929,7 @@ void CardsActivity::applyTheme() {
+@@ -915,7 +934,7 @@ void CardsActivity::applyTheme() {
  }
  
  nxui::Color CardsActivity::accent(float a) const {
@@ -2845,7 +3706,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  }
  
  nxui::Color CardsActivity::glassTint(float a) const {
-@@ -955,6 +969,10 @@ void CardsActivity::loadAvatar() {
+@@ -955,6 +974,10 @@ void CardsActivity::loadAvatar() {
          Pixels out;
          AccountProfile profile{};
          if (accountUidIsValid(&uid) && R_SUCCEEDED(accountGetProfile(&profile, uid))) {
@@ -2856,7 +3717,15 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
              u32 size = 0;
              if (R_SUCCEEDED(accountProfileGetImageSize(&profile, &size)) && size > 0) {
                  std::vector<std::uint8_t> jpeg(size);
-@@ -1288,6 +1306,8 @@ void CardsActivity::wantArt() {
+@@ -1275,6 +1298,7 @@ bool CardsActivity::reserveArtwork(std::uint64_t bytes) {
+ }
+ 
+ void CardsActivity::wantArt() {
++    if(m_profiles.open())return;
+     auto& page = games();
+     std::vector<Job> jobs;
+     auto add = [&](int i, int what) {
+@@ -1288,6 +1312,8 @@ void CardsActivity::wantArt() {
          jobs.push_back({page[(size_t)i], what, m_artGen});
      };
      const int s = sel();
@@ -2865,7 +3734,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      add(s, kCard);
      add(s, kBackground);
      add(s, kIcon); // (a title picture can mean a search online: after the pictures you see)
-@@ -1631,6 +1651,9 @@ void CardsActivity::goToPage(int page, int dir) {
+@@ -1631,6 +1657,9 @@ void CardsActivity::goToPage(int page, int dir) {
      if (m_moving) finishMove(true);
      if (page >= kPageCount) rebuildCustomPages(); // (play times and the like, as they are now)
      m_page = page;
@@ -2875,7 +3744,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      m_pageDir = dir > 0 ? 1 : -1;
      m_pageIn = m_settings.motion ? 0.f : 1.f;
      m_detailIn = m_pageIn;
-@@ -2042,7 +2065,7 @@ void CardsActivity::comeBack() {
+@@ -2042,7 +2071,7 @@ void CardsActivity::comeBack() {
      m_leaveT = 0.f;
      m_leaveThen = nullptr;
      m_intro = std::min(m_intro, 0.6f); // the cards rise back in
@@ -2884,7 +3753,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  }
  
  void CardsActivity::play() {
-@@ -2367,7 +2390,7 @@ void CardsActivity::ensureHxFonts() {
+@@ -2367,7 +2396,7 @@ void CardsActivity::ensureHxFonts() {
  }
  #endif
  
@@ -2893,7 +3762,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  #ifdef SWITCHU_MENU
      ensureHxFonts();
      if (!m_discordPanel) {
-@@ -2380,8 +2403,14 @@ void CardsActivity::openDiscord() {
+@@ -2380,8 +2409,14 @@ void CardsActivity::openDiscord() {
          DiscordPanel::Callbacks cb;
          cb.onClosed = [this]() { m_audio.play("hide_modal"); };
          cb.onReply = [this](Snowflake channelId, const std::string& name) {
@@ -2910,7 +3779,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
              }, m_discordPanel.get());
          };
          cb.onUserTokenLogin = [this]() { m_discordTokenEntryPending = true; }; // (after the panel's input returns)
-@@ -2390,11 +2419,13 @@ void CardsActivity::openDiscord() {
+@@ -2390,11 +2425,13 @@ void CardsActivity::openDiscord() {
          m_discordPanel->setCallbacks(std::move(cb));
          rootBox().addChild(m_discordPanel);
      }
@@ -2924,7 +3793,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      std::string path = findNro("switchcord");
      if (path.empty()) path = findNro("discord");
      if (!path.empty()) {
-@@ -4674,7 +4705,7 @@ void CardsActivity::quickChange(int row, int delta) {
+@@ -4674,7 +4711,7 @@ void CardsActivity::quickChange(int row, int delta) {
      takeFacts(true);
      if (row == kQMusic) {
          m_settings.musicVolume = std::clamp(m_settings.musicVolume + delta * 10, 0, 100);
@@ -2933,7 +3802,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      } else if (row == kQSounds) {
          m_settings.soundVolume = std::clamp(m_settings.soundVolume + delta * 10, 0, 100);
          m_audio.setSounds(m_settings.sounds, m_settings.soundVolume);
-@@ -4877,7 +4908,7 @@ void CardsActivity::updateMusic() {
+@@ -4877,7 +4914,7 @@ void CardsActivity::updateMusic() {
              spotifyDo(Spotify::Cmd::Volume, std::clamp(std::max(0, m_sp.volume) + (right ? 5 : -5), 0, 100));
          } else if (left || right) {
              m_settings.musicVolume = std::clamp(m_settings.musicVolume + (right ? 5 : -5), 0, 100);
@@ -2942,7 +3811,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
              m_settings.save();
          }
      } else {
-@@ -5061,7 +5092,7 @@ void CardsActivity::updateSpotifyQr() {
+@@ -5061,7 +5098,7 @@ void CardsActivity::updateSpotifyQr() {
      if (state == Spotify::Login::Done) {
          m_spQrOpen = false;
          m_settings.spotify = true; // signed in: the music player shows it
@@ -2951,13 +3820,25 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
          m_settings.save();
          m_audio.play("activation");
          say("Signed in: Spotify is in the music player now");
-@@ -5567,6 +5598,13 @@ void CardsActivity::buildSettings() {
+@@ -5278,7 +5315,7 @@ void CardsActivity::drawMusic(nxui::Renderer& r) {
+ }
+ 
+ // The pill's picture: who games start as; add or remove users.
+-void CardsActivity::openUsers() {
++void CardsActivity::openUserTools() {
+     std::vector<User> users = listUsers();
+     app().gpu().waitIdle(); // the last popup's pictures may still be drawing
+     m_userPictures.clear();
+@@ -5567,6 +5604,16 @@ void CardsActivity::buildSettings() {
          [this, save]() { m_settings.players = !m_settings.players; save(); }, "Green dots on games played online now"));
      look.rows.push_back(toggle("Animations", [this]() { return m_settings.motion; },
          [this, save]() { m_settings.motion = !m_settings.motion; save(); }));
 +    look.rows.push_back(toggle("Startup animation", [this]() { return m_settings.startupClip; },
 +        [this, save]() { m_settings.startupClip=!m_settings.startupClip;save(); },
 +        "Play the original Xbox 360 startup when the app starts"));
++    look.rows.push_back(toggle("Sign-in at startup",[this](){return m_settings.profileSignIn;},
++        [this,save](){m_settings.profileSignIn=!m_settings.profileSignIn;save();},
++        "Show full-body avatars and choose a Switch profile after startup"));
 +    look.rows.push_back(action("Preview startup", [this]() {
 +        m_bootClip.stop();m_bootClip.open(std::string(kAssets)+"boot/nxe360.bin");
 +        m_dashBoot=1.f;m_bootSkip={};m_bootPreview=true;m_audio.setMusic(false,m_settings.musicVolume);
@@ -2965,7 +3846,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      m_sheet.push_back(std::move(look));
  
      // The lock screen: its own tab (HomeNX's lock screen shares the password and the picture).
-@@ -5639,7 +5677,7 @@ void CardsActivity::buildSettings() {
+@@ -5639,7 +5686,7 @@ void CardsActivity::buildSettings() {
      Section sound{"Sound", "music", {}};
      sound.rows.push_back(toggle("Music", [this]() { return m_settings.music; }, [this, save]() {
          m_settings.music = !m_settings.music;
@@ -2974,7 +3855,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
          save();
      }, "HomeNX's HOME music"));
      sound.rows.push_back(slider("Music volume", [this]() { return m_settings.musicVolume; }, [this, save](int v) {
-@@ -6024,28 +6062,7 @@ void CardsActivity::buildSettings() {
+@@ -6024,28 +6071,7 @@ void CardsActivity::buildSettings() {
      }));
  #endif
      m_sheet.push_back(std::move(about));
@@ -3004,7 +3885,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  }
  
  void CardsActivity::saveAllPictures(bool quiet) {
-@@ -6620,7 +6637,9 @@ void CardsActivity::openSettings(int section) {
+@@ -6620,7 +6646,9 @@ void CardsActivity::openSettings(int section) {
      m_sheetOpen = true;
      m_sheetSec = std::clamp(section, 0, static_cast<int>(m_sheet.size()) - 1);
      m_sheetRow = 0;
@@ -3015,7 +3896,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      m_sheetScroll = 0.f;
      m_sheetIn = m_settings.motion ? 0.f : 1.f;
      m_sheetRowsIn = 1.f;
-@@ -7242,7 +7261,7 @@ void CardsActivity::keepTextCachesSmall() {
+@@ -7242,7 +7270,7 @@ void CardsActivity::keepTextCachesSmall() {
          s_lastTrim = now;
          f.trimCache(124, 3u << 20); // (trimCache scales its byte limit too)
      };
@@ -3024,7 +3905,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  #ifdef SWITCHU_MENU
      // Discord, Social and the keyboard draw with HomeNX's font: nothing trimmed
      // its cache, and once full no new channel names or messages showed.
-@@ -7304,83 +7323,6 @@ void CardsActivity::listInput(std::vector<MenuItem>& items, int& sel, const std:
+@@ -7304,83 +7332,6 @@ void CardsActivity::listInput(std::vector<MenuItem>& items, int& sel, const std:
      }
  }
  
@@ -3108,7 +3989,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  
  // ---------------------------------------------------------------- touch
  
-@@ -7431,35 +7373,7 @@ bool CardsActivity::handleTouch() {
+@@ -7431,35 +7382,7 @@ bool CardsActivity::handleTouch() {
      }
      if (m_sheetOpen) {
          if (!in.touchUp()) return in.isTouching();
@@ -3145,7 +4026,15 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      }
      if (m_quickOpen) return quickTouch();
      if (m_powerOpen) return powerTouch();
-@@ -7644,6 +7558,8 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7631,6 +7554,7 @@ void CardsActivity::onUpdate(float dt) {
+     // Either stick moves through the games and every CardsNX menu (HomeNX's screens
+     // in CardsNX already read their buttons before this).
+     app().input().mergeRightStick();
++    pollProfileJobs(); // collect completed loads even if B closed the picker
+     updateSpotify();
+ #ifdef SWITCHU_MENU
+     switchu::timebudget::poll(); // the clock, once the time service has a session to spare
+@@ -7644,6 +7568,8 @@ void CardsActivity::onUpdate(float dt) {
          m_reopenSec = -1;
          openSettings(sec);
          m_sheetRow = std::clamp(m_reopenRow, 0, std::max(0, static_cast<int>(m_sheet[(size_t)m_sheetSec].rows.size()) - 1));
@@ -3154,7 +4043,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
          m_sheetOnRows = true;
          m_sheetIn = 1.f;
      }
-@@ -7744,13 +7660,13 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7744,13 +7670,13 @@ void CardsActivity::onUpdate(float dt) {
      // song were a stall on frames 2-3) at 1.5 s, the avatar at 3 s, and the
      // icons decoded on a thread meanwhile.
      if (m_startStage < 3) {
@@ -3170,7 +4059,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
          } else if (m_startStage == 2 && m_time > 3.f) {
              m_startStage = 3;
              loadAvatar();
-@@ -7758,6 +7674,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7758,6 +7684,7 @@ void CardsActivity::onUpdate(float dt) {
      }
      if (m_avatarJob.valid() && m_avatarJob.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
          const Pixels px = m_avatarJob.get();
@@ -3178,7 +4067,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
          auto tex = std::make_unique<nxui::Texture>();
          if (!px.rgba.empty() && tex->loadFromPixels(app().gpu(), app().renderer(), px.rgba.data(), px.w, px.h))
              m_avatar = std::move(tex);
-@@ -7794,6 +7711,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7794,6 +7721,7 @@ void CardsActivity::onUpdate(float dt) {
          app().gpu().endTextureUploadBatch();
      }
      m_time += dt;
@@ -3186,7 +4075,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      updateNotices(dt);
      updateStorage();
      perfMark("start-up");
-@@ -7813,6 +7731,16 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7813,6 +7741,16 @@ void CardsActivity::onUpdate(float dt) {
      }
      perfMark("pictures");
      m_audio.update();
@@ -3203,7 +4092,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      perfMark("music");
      const bool motion = m_settings.motion;
      // A lagged frame doesn't skip through the animations: they take real time
-@@ -7823,6 +7751,18 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7823,6 +7761,18 @@ void CardsActivity::onUpdate(float dt) {
      // rise hidden behind a still frame.
      if (!m_returnTex || m_returnT > 0.f) step(m_intro, m_introFor);
      step(m_pageIn, 0.38f);
@@ -3222,7 +4111,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      step(m_detailIn, 0.25f);
      step(m_sheen, 0.8f);
      step(m_menuIn, 0.2f);
-@@ -7830,8 +7770,17 @@ void CardsActivity::onUpdate(float dt) {
+@@ -7830,8 +7780,17 @@ void CardsActivity::onUpdate(float dt) {
      step(m_logIn, 0.2f);
      step(m_pressT, 0.22f);
      step(m_bgFade, 0.45f);
@@ -3241,7 +4130,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      step(m_quickIn, 0.22f);
      step(m_powerIn, 0.28f);
      step(m_dotsIn, 0.26f);
-@@ -8341,6 +8290,14 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8341,6 +8300,14 @@ void CardsActivity::onUpdate(float dt) {
      }
  
      perfMark("HomeNX's screens, leaving");
@@ -3256,7 +4145,17 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      if (updateLock(dt)) return;
      perfMark("lock screen");
      if (!m_settings.introDone && !m_introOpen && m_time > 0.8f && !m_leaving) { // the first time
-@@ -8370,7 +8327,7 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8354,6 +8321,9 @@ void CardsActivity::onUpdate(float dt) {
+         return;
+     }
+ 
++    if(m_profilePending)openProfiles(true);
++    if(m_profiles.open()){updateProfiles(dt);return;}
++
+     auto& in = app().input();
+     using B = nxui::Button;
+     const bool aDown = in.isDown(B::A), bDown = in.isDown(B::B);
+@@ -8370,7 +8340,7 @@ void CardsActivity::onUpdate(float dt) {
          updateTask();
          return;
      }
@@ -3265,7 +4164,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  
      if (m_pickOpen) { // (over Settings too)
          updatePicker();
-@@ -8425,6 +8382,8 @@ void CardsActivity::onUpdate(float dt) {
+@@ -8425,6 +8395,8 @@ void CardsActivity::onUpdate(float dt) {
          return;
      }
  
@@ -3274,7 +4173,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      // Left / right: repeating while held.
      const bool left = in.isHeld(B::DLeft) || in.isHeld(B::LStickL) || in.isHeld(B::RStickL);
      const bool right = in.isHeld(B::DRight) || in.isHeld(B::LStickR) || in.isHeld(B::RStickR);
-@@ -8527,51 +8486,9 @@ void CardsActivity::draw(nxui::Renderer& r) {
+@@ -8527,51 +8499,12 @@ void CardsActivity::draw(nxui::Renderer& r) {
      m_drawMarkTick = armGetSystemTick();
      m_drawMarkMs = 0.f;
      m_drawMarkName = "";
@@ -3322,14 +4221,16 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
 -        frost(r, pill, 20.f, nxui::Color(0.06f, 0.07f, 0.10f, 0.7f));
 -        r.drawRoundedRectOutline(pill, accent(0.6f), 20.f, 1.5f);
 -        textMid(r, m_fBody, hint, pill.x + 22.f, pill.y + 20.f, kWhite);
--    }
 +    m_frosted = false;
 +    if (m_dashBoot > 0.f) { drawDashBoot(r); return; }
++    if(m_profiles.open()){
++        drawProfiles(r);drawMessage(r);drawLock(r);drawNotificationCard(r);return;
+     }
 +    drawDashboard(r);
      drawStep("draw: the menus");
      drawSheet(r);
      drawPopup(r); // (over Settings)
-@@ -8621,8 +8538,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
+@@ -8621,8 +8554,8 @@ void CardsActivity::icon(nxui::Renderer& r, const char* name, float cx, float cy
  }
  
  void CardsActivity::frost(nxui::Renderer& r, const nxui::Rect& rect, float radius, const nxui::Color& tint) {
@@ -3340,7 +4241,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  }
  
  void CardsActivity::glassCircle(nxui::Renderer& r, float cx, float cy, float d, bool focused, const char* name,
-@@ -8783,6 +8700,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
+@@ -8783,6 +8716,17 @@ void CardsActivity::drawTopBar(nxui::Renderer& r, float a) {
  }
  
  bool CardsActivity::cardRect(int index, nxui::Rect& card, float& chosen) {
@@ -3358,7 +4259,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      const float rel = static_cast<float>(index) - m_scroll;
      // A page switch slides the row in from the side.
      float slide = (1.f - easeOut(m_pageIn)) * 160.f * static_cast<float>(m_pageDir);
-@@ -9310,7 +9238,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
+@@ -9310,7 +9254,7 @@ void CardsActivity::drawRow(nxui::Renderer& r, MenuItem& item, const nxui::Rect&
      // The control on the right, and the room it leaves for the label.
      const float right = row.x + row.width - 18.f;
      float control = 0.f;
@@ -3367,7 +4268,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
      switch (item.kind) {
          case MenuItem::Toggle: {
              const float on = item.level ? item.level() : 0.f;
-@@ -9603,75 +9531,6 @@ void CardsActivity::drawQuick(nxui::Renderer& r) {
+@@ -9603,75 +9547,6 @@ void CardsActivity::drawQuick(nxui::Renderer& r) {
  }
  
  // Settings: a glass sheet, its sections on the left and their rows on the right.
@@ -3443,7 +4344,7 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
  
  void CardsActivity::openPagePicker() {
      std::vector<MenuItem> items;
-@@ -10037,4 +9896,10 @@ void CardsActivity::updateStorage() {
+@@ -10037,4 +9912,11 @@ void CardsActivity::updateStorage() {
      }
  }
  
@@ -3452,13 +4353,14 @@ index 6aa39c434ed8c3a6c575e6e07aaa444394411fed..7196ab571f144d82b06c5787d5d0dd8f
 +// The Guide's Friends blade shares HomeNX's DM service and reply keyboard.
 +#include "GuideDiscord.inc"
 +#include "Settings360.inc"
++#include "Profiles360.inc" // Native profiles with clothing-fitted full-body avatars
 +
  } // namespace cards
 diff --git a/projects/cards/src/CardsActivity.hpp b/projects/cards/src/CardsActivity.hpp
-index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..571ca5d368c1e5db442bfbe05c8b2669744c71ce 100644
+index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..3414826bf566c244e494cf5a9a033b83baa844c2 100644
 --- a/projects/cards/src/CardsActivity.hpp
 +++ b/projects/cards/src/CardsActivity.hpp
-@@ -1,8 +1,12 @@
+@@ -1,8 +1,13 @@
  #pragma once
  #include "Audio.hpp"
 +#include "BootClip.hpp"
@@ -3466,12 +4368,13 @@ index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..571ca5d368c1e5db442bfbe05c8b2669
  #include "Mtp.hpp"
  #include "Settings.hpp"
 +#include "SettingsLayout.hpp"
++#include "AvatarScene.hpp"
 +#include "GuideLayout.hpp"
 +#include "../../menu/src/social/DirectMessageView.hpp"
  #include "Spotify.hpp"
  
  #include <nxui/Activity.hpp>
-@@ -63,6 +67,59 @@ public:
+@@ -63,6 +68,59 @@ public:
      nxui::Widget* focusRoot() override; // HomeNX's screens when one is open; else it reads the buttons itself
  
  private:
@@ -3531,7 +4434,7 @@ index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..571ca5d368c1e5db442bfbe05c8b2669
      enum class Zone { Top, Cards, Bottom };
      enum Page { kGames, kHomebrew, kNintendo, kMedia, kPageCount };
      int pageCount() const { return kPageCount + static_cast<int>(m_settings.customPages.size()); }
-@@ -235,7 +292,7 @@ private:
+@@ -235,7 +293,7 @@ private:
      void launchGame(const Game& g);
      void openNro(const std::string& path);
      void openNintendo(const Game& g);
@@ -3540,7 +4443,7 @@ index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..571ca5d368c1e5db442bfbe05c8b2669
      void openBrowser();
      std::string findNro(const char* nameHas);
      // The launch: the card grows to fill the screen, the rest falls away, then
-@@ -260,6 +317,7 @@ private:
+@@ -260,6 +318,7 @@ private:
      struct Pixels {
          std::vector<std::uint8_t> rgba;
          int w = 0, h = 0;
@@ -3548,7 +4451,31 @@ index 0fed0fa8e1db1d518e62542c429c8b364e2b37d9..571ca5d368c1e5db442bfbe05c8b2669
      };
      std::unique_ptr<nxui::Texture> m_wallTex;
      std::future<Pixels> m_wallJob;
-@@ -752,6 +810,9 @@ private:
+@@ -456,6 +515,23 @@ private:
+     // Up / down, left / right, A and B on a list of rows; close() shuts it.
+     void listInput(std::vector<MenuItem>& items, int& sel, const std::function<void()>& close);
+     void openUsers();
++    void openUserTools();
++    void openProfiles(bool atStartup=false);
++    void updateProfiles(float dt);
++    void pollProfileJobs();
++    void loadProfiles();
++    void drawProfiles(nxui::Renderer& r);
++    void drawCharacter(nxui::Renderer& r,const avatar360::Look& look,float x,float y,float scale,float yaw,bool wave=false,bool portrait=false,float alpha=1.f);
++    void confirmProfile();
++    void saveProfileAvatar();
++    avatar360::Session m_profiles;
++    avatar360::Assets m_profileAssets;
++    std::future<std::array<avatar360::Model,6>> m_profileAssetJob;
++    bool m_profileAssetsFailed=false;
++    std::vector<User> m_profileUsers;
++    std::future<std::vector<User>> m_profileJob;
++    bool m_profileStartup=true,m_profilePending=false;
++    float m_profileScroll=0,m_profileRepeat=0,m_profileLoadTime=0,m_profileAge=0;
+     void openNotifications();
+     void startMove();
+     void finishMove(bool keep);
+@@ -752,6 +828,9 @@ private:
      bool m_sheetOpen = false, m_sheetOnRows = false;
      int m_sheetSec = 0, m_sheetRow = 0;
      float m_sheetIn = 0.f, m_sheetRowsIn = 1.f, m_sheetScroll = 0.f;
@@ -4340,10 +5267,204 @@ index 0000000000000000000000000000000000000000..0b3028ee9fa89f0616bb9a8c118a4c89
 +    return {x,260.f+(334.f-h)/2.f+rowOffset,w,h,relative>0.f ? 20.f*(1.f-focus):0.f};
 +}
 +} // namespace cards::nxe
+diff --git a/projects/cards/src/Profiles360.inc b/projects/cards/src/Profiles360.inc
+new file mode 100644
+index 0000000000000000000000000000000000000000..f417b4a79a533e2465aafb30deb4d7ea477fcfb8
+--- /dev/null
++++ b/projects/cards/src/Profiles360.inc
+@@ -0,0 +1,178 @@
++// Included inside namespace cards. Profile names and launch identities come
++// from Nintendo accounts; avatar appearances are app-local, keyed by full UID.
++namespace {
++std::string profile360Id(AccountUidLike uid){
++    char text[33];std::snprintf(text,sizeof(text),"%016llX%016llX",
++        static_cast<unsigned long long>(uid.uid[0]),static_cast<unsigned long long>(uid.uid[1]));return text;
++}
++}
++void CardsActivity::openUsers(){openProfiles();}
++
++void CardsActivity::openProfiles(bool startup){
++    m_profiles.begin(startup);m_profilePending=false;m_profileRepeat=0;m_profileLoadTime=0;m_profileAge=0;m_profileAssetsFailed=false;
++    m_dashGuide=false;m_guideClosing=false;m_menu.clear();m_profileUsers.clear();
++    forgetAllArt(); // make room for the character textures while this screen covers the library
++    loadProfiles();
++    if(!m_profileAssets.ready && !m_profileAssetJob.valid()){
++        const std::string base=std::string(kAssets)+"avatars/";
++        m_profileAssetJob=std::async(std::launch::async,[base](){
++            offScreenCore();std::array<avatar360::Model,6> models;
++            try{for(size_t i=0;i<models.size();++i)avatar360::loadModel(base+avatar360::modelFiles[i]+".avb",models[i]);}catch(...){models={};}
++            threadDone();return models;
++        });
++    }
++    m_audio.play("show_modal");
++}
++void CardsActivity::loadProfiles(){
++    if(m_profileJob.valid())return;
++    m_profileJob=std::async(std::launch::async,[](){offScreenCore();auto users=listUsers();threadDone();return users;});
++}
++void CardsActivity::confirmProfile(){
++    const auto picked=m_profiles.signIn();if(!picked)return;
++    const auto user=std::find_if(m_profileUsers.begin(),m_profileUsers.end(),[&](const auto& u){return profile360Id(u.uid)==picked->id;});
++    if(user==m_profileUsers.end())return;
++    AccountUid uid{};uid.uid[0]=user->uid.uid[0];uid.uid[1]=user->uid.uid[1];AccountProfile profile{};
++    if(R_FAILED(accountGetProfile(&profile,uid))){
++        say("That profile is no longer on the console.");m_profiles.begin(false);loadProfiles();return;
++    }
++    accountProfileClose(&profile);
++    setUser(user->uid);m_guideName=user->name;m_profiles.signedIn();m_audio.play("activation");
++}
++void CardsActivity::saveProfileAvatar(){
++    // Revalidate the target account before persisting; editing another
++    // profile's appearance must never silently change the active account.
++    const auto user=std::find_if(m_profileUsers.begin(),m_profileUsers.end(),[&](const auto& u){return profile360Id(u.uid)==m_profiles.editingId;});
++    if(user==m_profileUsers.end())return;
++    AccountUid uid{};uid.uid[0]=user->uid.uid[0];uid.uid[1]=user->uid.uid[1];AccountProfile profile{};
++    if(R_FAILED(accountGetProfile(&profile,uid))){say("That profile is no longer on the console.");m_profiles.back();return;}
++    accountProfileClose(&profile);
++    if(m_profiles.save(m_settings.profileAvatars)){m_settings.save();m_audio.play("toggle_on");}
++}
++void CardsActivity::pollProfileJobs(){
++    if(m_profileJob.valid() && m_profileJob.wait_for(std::chrono::seconds(0))==std::future_status::ready){
++        try{m_profileUsers=m_profileJob.get();}catch(...){m_profileUsers.clear();}
++        std::vector<avatar360::Profile> profiles;for(const auto& u:m_profileUsers)profiles.push_back({profile360Id(u.uid),u.name});
++        m_profiles.loaded(std::move(profiles),profile360Id(m_user));
++        m_profileScroll=float(avatar360::firstVisible(m_profiles.selected,int(m_profiles.profiles.size())));
++    }
++    if(m_profileAssetJob.valid() && m_profileAssetJob.wait_for(std::chrono::seconds(0))==std::future_status::ready){
++        try{m_profileAssets.models=m_profileAssetJob.get();}catch(...){m_profileAssets.models={};}
++        m_profileAssetsFailed=false;for(const auto& model:m_profileAssets.models)m_profileAssetsFailed|=!model.valid();
++        m_profileAssets.ready=!m_profileAssetsFailed;
++    }
++}
++void CardsActivity::updateProfiles(float dt){
++    using S=avatar360::Screen;using B=nxui::Button;auto& input=app().input();
++    m_profileAge+=std::max(0.f,dt);
++    pollProfileJobs();
++    if(!m_profileAssetsFailed && m_profileAssets.ready && !m_profileAssets.available()){
++        m_profileAssets.upload(app().gpu(),app().renderer());m_profileLoadTime+=dt;
++        if(m_profileLoadTime>15.f)m_profileAssetsFailed=true;
++    }
++    const auto previous=m_profiles.screen;
++    auto close=[&](){m_profiles.screen=S::Closed;};
++    const bool footerTouch=input.touchUp() && input.touchY()>=643;
++    const bool waiting=m_profiles.screen==S::Loading || !m_profileAssets.available();
++    if(input.isDown(B::B) || (waiting && footerTouch && input.touchX()<210))m_profiles.back();
++    else if((input.isDown(B::Y) || (m_profileAssetsFailed && footerTouch && input.touchX()>=250 && input.touchX()<540)) && m_profiles.screen==S::Picker){close();openUserTools();}
++    else if(m_profiles.screen==S::Welcome){
++        if(input.isDown(B::A) || (footerTouch && input.touchX()<270))close();else m_profiles.tick(dt);
++    }else if(m_profiles.screen==S::Picker && m_profileAssets.available()){
++        const bool left=input.isDown(B::DLeft)||input.isDown(B::LStickL),right=input.isDown(B::DRight)||input.isDown(B::LStickR);
++        if(left||right){m_profiles.move(right?1:-1);m_audio.play("navigation");}
++        if(input.isDown(B::A))confirmProfile();
++        else if(input.isDown(B::X))m_profiles.edit(m_settings.profileAvatars);
++        if(input.touchUp()){
++            const float x=input.touchX(),y=input.touchY();
++            if(std::abs(input.touchDeltaX())>60)m_profiles.move(input.touchDeltaX()<0?1:-1);
++            else if(y>=643){
++                if(x<200)confirmProfile();else if(x<390)m_profiles.back();else if(x<640)m_profiles.edit(m_settings.profileAvatars);else{close();openUserTools();}
++            }else for(int i=0;i<int(m_profiles.profiles.size());++i)if(avatar360::profileBox(i,m_profileScroll).contains(x,y)){
++                if(i==m_profiles.selected)confirmProfile();else m_profiles.selected=i;break;
++            }
++        }
++    }else if(m_profiles.screen==S::Editor){
++        int vertical=0,horizontal=0;
++        const bool up=input.isDown(B::DUp)||input.isDown(B::LStickU),down=input.isDown(B::DDown)||input.isDown(B::LStickD);
++        const bool left=input.isDown(B::DLeft)||input.isDown(B::LStickL),right=input.isDown(B::DRight)||input.isDown(B::LStickR);
++        const bool held=input.isHeld(B::DLeft)||input.isHeld(B::DRight)||input.isHeld(B::DUp)||input.isHeld(B::DDown)||input.isHeld(B::LStickL)||input.isHeld(B::LStickR)||input.isHeld(B::LStickU)||input.isHeld(B::LStickD);
++        if(up||down||left||right){vertical=down-up;horizontal=right-left;m_profileRepeat=.4f;}
++        else if(held && (m_profileRepeat-=dt)<=0){m_profileRepeat=.14f;vertical=(input.isHeld(B::DDown)||input.isHeld(B::LStickD))-(input.isHeld(B::DUp)||input.isHeld(B::LStickU));horizontal=(input.isHeld(B::DRight)||input.isHeld(B::LStickR))-(input.isHeld(B::DLeft)||input.isHeld(B::LStickL));}
++        else if(!held)m_profileRepeat=0;
++        m_profiles.field=std::clamp(m_profiles.field+vertical,0,int(avatar360::FeatureCount)-1);
++        if(horizontal)m_profiles.draft.cycle(m_profiles.field,horizontal);
++        if(input.isHeld(B::L))m_profiles.yaw-=dt*1.8f;
++        if(input.isHeld(B::R))m_profiles.yaw+=dt*1.8f;
++        if(input.isDown(B::A))m_profiles.draft.cycle(m_profiles.field,1);
++        if(input.isDown(B::Y))m_profiles.draft=avatar360::randomLook(uint32_t(armGetSystemTick()));
++        if(input.isDown(B::X))saveProfileAvatar();
++        if(input.touchUp()){
++            const float x=input.touchX(),y=input.touchY();
++            if(y>=643){if(x<230)saveProfileAvatar();else if(x<430)m_profiles.back();else if(x<690)m_profiles.draft=avatar360::randomLook(uint32_t(armGetSystemTick()));}
++            else if(x<580 && std::abs(input.touchDeltaX())>12)m_profiles.yaw+=input.touchDeltaX()*.009f;
++            else for(int i=0;i<avatar360::FeatureCount;++i)if(avatar360::editorRow(i,0).contains(x,y)){m_profiles.field=i;m_profiles.draft.cycle(i,x<900?-1:1);break;}
++        }
++    }
++    const float target=avatar360::firstVisible(m_profiles.selected,int(m_profiles.profiles.size()));
++    m_profileScroll+=(target-m_profileScroll)*(m_settings.motion?std::min(1.f,dt*12.f):1.f);
++    if(previous!=S::Closed && !m_profiles.open()){m_profileAssets.releaseTextures();wantArt();}
++}
++void CardsActivity::drawCharacter(nxui::Renderer& renderer,const avatar360::Look& look,float x,float y,float scale,float yaw,bool wave,bool portrait,float alpha){
++    avatar360::drawCharacter(m_profileAssets,renderer,look,x,y,scale,yaw,
++        m_settings.motion?(wave?m_profiles.welcomeTime:m_profileAge+look.value[avatar360::Character]*1.3f):0.f,alpha,wave,portrait);
++}
++void CardsActivity::drawProfiles(nxui::Renderer& r){
++    using S=avatar360::Screen;if(!m_profiles.open())return;
++    const nxui::Color white{1,1,1,1},dark{.15f,.17f,.16f,1},muted{.34f,.36f,.35f,1},green{.36f,.66f,.06f,1};
++    r.drawGradientRect({0,0,1280,405},{.18f,.22f,.22f,1},{.56f,.58f,.57f,1});
++    r.drawGradientRect({0,405,1280,315},{.56f,.58f,.57f,1},{.88f,.89f,.88f,1});
++    auto right=[&](const std::string& text,float y,float scale){textMid(r,m_fDashNav,text,1180-measured(m_fDashNav,text).x*scale,y,white,scale);};
++    auto centered=[&](nxui::Font& font,const std::string& text,float x,float y,nxui::Color color,float scale=1.f){textMid(r,font,text,x-measured(font,text).x*scale/2,y,color,scale);};
++    const bool edit=m_profiles.screen==S::Editor,welcome=m_profiles.screen==S::Welcome;
++    right(edit?"customize avatar":welcome?"welcome":"sign in or out",75,1.05f);
++    right(edit?"Make this avatar yours":welcome?"Signed in":"Choose your profile",111,.48f);
++    auto footer=[&](float x,const char* letter,const char* label,nxui::Color color){r.drawCircle({x,666},11,color);centered(m_fBadge,letter,x,666,white,.82f);textMid(r,m_fBody,label,x+19,666,dark,.88f);};
++    if(m_profiles.screen==S::Loading || (!m_profileAssets.available() && !m_profileAssetsFailed)){
++        centered(m_fDashNav,"Loading avatars...",640,370,white,.8f);
++        footer(88,"B","Back",{.75f,.08f,.07f,1});return;
++    }
++    if(m_profileAssetsFailed){
++        centered(m_fBody,"Avatar files could not be loaded.",640,330,white);
++        centered(m_fBody,"Reinstall the complete HomeNX360 update, including the avatars folder.",640,370,white,.85f);
++        footer(88,"B","Back",{.75f,.08f,.07f,1});footer(280,"Y","Manage users",{.84f,.66f,.04f,1});return;
++    }
++    if(edit){
++        const auto* profile=m_profiles.current();
++        drawCharacter(r,m_profiles.draft,330,575,310,m_profiles.yaw);
++        if(profile)centered(m_fLabel,fit(m_fLabel,profile->name,440),330,606,dark,1.1f);
++        for(int i=0;i<avatar360::FeatureCount;++i){
++            const auto row=avatar360::editorRow(i,0);const bool chosen=i==m_profiles.field;
++            if(chosen)r.drawGradientRect({row.x,row.y,row.w,row.h},{.49f,.76f,.08f,1},{.28f,.53f,.02f,1});
++            textMid(r,m_fBody,avatar360::featureNames[i],row.x+12,row.y+21,chosen?white:dark,.87f);
++            const std::string value="<  "+avatar360::featureValue(m_profiles.draft,i)+"  >";
++            textMid(r,m_fBody,value,row.x+row.w-12-measured(m_fBody,value).x*.78f,row.y+21,chosen?white:dark,.78f);
++        }
++        textMid(r,m_fBody,"L / R  Rotate avatar",665,574,dark,.82f);
++        textMid(r,m_fBody,"Drag the avatar to turn it.",665,606,muted,.78f);
++        footer(88,"X","Save avatar",{.05f,.37f,.72f,1});footer(320,"B","Cancel",{.75f,.08f,.07f,1});footer(520,"Y","Randomize",{.84f,.66f,.04f,1});return;
++    }
++    if(welcome){
++        const auto* profile=m_profiles.current();if(profile){drawCharacter(r,avatar360::forProfile(m_settings.profileAvatars,profile->id),400,575,310,0,true);textMid(r,m_fDashNav,"Welcome,",700,342,white,.8f);textMid(r,m_fDashNav,fit(m_fDashNav,profile->name,450,.9f),700,400,white,.9f);}
++        footer(88,"A","Continue",green);return;
++    }
++    if(m_profiles.profiles.empty())centered(m_fBody,"No Switch profiles found. Choose Manage users to add one.",640,360,white);
++    r.pushClipRect({0,140,1280,500});
++    for(int i=0;i<int(m_profiles.profiles.size());++i){
++        const auto box=avatar360::profileBox(i,m_profileScroll);if(box.x+box.w<0 || box.x>1280)continue;
++        const auto& profile=m_profiles.profiles[i];const bool chosen=i==m_profiles.selected;const float x=box.x+box.w/2;
++        // A broad soft floor shadow anchors each full-body character.
++        for(int n=8;n>0;--n)r.drawRoundedRect({x-30-n*3.f,485-n*.7f,60+n*6.f,9+n*1.4f},{0,0,0,.012f},10);
++        drawCharacter(r,avatar360::forProfile(m_settings.profileAvatars,profile.id),x,490,chosen?210:200,chosen?-.08f:.08f,false,false,chosen?1.f:.8f);
++        centered(m_fLabel,fit(m_fLabel,profile.name,260,chosen?1.15f:.95f),x,532,chosen?dark:muted,chosen?1.15f:.95f);
++        centered(m_fBody,profile.id==profile360Id(m_user)?"Signed in":"Offline profile",x,568,chosen?dark:muted,.76f);
++        if(chosen)r.drawRect({x-55,597,110,3},green);
++    }
++    r.popClipRect();
++    footer(88,"A","Select",green);footer(270,"B","Back",{.75f,.08f,.07f,1});footer(440,"X","Edit avatar",{.05f,.37f,.72f,1});footer(680,"Y","Manage users",{.84f,.66f,.04f,1});
++    if(m_profiles.profiles.size()>4)textMid(r,m_fBody,std::to_string(m_profiles.selected+1)+" / "+std::to_string(m_profiles.profiles.size()),1120,666,dark,.8f);
++}
 diff --git a/projects/cards/src/Settings.hpp b/projects/cards/src/Settings.hpp
-index b7d5dffad992f7f17eabad6b5e8ce5be9b8d4833..a23c64c12139ebb43de983c41e9069d2acb989e4 100644
+index b7d5dffad992f7f17eabad6b5e8ce5be9b8d4833..b360e308b11f710c6e840a130dc9d9b493822615 100644
 --- a/projects/cards/src/Settings.hpp
 +++ b/projects/cards/src/Settings.hpp
+@@ -1,8 +1,8 @@
+ #pragma once
++#include "Avatar360.hpp"
+ #include <nlohmann/json.hpp>
+ 
+ #include <algorithm>
+-#include <map>
+ #include <cstdint>
+ #include <filesystem>
+ #include <fstream>
 @@ -39,6 +39,7 @@ struct Settings {
      bool sounds = true;
      int soundVolume = 80;     // 0..100
@@ -4352,7 +5473,16 @@ index b7d5dffad992f7f17eabad6b5e8ce5be9b8d4833..a23c64c12139ebb43de983c41e9069d2
      bool motion = true;       // animations (off: things move straight to place)
      bool bgMotion = true;     // the background art drifts
      int startPage = 0;        // (old: the page order's first is where it opens now)
-@@ -116,6 +117,7 @@ struct Settings {
+@@ -74,6 +75,8 @@ struct Settings {
+     long long picturesAt = 0;   // when every game's pictures were last made sure of (seconds)
+     long long achSeenAt = 0;    // the newest achievement HOME has said (seconds; 0: none said yet)
+     bool introDone = false;     // the first-time intro was shown
++    bool profileSignIn = true;
++    avatar360::Wardrobe profileAvatars;
+     std::string wallpaper;      // one picture behind everything ("" = each game's art)
+     std::map<std::string, std::string> names; // + > Rename: by title ID (hex) or .nro path
+     std::vector<std::string> sheetOrder; // Settings' tabs by name, in his order (new ones after)
+@@ -116,6 +119,7 @@ struct Settings {
              soundVolume = j.value("soundVolume", soundVolume);
              players = j.value("players", players);
              motion = j.value("motion", motion);
@@ -4360,7 +5490,27 @@ index b7d5dffad992f7f17eabad6b5e8ce5be9b8d4833..a23c64c12139ebb43de983c41e9069d2
              bgMotion = j.value("bgMotion", bgMotion);
              startPage = j.value("startPage", startPage);
              pageOrder = j.value("pageOrder", pageOrder);
-@@ -186,7 +188,7 @@ struct Settings {
+@@ -176,6 +180,19 @@ struct Settings {
+             listsAt = j.value("listsAt", listsAt);
+             perfLog = j.value("perfLog", perfLog);
+             language = j.value("language", language);
++            profileSignIn = j.value("profileSignIn", profileSignIn);
++            profileAvatars.clear();
++            if(j.contains("profileAvatars") && j["profileAvatars"].is_object())
++                for(const auto& [id,values]:j["profileAvatars"].items()) {
++                    if(profileAvatars.size()>=32)break;
++                    if(!avatar360::validId(id) || !values.is_array() || values.size()!=avatar360::FeatureCount)continue;
++                    avatar360::Look look;bool valid=true;
++                    for(int i=0;i<avatar360::FeatureCount;++i) {
++                        if(!values[i].is_number_integer()){valid=false;break;}
++                        try {look.value[i]=values[i].get<int>();} catch(...) {valid=false;break;}
++                    }
++                    if(valid){look.normalize();profileAvatars[id]=look;}
++                }
+             const char* const keys[4] = {"orderGames", "orderHomebrew", "orderNintendo", "orderMedia"};
+             for (int p = 0; p < 4; ++p) order[p] = j.value(keys[p], order[p]);
+         } catch (...) {
+@@ -186,7 +203,7 @@ struct Settings {
      void save() const {
          nlohmann::json j = {{"music", music}, {"musicVolume", musicVolume}, {"shuffle", shuffle}, {"repeat", repeat},
                              {"sounds", sounds}, {"soundVolume", soundVolume}, {"players", players},
@@ -4369,6 +5519,16 @@ index b7d5dffad992f7f17eabad6b5e8ce5be9b8d4833..a23c64c12139ebb43de983c41e9069d2
                              {"sortOrder", sort}, {"haze", haze}, {"boxArt", boxArt}, {"accent", accent},
                              {"glass", glass}, {"launchStyle", launchStyle}, {"clock24", clock24}, {"showFree", showFree}, {"showTemp", showTemp}, {"titlePics", titlePics}, {"mediaIn", mediaIn}, {"mediaOut", mediaOut}, {"gamesIn", gamesIn}, {"gamesOut", gamesOut}, {"fullCards", fullCards}, {"nroHash", nroHash}, {"titles", titles}, {"askUser", askUser}, {"panelApp", panelApp},
                              {"lockScreen", lockScreen}, {"lockMusic", lockMusic}, {"keepHomebrew", keepHomebrew}, {"hbPath", hbPath}, {"hbHost", hbHost}, {"hiddenCards", hiddenCards}, {"sheetBack", sheetBack}, {"sheetBackRow", sheetBackRow}, {"hiddenPages", hiddenPages}, {"spotify", spotify}, {"picturesAt", picturesAt}, {"achSeenAt", achSeenAt},{"introDone", introDone}, {"wallpaper", wallpaper}, {"names", names},
+@@ -197,6 +214,9 @@ struct Settings {
+         for (const auto& page : customPages) j["customPages"].push_back({{"name", page.name}, {"titles", page.titles}});
+         j["notificationCards"] = notificationCards;
+         j["lastPage"] = lastPage;
++        j["profileSignIn"]=profileSignIn;
++        j["profileAvatars"]=nlohmann::json::object();
++        for(const auto& [id,look]:profileAvatars)if(avatar360::validId(id))j["profileAvatars"][id]=look.value;
+         j["lockGameBanner"] = lockGameBanner;
+         writeLater(kPath, j.dump(2));
+     }
 diff --git a/projects/cards/src/Settings360.inc b/projects/cards/src/Settings360.inc
 new file mode 100644
 index 0000000000000000000000000000000000000000..3e170219f940f2c9870d878f704a46cf79d15d17
@@ -4467,7 +5627,7 @@ index 0000000000000000000000000000000000000000..3e170219f940f2c9870d878f704a46cf
 +}
 diff --git a/projects/cards/src/SettingsBindings.inc b/projects/cards/src/SettingsBindings.inc
 new file mode 100644
-index 0000000000000000000000000000000000000000..c8cd3640399d919a52164c20a86d6a9034f92a14
+index 0000000000000000000000000000000000000000..7a41b13e14302a45d560b839aa261d5fe88e5fae
 --- /dev/null
 +++ b/projects/cards/src/SettingsBindings.inc
 @@ -0,0 +1,81 @@
@@ -4510,7 +5670,7 @@ index 0000000000000000000000000000000000000000..c8cd3640399d919a52164c20a86d6a90
 +#ifndef SWITCHU_MENU
 +    note(Clock,"Console date and time","HOME frontend required","The standalone preview can change the dashboard's clock format. Console date and time editing is available when HomeNX360 runs as HOME.");
 +#endif
-+    append(Startup,"Look",{"Startup animation","Preview startup"});
++    append(Startup,"Look",{"Startup animation","Sign-in at startup","Preview startup"});
 +    append(Startup,"Console",{"Sleep in handheld","Sleep on the TV"});
 +    m_sheet[Startup].rows.push_back(action("Turn Off Console",[this](){m_sheetOpen=false;openPower();}));
 +    m_sheet[Startup].rows.back().detail="Open the Switch's sleep, shutdown, and restart controls.";
@@ -5047,6 +6207,115 @@ index ecb0ea0e523bc872f033dc12f88b8219b6812399..26084fa5995fb70c9a0b8a1e618989f0
  
      // The server bar: 0 = Direct Messages, else a server's id.
      std::vector<DiscordService::Server> m_servers;
+diff --git a/shaders/basic_fsh.glsl b/shaders/basic_fsh.glsl
+index dd048ffd65a35eb75e2bbcd5089d3211fb53cb3f..d86e7932956a35c3e8bd1204bcacb930cd4343d0 100644
+--- a/shaders/basic_fsh.glsl
++++ b/shaders/basic_fsh.glsl
+@@ -24,6 +24,13 @@ float sdRoundedBox(vec2 p, vec2 halfExtent, float radius) {
+ 
+ void main() {
+     vec4 c = (useTexture != 0) ? texture(tex, fragUV) * fragColor : fragColor;
++    // Optional creator hair dyes retain the baked texture's highlight detail.
++    // Original colour uses rad=-1 and keeps the exported surface unchanged.
++    if (fragShapeRound.x < -1.5 && useTexture != 0) {
++        vec4 surface = texture(tex, fragUV);
++        float shade = clamp(0.55 + dot(surface.rgb, vec3(0.2126,0.7152,0.0722))*1.7,0.35,1.15);
++        c = vec4(fragColor.rgb*shade,surface.a*fragColor.a);
++    }
+     float radius = fragShapeRound.x;
+     if (radius > 0.0) {
+         float distanceToEdge = sdRoundedBox(fragShapePos, fragShapeHalf, radius);
+diff --git a/shaders/basic_vsh.glsl b/shaders/basic_vsh.glsl
+index aa40635f6bf68e0b379a55087d3f811bfce03068..7e295b3f24887a8d453e05b6514a9babe6e080c9 100644
+--- a/shaders/basic_vsh.glsl
++++ b/shaders/basic_vsh.glsl
+@@ -21,6 +21,9 @@ layout (location = 4) out vec2 fragShapeRound;
+ 
+ void main() {
+     gl_Position = projection * vec4(inPos, 0.0, 1.0);
++    // Avatar vertices already carry orthographic, normalized camera depth.
++    // Ordinary UI vertices retain their original rounded-shape attributes.
++    if (inShapeRound.x < 0.0) gl_Position.z = inShapePos.x;
+     fragUV    = inUV;
+     fragColor = inColor;
+     fragShapePos = inShapePos;
+diff --git a/tests/avatar360_test.cpp b/tests/avatar360_test.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..8e1ec63987e240ab06011443593d608cc3e46077
+--- /dev/null
++++ b/tests/avatar360_test.cpp
+@@ -0,0 +1,49 @@
++#include "../projects/cards/src/Avatar360.hpp"
++#include "../projects/cards/src/AvatarModel.hpp"
++#include <cassert>
++#include <iostream>
++using namespace cards::avatar360;
++int main(int argc,char** argv){
++    assert(argc==2);const std::string a="00000000000000010000000000000002",b="00000000000000030000000000000004";
++    assert(validId(a));assert(!validId(std::string(32,'0')));assert(!validId("bad"));assert(!validId(std::string(32,'g')));
++    Wardrobe wardrobe;Session s;s.begin(true);s.loaded({{a,"First"},{b,"Second"},{a,"Duplicate"},{"bad","Invalid"}},a);
++    assert(s.profiles.size()==2 && s.selected==0 && s.screen==Screen::Picker);
++    s.move(1);s.edit(wardrobe);const auto before=forProfile(wardrobe,b);s.draft.cycle(Top,1);s.back();assert(wardrobe.empty());
++    s.edit(wardrobe);s.draft.cycle(Character,1);s.draft.cycle(Top,2);const auto saved=s.draft;assert(s.save(wardrobe));assert(wardrobe.size()==1 && wardrobe.at(b)==saved && !wardrobe.count(a));
++    assert(forProfile(wardrobe,b)==saved);assert(forProfile(wardrobe,a)==forProfile(wardrobe,a));
++    Session canceled;canceled.begin(true);canceled.back();canceled.loaded({{a,"Late result"}},a);assert(!canceled.open());canceled.begin(false);canceled.loaded({{b,"New load"}},b);assert(canceled.current()->id==b);
++    auto selected=s.signIn();assert(selected && selected->id==b);s.signedIn();s.tick(1);assert(s.screen==Screen::Welcome);s.tick(5);assert(!s.open());
++    Look corrupt;corrupt.value.fill(999);corrupt.normalize();for(int i=0;i<FeatureCount;++i)assert(corrupt.value[i]==choices[i]-1);
++    for(int i=0;i<FeatureCount;++i){Look l;l.cycle(i,-1);assert(l.value[i]>=0 && l.value[i]<choices[i]);}
++    assert(firstVisible(0,8)==0 && firstVisible(7,8)==4);
++    std::array<Model,6> models;
++    for(int i=0;i<6;++i){
++        assert(loadModel(std::string(argv[1])+"/"+modelFiles[i]+".avb",models[i]));assert(models[i].bones.size()==71);
++        for(float time:{0.f,1.2f,4.f,30.f})for(bool wave:{false,true}){
++            const auto world=models[i].pose(time,wave);const auto skin=retarget(models[i],models[i],world);assert(skin.size()==71);
++            size_t visible=0;float minY=100,maxY=-100;
++            for(const auto& part:models[i].parts){
++                std::vector<ProjectedVertex> vertices;
++                for(const auto& v:part.vertices){auto p=skinVertex(v,skin);assert(std::isfinite(p.x)&&std::isfinite(p.y)&&std::isfinite(p.z));assert(std::abs(p.x)<3 && p.y>-.5f && p.y<3 && std::abs(p.z)<3);minY=std::min(minY,p.y);maxY=std::max(maxY,p.y);vertices.push_back(projectVertex(v,skin,640,500,210,.3f,1,1));}
++                visible+=visibleIndices(part,vertices).size();
++            }
++            assert(visible>1000 && minY<.2f && maxY>1.3f);
++        }
++        for(int v=0;v<3;++v){const int source=donor(i,v);assert(source%2==i%2);assert(retarget(models[source],models[i],models[i].pose(0,false)).size()==71 || !models[source].valid());}
++    }
++    // All donor rigs must map by bone identity, independent of joint ordering.
++    for(int i=0;i<6;++i)for(int n=0;n<3;++n)assert(retarget(models[donor(i,n)],models[i],models[i].pose(0,false)).size()==71);
++    // Even four of the most expensive possible outfits must fit the native
++    // indexed stream, independently of the ordinary 2D UI vertex allowance.
++    size_t largest=0;
++    for(int body=0;body<6;++body)for(int hair=0;hair<4;++hair)for(int top=0;top<3;++top)for(int bottom=0;bottom<3;++bottom)for(int shoes=0;shoes<3;++shoes){
++        Look l;l.value[Character]=body;l.value[Hair]=hair;l.value[Top]=top;l.value[Bottom]=bottom;l.value[Shoes]=shoes;size_t bytes=0;
++        for(int source=0;source<6;++source)for(const auto& part:models[source].parts)if(partEnabled(l,part.slot,source))bytes+=part.vertices.size()*56+part.indices.size()*4+512;
++        largest=std::max(largest,bytes);
++    }
++    assert(largest*4<=4u*1024u*1024u);std::cout<<"Four-avatar stream upper bound: "<<largest*4<<" / 4194304 bytes\n";
++    const std::string path=std::string(argv[1])+"/regular.avb";std::ifstream in(path,std::ios::binary);std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)),{});Model untouched=models[0];
++    const auto bones=untouched.bones;bytes.resize(100);assert(!decodeModel(bytes,untouched) && untouched.bones==bones);
++    bytes.assign(24,0xff);assert(!decodeModel(bytes,untouched));
++    std::cout<<"Avatar profiles, per-UID draft/save/cancel, all six rigs, animation bounds, wardrobe mapping and invalid banks passed.\n";
++}
+diff --git a/tests/avatar_media360_test.py b/tests/avatar_media360_test.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..03c004c299f3744ddcfd432ded1d77e3ddc127bc
+--- /dev/null
++++ b/tests/avatar_media360_test.py
+@@ -0,0 +1,16 @@
++"""Verify shipped native banks against the unchanged source export manifests."""
++import hashlib,json,struct
++from pathlib import Path
++root=Path(__file__).resolve().parents[1]
++names=['regular','player','fan','street','smart','night']
++for name in names:
++    path=root/'projects/cards/romfs/avatars'/f'{name}.avb';data=path.read_bytes()
++    report=json.loads(path.with_suffix('.json').read_text())
++    magic,joints,parts,textures,clips=struct.unpack_from('<8s4I',data)
++    assert magic==b'NXAVTR1\0' and joints==71 and clips==2
++    assert parts==report['parts'] and textures==report['textures']
++    assert hashlib.sha256(data).hexdigest()==report['bank_sha256']
++    for field in ('source','body_source'):
++        source=root/'media/avatars'/report[field]
++        assert source.is_file() and hashlib.sha256(source.read_bytes()).hexdigest()==report[field+'_sha256']
++print('Six native banks and all 12 unchanged source export SHA-256 hashes passed.')
 diff --git a/tests/dashboard360_test.cpp b/tests/dashboard360_test.cpp
 new file mode 100644
 index 0000000000000000000000000000000000000000..0ef30566502b9d52c2cf7fb4c18e7f3e01d9e4f4
@@ -5277,10 +6546,10 @@ index 0000000000000000000000000000000000000000..d94bd37dcf7ff007a214f40a3be51639
 +}
 diff --git a/tests/settings360_test.cpp b/tests/settings360_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..bf86cf80d3bb8a8fb02e9d8710da06fcdacd8263
+index 0000000000000000000000000000000000000000..7fd4ed779245e1152926d4afdf6611c239eba2bb
 --- /dev/null
 +++ b/tests/settings360_test.cpp
-@@ -0,0 +1,186 @@
+@@ -0,0 +1,190 @@
 +#include "../projects/cards/src/SettingsLayout.hpp"
 +#include "../projects/cards/src/NxeLayout.hpp"
 +#include <cassert>
@@ -5351,14 +6620,16 @@ index 0000000000000000000000000000000000000000..bf86cf80d3bb8a8fb02e9d8710da06fc
 +}
 +int main(){
 +    using namespace cards;using namespace cards::settings360;
-+    CardsActivity app;int volume=60,saves=0,moves=0;bool startup=true;
++    CardsActivity app;int volume=60,saves=0,moves=0;bool startup=true,signIn=true;
 +    auto callback=CardsActivity::action("Preview startup",[](){});
 +    auto toggle=callback;toggle.label="Startup animation";toggle.kind=CardsActivity::MenuItem::Toggle;
 +    toggle.run={};toggle.level=[&](){return startup?1.f:0.f;};toggle.change=[&](int){startup=!startup;++saves;};
++    auto signInToggle=toggle;signInToggle.label="Sign-in at startup";
++    signInToggle.level=[&](){return signIn?1.f:0.f;};signInToggle.change=[&](int){signIn=!signIn;++saves;};
 +    auto inert=[](const char* name){return CardsActivity::info(name,[](){return "real getter fixture";});};
 +    app.m_sheet={
 +        {"Home","home",{inert("Custom pages"),inert("Sort games")}},
-+        {"Look","gear",{inert("Clock"),inert("Animations"),toggle,callback,inert("Launch animation")}},
++        {"Look","gear",{inert("Clock"),inert("Animations"),toggle,signInToggle,callback,inert("Launch animation")}},
 +        {"Lock screen","moon",{inert("Lock screen")}},
 +        {"Sound","music",{CardsActivity::slider("Music volume",[&](){return volume;},[&](int v){volume=v;++saves;},"Volume")}},
 +        {"Notifications","bell",{inert("Notification cards")}},
@@ -5411,6 +6682,8 @@ index 0000000000000000000000000000000000000000..bf86cf80d3bb8a8fb02e9d8710da06fc
 +    volume=30;assert(music.value()=="30%");
 +    find(Startup,"Startup animation").change(1);
 +    assert(!startup && find(Look,"Startup animation").level()==0.f);
++    const int beforeSignIn=saves;find(Startup,"Sign-in at startup").change(1);
++    assert(!signIn && saves==beforeSignIn+1 && !startup);
 +    const int oldMoves=moves;find(Memory,"Move software between console and microSD").run();assert(moves==oldMoves+1);
 +    find(Display,"Brightness").change(1);assert(brightnessWritten>.59f && brightnessWritten<.61f);
 +    assert(find(settings360::Audio,"Pair headphones or a speaker").run);
@@ -5518,7 +6791,7 @@ index 0000000000000000000000000000000000000000..a48d19b31856d64b7d43f54ab8d2d81e
 +}
 diff --git a/tools/package_dashboard360.py b/tools/package_dashboard360.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..c088b5ab5871a1ee5951feb0017f147a4161c6b8
+index 0000000000000000000000000000000000000000..29205832063ec0746da1412e515672405c8f7fdd
 --- /dev/null
 +++ b/tools/package_dashboard360.py
 @@ -0,0 +1,76 @@
@@ -5547,7 +6820,7 @@ index 0000000000000000000000000000000000000000..c088b5ab5871a1ee5951feb0017f147a
 +    'switch/SwitchU/bin/cardsnx.nro': release / 'CardsNX.nro',
 +    'switch/SwitchU/bin/homenx-loader.nro': release / 'HomeNX-Loader.nro',
 +}
-+for folder in ('fonts', 'icons', 'shaders', 'certs', 'boot'):
++for folder in ('fonts', 'icons', 'shaders', 'certs', 'boot', 'avatars'):
 +    base = root / 'build/cards-romfs' / folder
 +    if not base.is_dir():
 +        raise SystemExit(f'Missing CardsNX assets: {base}')
@@ -5598,6 +6871,265 @@ index 0000000000000000000000000000000000000000..c088b5ab5871a1ee5951feb0017f147a
 +    z.writestr('switch/SwitchU/dashboard360-build.json', manifest_text)
 +    z.write(root / 'README-360.md', 'INSTALL-360.md')
 +print('Packaged preview NRO and HomeNX update:', output)
+diff --git a/tools/prepare_avatar360.py b/tools/prepare_avatar360.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..d4eb61cb14552f404e9fb556ddd7302596582ce5
+--- /dev/null
++++ b/tools/prepare_avatar360.py
+@@ -0,0 +1,127 @@
++#!/usr/bin/env python3
++"""Convert a public 360sona GLB export into the bounded native avatar format.
++
++Original meshes, skin weights, inverse bind matrices and baked surface colours
++are retained. Only textures (384 px maximum) and animation sampling (15 Hz) are
++reduced for the Switch HOME memory budget. No network access is performed.
++"""
++import argparse, bisect, hashlib, io, json, math, struct
++from pathlib import Path
++from PIL import Image
++
++IDENTITY=[1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.]
++def mul(a,b):return [sum(a[k*4+r]*b[c*4+k] for k in range(4)) for c in range(4) for r in range(4)]
++def trs(t,q,s):
++    x,y,z,w=q
++    return [(1-2*y*y-2*z*z)*s[0],(2*x*y+2*z*w)*s[0],(2*x*z-2*y*w)*s[0],0.,
++            (2*x*y-2*z*w)*s[1],(1-2*x*x-2*z*z)*s[1],(2*y*z+2*x*w)*s[1],0.,
++            (2*x*z+2*y*w)*s[2],(2*y*z-2*x*w)*s[2],(1-2*x*x-2*y*y)*s[2],0.,*t,1.]
++def slerp(a,b,t):
++    d=sum(x*y for x,y in zip(a,b))
++    if d<0:b=[-x for x in b];d=-d
++    if d>.9995:r=[x+(y-x)*t for x,y in zip(a,b)]
++    else:
++        theta=math.acos(max(-1.,min(1.,d)));sn=math.sin(theta)
++        r=[(x*math.sin((1-t)*theta)+y*math.sin(t*theta))/sn for x,y in zip(a,b)]
++    length=math.sqrt(sum(x*x for x in r));return [x/length for x in r]
++def namehash(name):
++    h=2166136261
++    for x in name.encode():h=((h^x)*16777619)&0xffffffff
++    return h
++def convert(src,dest):
++    blob=src.read_bytes()
++    if struct.unpack_from('<4sII',blob)!=(b'glTF',2,len(blob)):raise ValueError('Invalid GLB')
++    size,tag=struct.unpack_from('<I4s',blob,12);doc=json.loads(blob[20:20+size])
++    pos=20+size;length,tag=struct.unpack_from('<I4s',blob,pos)
++    if tag!=b'BIN\0':raise ValueError('Expected embedded BIN chunk')
++    data=blob[pos+8:pos+8+length]
++    def view(i):
++        v=doc['bufferViews'][i];off=v.get('byteOffset',0);return data[off:off+v['byteLength']]
++    cache={}
++    def acc(i):
++        if i in cache:return cache[i]
++        a=doc['accessors'][i];v=doc['bufferViews'][a['bufferView']]
++        if 'sparse' in a:raise ValueError('Sparse accessors unsupported')
++        n={'SCALAR':1,'VEC2':2,'VEC3':3,'VEC4':4,'MAT4':16}[a['type']]
++        code={5121:'B',5123:'H',5125:'I',5126:'f'}[a['componentType']]
++        fmt='<'+code*n;stride=v.get('byteStride',struct.calcsize(fmt));off=v.get('byteOffset',0)+a.get('byteOffset',0)
++        result=[struct.unpack_from(fmt,data,off+j*stride) for j in range(a['count'])]
++        cache[i]=result;return result
++    skin=doc['skins'][0];joints=skin['joints'];nodes=doc['nodes']
++    if len(doc['skins'])!=1 or not 1<=len(joints)<=128:raise ValueError('Unsupported rig')
++    parents={c:i for i,n in enumerate(nodes) for c in n.get('children',[])}
++    def worlds(animation,time):
++        values={}
++        if animation:
++            for ch in animation['channels']:
++                target=ch['target'];sam=animation['samplers'][ch['sampler']]
++                keys=[v[0] for v in acc(sam['input'])];vals=acc(sam['output'])
++                lo=max(0,min(len(keys)-1,bisect.bisect_right(keys,time)-1));hi=min(lo+1,len(keys)-1)
++                u=0 if hi==lo else max(0,min(1,(time-keys[lo])/(keys[hi]-keys[lo])))
++                interp=sam.get('interpolation','LINEAR')
++                if interp=='STEP':v=vals[lo]
++                elif interp=='LINEAR':v=slerp(vals[lo],vals[hi],u) if target['path']=='rotation' else [a+(b-a)*u for a,b in zip(vals[lo],vals[hi])]
++                else:raise ValueError('Unsupported interpolation')
++                values[target['node'],target['path']]=v
++        out={}
++        def world(i):
++            if i in out:return out[i]
++            n=nodes[i];m=n.get('matrix')
++            if m is None:m=trs(values.get((i,'translation'),n.get('translation',[0,0,0])),values.get((i,'rotation'),n.get('rotation',[0,0,0,1])),values.get((i,'scale'),n.get('scale',[1,1,1])))
++            out[i]=mul(world(parents[i]),m) if i in parents else m
++            return out[i]
++        return [world(j) for j in joints]
++    parts=[];materials=doc['materials'];images=[];image_lookup={}
++    for node in nodes:
++        if 'mesh' not in node:continue
++        if node.get('skin')!=0:raise ValueError('Expected skinned mesh')
++        name=node.get('name','').lower()
++        slot=0 if name=='body' else 1 if name=='head' else 2 if name.startswith('hair:') else 3 if name.startswith('shirt:') else 4 if name.startswith('trousers:') else 5 if name.startswith('shoes:') else 7 if name.startswith('headwear:') else 6
++        for prim in doc['meshes'][node['mesh']]['primitives']:
++            if prim.get('mode',4)!=4:raise ValueError('Expected triangles')
++            mat=materials[prim['material']]
++            mode=mat.get('alphaMode','OPAQUE')
++            if mode not in ('OPAQUE','MASK','BLEND'):raise ValueError('Unsupported material')
++            pbr=mat['pbrMetallicRoughness'];factor=pbr.get('baseColorFactor',[1,1,1,1])
++            image=doc['textures'][pbr['baseColorTexture']['index']]['source']
++            key=(image,tuple(factor),mode,mat.get('alphaCutoff',.5))
++            if key not in image_lookup:
++                image_lookup[key]=len(images)
++                im=Image.open(io.BytesIO(view(doc['images'][image]['bufferView']))).convert('RGBA');im.thumbnail((384,384),Image.Resampling.LANCZOS)
++                channels=list(im.split())
++                for channel in range(4):channels[channel]=channels[channel].point(lambda x,k=factor[channel]:round(x*k))
++                if mode=='OPAQUE':channels[3]=channels[3].point(lambda _:255)
++                elif mode=='MASK':channels[3]=channels[3].point(lambda x:255 if x>=mat.get('alphaCutoff',.5)*255 else 0)
++                im=Image.merge('RGBA',channels)
++                out=io.BytesIO();im.save(out,format='PNG',optimize=True);images.append(out.getvalue())
++            attrs=prim['attributes'];ps=acc(attrs['POSITION']);uv=acc(attrs['TEXCOORD_0']);js=acc(attrs['JOINTS_0']);ws=acc(attrs['WEIGHTS_0']);idx=[x[0] for x in acc(prim['indices'])]
++            if not len(idx)%3==0 or max(idx)>=len(ps):raise ValueError('Invalid index')
++            vertices=bytearray()
++            for p,u,j,w in zip(ps,uv,js,ws):
++                if any(v>=len(joints) for v in j) or abs(sum(w)-1)>.002 or not all(math.isfinite(x) for x in (*p,*u,*w)):raise ValueError('Invalid vertex')
++                vertices+=struct.pack('<9f4B',*p,*u,*w,*j)
++            parts.append((slot,image_lookup[key],vertices,idx,mode=='BLEND'))
++    animations=doc.get('animations',[])
++    idle=next((x for x in animations if x['name']=='Just... standing around'),None)
++    wave=next((x for x in animations if x['name']=='Hello there!'),None)
++    if idle is None or wave is None:raise ValueError('Export idle and wave animations')
++    dest.parent.mkdir(parents=True,exist_ok=True)
++    with dest.open('wb') as f:
++        f.write(struct.pack('<8s4I',b'NXAVTR1\0',len(joints),len(parts),len(images),2))
++        for j,m in zip(joints,acc(skin['inverseBindMatrices'])):f.write(struct.pack('<I16f',namehash(nodes[j]['name']),*m))
++        for slot,texture,vertices,indices,blend in parts:
++            f.write(struct.pack('<5I',slot,texture,len(vertices)//40,len(indices),int(blend)));f.write(vertices);f.write(struct.pack('<'+'I'*len(indices),*indices))
++        for image in images:f.write(struct.pack('<I',len(image)));f.write(image)
++        clip_info=[]
++        for clip_id,clip in enumerate((idle,wave)):
++            duration=max(acc(s['input'])[-1][0] for s in clip['samplers']);frames=math.ceil(duration*15)+1
++            if not 0<duration<=60:raise ValueError('Unexpected animation duration')
++            f.write(struct.pack('<IIf',clip_id,frames,duration))
++            for frame in range(frames):
++                for m in worlds(clip,duration*frame/(frames-1)):f.write(struct.pack('<12f',*[m[c*4+r] for r in range(3) for c in range(4)]))
++            clip_info.append({'name':clip['name'],'duration':duration,'frames':frames})
++    report={'source':src.name,'source_sha256':hashlib.sha256(blob).hexdigest(),'bank_sha256':hashlib.sha256(dest.read_bytes()).hexdigest(),'joints':len(joints),'parts':len(parts),'vertices':sum(len(x[2])//40 for x in parts),'triangles':sum(len(x[3])//3 for x in parts),'textures':len(images),'texture_max_side':384,'animations':clip_info,'artwork':'Microsoft; exported through the public 360sona editor demo','export_generator':doc['asset']}
++    dest.with_suffix('.json').write_text(json.dumps(report,indent=2)+'\n')
++    print(dest.name,dest.stat().st_size,'bytes;',report['vertices'],'vertices;',report['triangles'],'triangles')
++if __name__=='__main__':
++    p=argparse.ArgumentParser(description=__doc__);p.add_argument('source',type=Path);p.add_argument('output',type=Path);a=p.parse_args();convert(a.source,a.output)
+diff --git a/tools/prepare_avatar_wardrobe.py b/tools/prepare_avatar_wardrobe.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..2dae33b1424a758bb1651b89bd5d0872ee7c64d5
+--- /dev/null
++++ b/tools/prepare_avatar_wardrobe.py
+@@ -0,0 +1,120 @@
++#!/usr/bin/env python3
++"""Build six original-style avatar banks with complete underlying body geometry.
++
++Requires the unchanged clothed AND complete-body public editor exports in
++media/avatars. Original clothing-fitted body meshes avoid replacement-part
++intersections. Body UV transfer retains the selected starter's skin appearance;
++complete calf geometry repairs shorts. The native depth buffer occludes skin
++covered by clothing. Requires Pillow and NumPy.
++"""
++import hashlib,json,struct,tempfile
++import numpy as np
++from pathlib import Path
++from prepare_avatar360 import convert
++ROOT=Path(__file__).resolve().parents[1]
++NAMES=['regular','player','fan','street','smart','night']
++def read(path):
++    data=path.read_bytes();magic,nj,np,nt,nc=struct.unpack_from('<8s4I',data);pos=24
++    if magic!=b'NXAVTR1\0':raise ValueError('Invalid native bank')
++    rig=data[pos:pos+68*nj];pos+=68*nj;parts=[];images=[]
++    for _ in range(np):
++        slot,texture,nv,ni,blend=struct.unpack_from('<5I',data,pos);pos+=20
++        vertices=[data[pos+i*40:pos+(i+1)*40] for i in range(nv)];pos+=nv*40
++        indices=struct.unpack_from('<'+'I'*ni,data,pos);pos+=ni*4
++        parts.append({'slot':slot,'texture':texture,'vertices':vertices,'indices':indices,'blend':blend})
++    for _ in range(nt):size=struct.unpack_from('<I',data,pos)[0];pos+=4;images.append(data[pos:pos+size]);pos+=size
++    return {'joints':nj,'clips':nc,'rig':rig,'parts':parts,'images':images,'animations':data[pos:]}
++def point(vertex):return tuple(round(v,5) for v in struct.unpack_from('<3f',vertex))
++def key(points):return tuple(sorted(points))
++def regionOf(points):
++    y=sum(p[1] for p in points)/3
++    return 0 if y>.78 else 1 if y>.16 else 2
++class SkinUV:
++    # Transfer body UVs by triangle, preserving atlas seams. Nearest triangle
++    # transfer covers the small clothing-driven changes to the bare body mesh.
++    def __init__(self,body):
++        self.triangles=[];self.exact={}
++        for part in body['parts']:
++            if part['slot']!=0:continue
++            self.texture=part['texture']
++            for i in range(0,len(part['indices']),3):
++                vertices=[part['vertices'][j] for j in part['indices'][i:i+3]]
++                ps=np.array([struct.unpack_from('<3f',v) for v in vertices]);uv=np.array([struct.unpack_from('<2f',v,12) for v in vertices]);index=len(self.triangles)
++                self.triangles.append((ps,uv));self.exact[key(point(v) for v in vertices)]=index
++        self.centers=np.array([ps.mean(axis=0) for ps,uv in self.triangles])
++    def transfer(self,vertices):
++        ps=np.array([struct.unpack_from('<3f',v) for v in vertices]);rounded=[point(v) for v in vertices]
++        index=self.exact.get(key(rounded))
++        if index is None:index=int(np.argmin(((self.centers-ps.mean(axis=0))**2).sum(axis=1)))
++        source,uv=self.triangles[index];result=[]
++        for vertex,p in zip(vertices,ps):
++            exact=next((i for i,q in enumerate(source) if np.linalg.norm(p-q)<.00003),None)
++            if exact is not None:mapped=uv[exact]
++            else:
++                edges=np.array([source[1]-source[0],source[2]-source[0]]).T
++                blend=np.linalg.lstsq(edges,p-source[0],rcond=None)[0];weights=np.maximum(0,[1-blend.sum(),*blend]);weights/=weights.sum();mapped=weights@uv
++            result.append(vertex[:12]+struct.pack('<2f',*mapped)+vertex[20:])
++        return result
++
++def compact(slot,texture,triangles):
++    vertices=[];indices=[];seen={}
++    for triangle in triangles:
++        for vertex in triangle:
++            if vertex not in seen:seen[vertex]=len(vertices);vertices.append(vertex)
++            indices.append(seen[vertex])
++    return {'slot':slot,'texture':texture,'vertices':vertices,'indices':indices,'blend':0}
++def check_rig(a,b):
++    if a['joints']!=b['joints']:raise ValueError('Body rig differs')
++    for j in range(a['joints']):
++        x=struct.unpack_from('<I16f',a['rig'],j*68);y=struct.unpack_from('<I16f',b['rig'],j*68)
++        if x[0]!=y[0] or max(abs(v-w) for v,w in zip(x[1:],y[1:]))>1e-5:raise ValueError('Complete body inverse bind matrices differ')
++def write(path,bank):
++    # Compact textures and vertices after selecting the visible submeshes.
++    images=[];image_map={}
++    with path.open('wb') as out:
++        for part in bank['parts']:
++            image=bank['images'][part['texture']];h=hashlib.sha256(image).hexdigest()
++            if h not in image_map:image_map[h]=len(images);images.append(image)
++            part['texture']=image_map[h]
++        out.write(struct.pack('<8s4I',b'NXAVTR1\0',bank['joints'],len(bank['parts']),len(images),bank['clips']));out.write(bank['rig'])
++        for part in bank['parts']:
++            out.write(struct.pack('<5I',part['slot'],part['texture'],len(part['vertices']),len(part['indices']),part['blend']))
++            for v in part['vertices']:out.write(v)
++            out.write(struct.pack('<'+'I'*len(part['indices']),*part['indices']))
++        for image in images:out.write(struct.pack('<I',len(image)));out.write(image)
++        out.write(bank['animations'])
++    return len(images)
++def main():
++    media=ROOT/'media/avatars';dest=ROOT/'projects/cards/romfs/avatars';dest.mkdir(parents=True,exist_ok=True)
++    with tempfile.TemporaryDirectory() as tmp:
++        tmp=Path(tmp);clothed=[];full=[]
++        for name in NAMES:
++            convert(media/f'xbox-{name}.glb',tmp/f'{name}.avb');clothed.append(read(tmp/f'{name}.avb'))
++            convert(media/f'body-{name}.glb',tmp/f'body-{name}.avb');full.append(read(tmp/f'body-{name}.avb'))
++        for index,name in enumerate(NAMES):
++            original=clothed[index];body=full[index];check_rig(original,body)
++            bank={**original,'parts':[p.copy() for p in original['parts'] if p['slot']!=0],'images':original['images']+body['images']}
++            uv=SkinUV(body)
++            for family in range(3):
++                donor=index%2+family*2;check_rig(original,clothed[donor])
++                for part in clothed[donor]['parts']:
++                    if part['slot']!=0:continue
++                    groups=[[],[],[]]
++                    for at in range(0,len(part['indices']),3):
++                        vertices=[part['vertices'][v] for v in part['indices'][at:at+3]];region=regionOf([point(v) for v in vertices])
++                        groups[region].append(vertices if donor==index else uv.transfer(vertices))
++                    for region,triangles in enumerate(groups):
++                        if triangles:bank['parts'].append(compact(8+region*3+family,part['texture'] if donor==index else len(original['images'])+uv.texture,triangles))
++            if index%2==0:
++                calves=[]
++                for part in body['parts']:
++                    if part['slot']!=0:continue
++                    for at in range(0,len(part['indices']),3):
++                        vertices=[part['vertices'][v] for v in part['indices'][at:at+3]];y=sum(point(v)[1] for v in vertices)/3
++                        if .30<y<.56:calves.append(vertices)
++                if calves:bank['parts'].append(compact(17,len(original['images'])+uv.texture,calves))
++            target=dest/f'{name}.avb';texture_count=write(target,bank)
++            report=json.loads((tmp/f'{name}.json').read_text());report.update({'bank_sha256':hashlib.sha256(target.read_bytes()).hexdigest(),'parts':len(bank['parts']),'vertices':sum(len(p['vertices']) for p in bank['parts']),'triangles':sum(len(p['indices'])//3 for p in bank['parts']),'body_visibility':'Original clothing-fitted body meshes, body UV transfer within each compatible rig family, and complete calf geometry for shorts','body_source':f'body-{name}.glb','body_source_sha256':hashlib.sha256((media/f'body-{name}.glb').read_bytes()).hexdigest()})
++            report['textures']=texture_count
++            target.with_suffix('.json').write_text(json.dumps(report,indent=2)+'\n');print('Wardrobe',name,target.stat().st_size,'bytes')
++if __name__=='__main__':main()
 diff --git a/tools/prepare_startup360.py b/tools/prepare_startup360.py
 new file mode 100644
 index 0000000000000000000000000000000000000000..086c4459c26db91cb6a0518dc77878a00907ad76
@@ -5648,6 +7180,51 @@ index 0000000000000000000000000000000000000000..086c4459c26db91cb6a0518dc77878a0
 + report={'source_sha256':hashlib.sha256(a.input.read_bytes()).hexdigest(),'source_size':[v['width'],v['height']],'playback_size':[width,height],'frame_rate':[num,den],'frames':len(frames),'duration_us':duration,'resampling':'Lanczos to Switch logical 1280x720; no cropping or overlays','frame_encoding':'lossless WebP; every decoded frame compared with resized source RGB','audio':'PCM 16-bit stereo 44100 Hz','bank_sha256':hashlib.sha256(a.output.read_bytes()).hexdigest(),'frame_rgb_sha256':hashes}
 + a.output.with_suffix('.json').write_text(json.dumps(report,indent=2)+'\n')
 + print('Verified',len(frames),'lossless frames;',a.output.stat().st_size,'bytes')
+diff --git a/tools/preview_avatar360.cpp b/tools/preview_avatar360.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..d9a8fc9af86c455c9f2e02f52dfa97ee79cd9742
+--- /dev/null
++++ b/tools/preview_avatar360.cpp
+@@ -0,0 +1,39 @@
++// Export the SAME native CPU skinning/projection used by the Switch frontend.
++// tools/render_avatar360.py supplies a software z-buffer for reference images.
++#include "../projects/cards/src/Avatar360.hpp"
++#include "../projects/cards/src/AvatarModel.hpp"
++#include <iostream>
++using namespace cards::avatar360;
++template<class T> void write(std::ofstream& out,const T& value){out.write(reinterpret_cast<const char*>(&value),sizeof(value));}
++int main(int argc,char** argv){
++    if(argc<3)return 2;std::array<Model,6> models;
++    for(size_t i=0;i<models.size();++i)if(!loadModel(std::string(argv[1])+"/"+modelFiles[i]+".avb",models[i])){std::cerr<<"Invalid model "<<modelFiles[i]<<"\n";return 1;}
++    std::ofstream out(argv[2],std::ios::binary);uint32_t imageCount=0,partCount=0;
++    for(const auto& model:models)imageCount+=model.images.size();
++    write(out,imageCount);const auto countPos=out.tellp();write(out,partCount);
++    for(const auto& model:models)for(const auto& png:model.images){write(out,uint32_t(png.size()));out.write(reinterpret_cast<const char*>(png.data()),png.size());}
++    const bool editor=argc>3 && std::string(argv[3])=="editor";
++    const bool wardrobe=argc>3 && std::string(argv[3])=="wardrobe";
++    for(int person=0;person<(editor?1:4);++person){
++        Look look;look.value[Character]=std::array<int,4>{1,0,2,5}[person];
++        if(wardrobe){look.value[Hair]=1;look.value[HairColour]=3;look.value[Top]=2;look.value[Bottom]=1;look.value[Shoes]=2;}
++        const auto& body=models[look.value[Character]];const auto world=body.pose(1.2f,false);
++        for(int blend=0;blend<2;++blend){uint32_t imageOffset=0;
++            for(int source=0;source<6;++source){
++                const auto& model=models[source];const auto skin=retarget(model,body,world);if(skin.empty())return 3;
++                for(const auto& part:model.parts){
++                    if(int(part.blend)!=blend || !partEnabled(look,part.slot,source))continue;
++                    std::vector<ProjectedVertex> vertices;
++                    for(const auto& v:part.vertices)vertices.push_back(projectVertex(v,skin,editor?330.f:190.f+335.f*person,editor?575.f:490.f,editor?310.f:210.f,editor?.3f:-.08f,1,1));
++                    auto indices=visibleIndices(part,vertices);if(indices.empty())continue;
++                    write(out,uint32_t(imageOffset+part.texture));write(out,part.blend);write(out,uint32_t(vertices.size()));write(out,uint32_t(indices.size()));
++                    const auto dye=part.slot==2 && look.value[HairColour]?hairTints[look.value[HairColour]]:std::array<float,3>{-1,-1,-1};
++                    for(float c:dye)write(out,c);
++                    out.write(reinterpret_cast<const char*>(vertices.data()),vertices.size()*sizeof(ProjectedVertex));out.write(reinterpret_cast<const char*>(indices.data()),indices.size()*4);++partCount;
++                }
++                imageOffset+=model.images.size();
++            }
++        }
++    }
++    out.seekp(countPos);write(out,partCount);return !out;
++}
 diff --git a/tools/preview_settings360.cpp b/tools/preview_settings360.cpp
 new file mode 100644
 index 0000000000000000000000000000000000000000..9641233b795ba1ee5cec97480181ee43b5624c2c
@@ -5699,8 +7276,75 @@ index 0000000000000000000000000000000000000000..9641233b795ba1ee5cec97480181ee43
 +    p.text("Select",131,657,21,{.97f,.97f,.94f});p.text("Back",241,657,21,{.97f,.97f,.94f});
 +    std::cout<<"</svg>\n";
 +}
+diff --git a/tools/render_avatar360.py b/tools/render_avatar360.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..62237c976a6d787340c30af9ae308320fa50b533
+--- /dev/null
++++ b/tools/render_avatar360.py
+@@ -0,0 +1,61 @@
++#!/usr/bin/env python3
++"""Rasterize preview_avatar360.cpp's native geometry; never used on Switch."""
++import argparse,io,struct
++from pathlib import Path
++import numpy as np
++from PIL import Image,ImageDraw,ImageFont
++p=argparse.ArgumentParser(description=__doc__);p.add_argument('scene',type=Path);p.add_argument('output',type=Path);p.add_argument('--editor',action='store_true');a=p.parse_args()
++data=a.scene.read_bytes();pos=0
++def unpack(fmt):
++ global pos
++ out=struct.unpack_from(fmt,data,pos);pos+=struct.calcsize(fmt);return out
++images,parts=unpack('<II');textures=[]
++for _ in range(images):
++ n,=unpack('<I');textures.append(np.asarray(Image.open(io.BytesIO(data[pos:pos+n])).convert('RGBA'),dtype=np.float32)/255);pos+=n
++w,h=1280,720
++top=np.array([.18,.22,.22]);mid=np.array([.56,.58,.57]);bottom=np.array([.88,.89,.88])
++rgb=np.empty((h,w,3),np.float32)
++for y in range(h):
++ t=y/405 if y<405 else (y-405)/315;rgb[y,:,:]=(top*(1-t)+mid*t) if y<405 else (mid*(1-t)+bottom*t)
++depth=np.ones((h,w),np.float32)
++for _ in range(parts):
++ tex,blend,nv,ni=unpack('<4I');dye=np.array(unpack('<3f'));vertices=np.frombuffer(data,dtype='<f4',count=nv*5,offset=pos).reshape(nv,5);pos+=nv*20;indices=np.frombuffer(data,dtype='<u4',count=ni,offset=pos);pos+=ni*4;texture=textures[tex]
++ for ids in indices.reshape(-1,3):
++  v=vertices[ids];lo=np.maximum(0,np.floor(v[:,:2].min(axis=0)).astype(int));hi=np.minimum([w-1,h-1],np.ceil(v[:,:2].max(axis=0)).astype(int))
++  if np.any(lo>hi):continue
++  xx,yy=np.meshgrid(np.arange(lo[0],hi[0]+1)+.5,np.arange(lo[1],hi[1]+1)+.5)
++  den=(v[1,1]-v[2,1])*(v[0,0]-v[2,0])+(v[2,0]-v[1,0])*(v[0,1]-v[2,1])
++  if abs(den)<1e-7:continue
++  u=((v[1,1]-v[2,1])*(xx-v[2,0])+(v[2,0]-v[1,0])*(yy-v[2,1]))/den
++  q=((v[2,1]-v[0,1])*(xx-v[2,0])+(v[0,0]-v[2,0])*(yy-v[2,1]))/den;r=1-u-q
++  z=u*v[0,2]+q*v[1,2]+r*v[2,2];ds=depth[lo[1]:hi[1]+1,lo[0]:hi[0]+1]
++  mask=(u>=0)&(q>=0)&(r>=0)&(z<=ds)
++  if not mask.any():continue
++  uv=u[...,None]*v[0,3:]+q[...,None]*v[1,3:]+r[...,None]*v[2,3:]
++  # Bilinear sampling matches the native sampler's linear surface filtering.
++  tx=np.clip(uv[...,0]*texture.shape[1]-.5,0,texture.shape[1]-1);ty=np.clip(uv[...,1]*texture.shape[0]-.5,0,texture.shape[0]-1)
++  x0=tx.astype(int);y0=ty.astype(int);x1=np.minimum(x0+1,texture.shape[1]-1);y1=np.minimum(y0+1,texture.shape[0]-1);fx=(tx-x0)[...,None];fy=(ty-y0)[...,None]
++  c=(texture[y0,x0]*(1-fx)+texture[y0,x1]*fx)*(1-fy)+(texture[y1,x0]*(1-fx)+texture[y1,x1]*fx)*fy
++  if dye[0]>=0:
++   shade=np.clip(.55+(c[...,:3]*[.2126,.7152,.0722]).sum(axis=2)*1.7,.35,1.15);c[...,:3]=dye*shade[...,None]
++  mask&=c[...,3]>0
++  target=rgb[lo[1]:hi[1]+1,lo[0]:hi[0]+1];alpha=c[...,3:4];mixed=c[...,:3]*alpha+target*(1-alpha);target[mask]=mixed[mask]
++  if not blend:ds[mask]=z[mask]
++im=Image.fromarray(np.uint8(np.clip(rgb,0,1)*255));d=ImageDraw.Draw(im)
++fontbase=Path(__file__).resolve().parents[1]/'projects/cards/romfs/fonts'
++def font(size,bold=False):return ImageFont.truetype(str(fontbase/('selawksb.ttf' if bold else 'selawkl.ttf')),size)
++d.text((1180,55),'customize avatar' if a.editor else 'sign in or out',font=font(38),anchor='ra',fill='white');d.text((1180,103),'Make this avatar yours' if a.editor else 'Choose your profile',font=font(19),anchor='ra',fill='white')
++if not a.editor:
++ for i,name in enumerate(['Player one','Player two','Player three','Player four']):
++  x=190+i*335;d.text((x,515),name,font=font(25,True),anchor='ma',fill='#252b29');d.text((x,559),'Signed in' if i==0 else 'Offline profile',font=font(18),anchor='ma',fill='#545955')
++ d.line((135,597,245,597),fill='#5caa0f',width=3)
++else:
++ names=['Face & body','Hairstyle','Hair colour','Top','Bottoms','Shoes','Accessories','Height','Build'];values=['The player','Ponytail','Original','Halo tee','Skinny jeans','Neon high-tops','On','3 / 5','3 / 5']
++ for i,(name,value) in enumerate(zip(names,values)):
++  y=140+i*44
++  if not i:d.rectangle((650,y,1170,y+42),fill='#6ba815')
++  d.text((662,y+10),name,font=font(21),fill='white' if not i else '#252b29');d.text((1158,y+10),'<  '+value+'  >',font=font(20),anchor='ra',fill='white' if not i else '#252b29')
++ d.text((665,564),'L / R  Rotate avatar',font=font(20),fill='#252b29');d.text((330,598),'Player one',font=font(25,True),anchor='ma',fill='#252b29')
++for x,letter,label,color in ([(88,'X','Save avatar','#1065b9'),(320,'B','Cancel','#bf1512'),(520,'Y','Randomize','#d6a90a')] if a.editor else [(88,'A','Select','#5caa0f'),(270,'B','Back','#bf1512'),(440,'X','Edit avatar','#1065b9'),(680,'Y','Manage users','#d6a90a')]):
++ d.ellipse((x-11,655,x+11,677),fill=color);d.text((x,657),letter,font=font(16,True),anchor='ma',fill='white');d.text((x+19,654),label,font=font(22),fill='#252b29')
++a.output.parent.mkdir(parents=True,exist_ok=True);im.save(a.output);print(a.output)
 diff --git a/xmake.lua b/xmake.lua
-index d9ca0a55b4c48baee56d9fccb98a3a283a46750a..d8987fbf2eafeb7895103e823d9770023f9ee4ad 100644
+index d9ca0a55b4c48baee56d9fccb98a3a283a46750a..67254ed1927ccefb4aabb00543622397e66091ac 100644
 --- a/xmake.lua
 +++ b/xmake.lua
 @@ -187,7 +187,7 @@ target("SwitchU")
@@ -5712,11 +7356,12 @@ index d9ca0a55b4c48baee56d9fccb98a3a283a46750a..d8987fbf2eafeb7895103e823d977002
                "projects/cards/src/Mtp.cpp", "projects/cards/src/Spotify.cpp")
      add_files("projects/updater/src/Catalog.cpp") -- homebrew updates, as the Homebrew Manager finds them
      add_includedirs("projects/cards/src", {public = false})
-@@ -417,7 +417,9 @@ target("CardsNX")
+@@ -417,7 +417,10 @@ target("CardsNX")
          local romfs_dir = path.join(os.projectdir(), "build/cards-romfs")
          os.mkdir(path.join(romfs_dir, "fonts"))
          os.mkdir(path.join(romfs_dir, "icons"))
 +        os.cp(path.join(os.projectdir(), "projects/cards/romfs/boot"), romfs_dir)
++        os.cp(path.join(os.projectdir(), "projects/cards/romfs/avatars"), romfs_dir)
          os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/*.ttf"), path.join(romfs_dir, "fonts"))
 +        os.cp(path.join(os.projectdir(), "projects/cards/romfs/fonts/Selawik-OFL.txt"), path.join(romfs_dir, "fonts"))
          os.cp(path.join(os.projectdir(), "projects/cards/romfs/icons/*.png"), path.join(romfs_dir, "icons"))

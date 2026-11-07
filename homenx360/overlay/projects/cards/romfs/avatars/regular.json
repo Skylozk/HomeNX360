@@ -1,0 +1,36 @@
+{
+  "source": "xbox-regular.glb",
+  "source_sha256": "4f440c729ff3862e20de7d10990489c1cbc69b61bcd4b19cc1f8604aa7ae0fc2",
+  "bank_sha256": "35bcee2fb099544d78caaf2a229191b4aa10bad30c4ade896f76cb741180320a",
+  "joints": 71,
+  "parts": 16,
+  "vertices": 9869,
+  "triangles": 8318,
+  "textures": 10,
+  "texture_max_side": 384,
+  "animations": [
+    {
+      "name": "Just... standing around",
+      "duration": 4.8333330154418945,
+      "frames": 74
+    },
+    {
+      "name": "Hello there!",
+      "duration": 5.333333492279053,
+      "frames": 82
+    }
+  ],
+  "artwork": "Microsoft; exported through the public 360sona editor demo",
+  "export_generator": {
+    "version": "2.0",
+    "generator": "360sona",
+    "copyright": "Made with 360sona, https://360sona.com",
+    "extras": {
+      "madeWith": "360sona",
+      "url": "https://360sona.com"
+    }
+  },
+  "body_visibility": "Original clothing-fitted body meshes, body UV transfer within each compatible rig family, and complete calf geometry for shorts",
+  "body_source": "body-regular.glb",
+  "body_source_sha256": "cd6b5cd09e21f5e2072e08e8071fe6c2948aef10ac9e4837b1b597106141a935"
+}

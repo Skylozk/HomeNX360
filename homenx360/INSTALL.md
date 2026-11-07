@@ -8,6 +8,8 @@ an experimental 2008 NXE-inspired dashboard: vertical channels, overlapping
 cards, reflections, a Guide, full-screen NXE settings and a skippable recorded Xbox 360 startup. Game artwork and
 names come from the Switch's library. Existing HomeNX dialogs remain available.
 The startup runs inside HomeNX; it does not replace the console bootloader.
+Profiles now show original-style full-body Xbox 360 avatars with a per-profile
+creator. See `AVATAR-GUIDE.md` for controls, media credits and fidelity limits.
 See [the reference log](NXE-REFERENCES.md) for the evidence and remaining gaps.
 
 ## Your console
@@ -80,6 +82,19 @@ lock screen, notifications, pictures and update tools. Console Settings uses
 the eight NXE category names. Xbox camera, disc auto-play and LIVE features are
 explicitly unavailable. Console date/time and Nintendo network configuration
 require the HOME frontend. See `SETTINGS-REFERENCES.md` for the complete mapping.
+
+## Avatar profiles
+
+Profiles opens the NXE-style sign-in row. Left/Right selects a Switch profile,
+A signs in, X customizes its full-body avatar, Y opens the existing user tools,
+and B returns. In the creator use Up/Down for features, Left/Right to change,
+L/R to rotate, Y to randomize, X to save and B to cancel. The creator saves only
+the appearance for that Nintendo account UID. It never changes Miis or names.
+
+Sign-in follows startup by default. Console Settings → Startup and Shutdown →
+Sign-in at startup disables it. Returning HOME from a game keeps your profile.
+The NRO embeds avatar assets; the HOME update also needs the complete
+`switch/SwitchU/cards/avatars/` folder from the ZIP. Read `AVATAR-GUIDE.md`.
 
 ## Undo
 

@@ -1,8 +1,8 @@
 #pragma once
+#include "Avatar360.hpp"
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
-#include <map>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -75,6 +75,8 @@ struct Settings {
     long long picturesAt = 0;   // when every game's pictures were last made sure of (seconds)
     long long achSeenAt = 0;    // the newest achievement HOME has said (seconds; 0: none said yet)
     bool introDone = false;     // the first-time intro was shown
+    bool profileSignIn = true;
+    avatar360::Wardrobe profileAvatars;
     std::string wallpaper;      // one picture behind everything ("" = each game's art)
     std::map<std::string, std::string> names; // + > Rename: by title ID (hex) or .nro path
     std::vector<std::string> sheetOrder; // Settings' tabs by name, in his order (new ones after)
@@ -178,6 +180,19 @@ struct Settings {
             listsAt = j.value("listsAt", listsAt);
             perfLog = j.value("perfLog", perfLog);
             language = j.value("language", language);
+            profileSignIn = j.value("profileSignIn", profileSignIn);
+            profileAvatars.clear();
+            if(j.contains("profileAvatars") && j["profileAvatars"].is_object())
+                for(const auto& [id,values]:j["profileAvatars"].items()) {
+                    if(profileAvatars.size()>=32)break;
+                    if(!avatar360::validId(id) || !values.is_array() || values.size()!=avatar360::FeatureCount)continue;
+                    avatar360::Look look;bool valid=true;
+                    for(int i=0;i<avatar360::FeatureCount;++i) {
+                        if(!values[i].is_number_integer()){valid=false;break;}
+                        try {look.value[i]=values[i].get<int>();} catch(...) {valid=false;break;}
+                    }
+                    if(valid){look.normalize();profileAvatars[id]=look;}
+                }
             const char* const keys[4] = {"orderGames", "orderHomebrew", "orderNintendo", "orderMedia"};
             for (int p = 0; p < 4; ++p) order[p] = j.value(keys[p], order[p]);
         } catch (...) {
@@ -199,6 +214,9 @@ struct Settings {
         for (const auto& page : customPages) j["customPages"].push_back({{"name", page.name}, {"titles", page.titles}});
         j["notificationCards"] = notificationCards;
         j["lastPage"] = lastPage;
+        j["profileSignIn"]=profileSignIn;
+        j["profileAvatars"]=nlohmann::json::object();
+        for(const auto& [id,look]:profileAvatars)if(avatar360::validId(id))j["profileAvatars"][id]=look.value;
         j["lockGameBanner"] = lockGameBanner;
         writeLater(kPath, j.dump(2));
     }

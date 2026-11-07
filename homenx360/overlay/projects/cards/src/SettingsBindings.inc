@@ -37,7 +37,7 @@ void CardsActivity::buildNxeSettings() {
 #ifndef SWITCHU_MENU
     note(Clock,"Console date and time","HOME frontend required","The standalone preview can change the dashboard's clock format. Console date and time editing is available when HomeNX360 runs as HOME.");
 #endif
-    append(Startup,"Look",{"Startup animation","Preview startup"});
+    append(Startup,"Look",{"Startup animation","Sign-in at startup","Preview startup"});
     append(Startup,"Console",{"Sleep in handheld","Sleep on the TV"});
     m_sheet[Startup].rows.push_back(action("Turn Off Console",[this](){m_sheetOpen=false;openPower();}));
     m_sheet[Startup].rows.back().detail="Open the Switch's sleep, shutdown, and restart controls.";

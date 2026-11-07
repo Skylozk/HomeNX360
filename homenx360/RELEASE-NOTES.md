@@ -1,29 +1,31 @@
-# HomeNX360 Discord Friends preview
+# HomeNX360 full-body avatar preview
 
-Adds a Friends blade to the NXE Guide with Discord direct and group DMs,
-unread markers, and paging through the full inbox. A or touch opens a
-conversation using HomeNX's existing chat reader; A/X in chat opens the reply
-keyboard. B returns to the DM list and then the Guide. X in Friends opens
-Discord sign-in/account controls. Quick Launch Friends and Messages route here.
+Adds full-body Xbox 360 avatars to an NXE-style profile sign-in screen, using
+real Switch profile names and launch identities. Six face/body starters, mixed
+hairstyles/clothing/shoes, accessories, natural hair colours, height and build
+are available in a custom per-profile creator. Avatars use original meshes,
+baked textures, idle motion and a greeting exported through 360sona.
 
-This view hides server navigation and restricts conversations to DMs. The
-ordinary Discord entry elsewhere in HomeNX retains its server navigation.
-Replies check the account, connection and destination again when submitted.
-Empty/canceled replies enqueue nothing. Existing sending/failed indicators are
-retained. The recorded startup and full-screen NXE settings are unchanged.
+**Profiles:** Left/Right selects, A signs in, X edits, Y opens Nintendo user
+tools, B returns. **Creator:** Up/Down chooses a feature, Left/Right changes it,
+L/R rotates, Y randomizes, X saves, B cancels. Touch is supported. Saving another
+profile's appearance does not change the signed-in account or Nintendo Miis.
+Sign-in follows startup on a fresh app launch/console boot; returning HOME from
+a game keeps the current account. Startup and Shutdown has a sign-in toggle.
 
-**Install HomeNX360-update.zip for this feature**, following INSTALL.md and
-backing up your existing installation first. Integrated Discord requires the
-HOME frontend. The standalone preview NRO shows the HOME requirement and an
-external Discord app shortcut; it does not embed the Discord backend.
+Download **HomeNX360-preview.nro** for the standalone app, or install the complete
+**HomeNX360-update.zip** for HOME. The update includes the required avatars
+folder. Back up the existing installation and config/CardsNX/ first; read
+INSTALL.md and AVATAR-GUIDE.md. Source, media credits, hashes and reference
+previews are included. Existing NXE settings, Discord Friends and startup remain.
 
-Host tests cover the production Guide routing and DM helpers in both app/HOME
-configurations: paging, unread/group DMs, stable selection, removed conversations,
-account changes, server exclusion, and explicit keyboard-submit routing.
-All six blades and their touch targets are checked. No live account was accessed
-and no test messages were sent. Source, checksums and DISCORD-GUIDE.md are included.
+This compact creator does not include every original facial slider/catalog item
+or the exact four characters in the supplied screenshot. Optional hair dyes,
+lighting and font metrics differ; some mixed items may intersect. Preview PNGs
+are software reference renders using the native geometry, not Switch captures.
+Physical Switch rendering and firmware compatibility remain unverified.
 
-Live login/delivery and physical Switch behavior remain unverified here.
-The added sixth Friends blade is a requested extension to the NXE Guide.
-Chat/sign-in use HomeNX's existing Discord interface. Fonts and animation
-fidelity limits from earlier releases still apply.
+Original avatar artwork/animations belong to Microsoft; exported media are
+credited separately from the GPL code. 360sona is by Ezra Kruger. No Xbox Live
+services, online avatar-rendering dependency or Nintendo account modification is
+included. Integrated Discord still requires the HOME frontend.

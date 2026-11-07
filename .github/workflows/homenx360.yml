@@ -56,6 +56,9 @@ jobs:
           /tmp/settings360-test
           g++ -std=c++20 -DSWITCHU_MENU tests/settings360_test.cpp -o /tmp/settings360-home-test
           /tmp/settings360-home-test
+          g++ -std=c++20 -O2 tests/avatar360_test.cpp -o /tmp/avatar360-test
+          /tmp/avatar360-test projects/cards/romfs/avatars
+          python3 tests/avatar_media360_test.py
       - name: Configure
         working-directory: build/homenx360-source
         run: xmake f --yes -vD -p cross -m release -a aarch64 --toolchain=devkita64 --homebrew=n --root
@@ -83,6 +86,9 @@ jobs:
           cp homenx360/GUIDE-REFERENCES.md build/artifacts/GUIDE-REFERENCES.md
           cp homenx360/SETTINGS-REFERENCES.md build/artifacts/SETTINGS-REFERENCES.md
           cp homenx360/DISCORD-GUIDE.md build/artifacts/DISCORD-GUIDE.md
+          cp homenx360/AVATAR-GUIDE.md build/artifacts/AVATAR-GUIDE.md
+          cp homenx360/avatar-signin-preview.png build/artifacts/avatar-signin-preview.png
+          cp homenx360/avatar-creator-preview.png build/artifacts/avatar-creator-preview.png
           cp homenx360/RELEASE-NOTES.md build/artifacts/RELEASE-NOTES.md
           cd build/artifacts
           sha256sum * > SHA256SUMS.txt

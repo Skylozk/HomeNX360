@@ -73,3 +73,8 @@ Open Font License 1.1. The unmodified font is from Microsoft/Selawik release
 
 Xbox 360 startup footage and sound are Microsoft material, separate from the
 GPL code. See media/STARTUP-MEDIA-NOTICE.md for the source recording and hashes.
+
+Xbox 360 avatar meshes, textures and animations are also Microsoft material,
+exported through the public 360sona editor by Ezra Kruger. These assets are
+separate from the GPL code. See media/avatars/AVATAR-MEDIA-NOTICE.md and the six
+source/bank hash reports in projects/cards/romfs/avatars/.

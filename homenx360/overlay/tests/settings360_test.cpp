@@ -68,14 +68,16 @@ public:
 }
 int main(){
     using namespace cards;using namespace cards::settings360;
-    CardsActivity app;int volume=60,saves=0,moves=0;bool startup=true;
+    CardsActivity app;int volume=60,saves=0,moves=0;bool startup=true,signIn=true;
     auto callback=CardsActivity::action("Preview startup",[](){});
     auto toggle=callback;toggle.label="Startup animation";toggle.kind=CardsActivity::MenuItem::Toggle;
     toggle.run={};toggle.level=[&](){return startup?1.f:0.f;};toggle.change=[&](int){startup=!startup;++saves;};
+    auto signInToggle=toggle;signInToggle.label="Sign-in at startup";
+    signInToggle.level=[&](){return signIn?1.f:0.f;};signInToggle.change=[&](int){signIn=!signIn;++saves;};
     auto inert=[](const char* name){return CardsActivity::info(name,[](){return "real getter fixture";});};
     app.m_sheet={
         {"Home","home",{inert("Custom pages"),inert("Sort games")}},
-        {"Look","gear",{inert("Clock"),inert("Animations"),toggle,callback,inert("Launch animation")}},
+        {"Look","gear",{inert("Clock"),inert("Animations"),toggle,signInToggle,callback,inert("Launch animation")}},
         {"Lock screen","moon",{inert("Lock screen")}},
         {"Sound","music",{CardsActivity::slider("Music volume",[&](){return volume;},[&](int v){volume=v;++saves;},"Volume")}},
         {"Notifications","bell",{inert("Notification cards")}},
@@ -128,6 +130,8 @@ int main(){
     volume=30;assert(music.value()=="30%");
     find(Startup,"Startup animation").change(1);
     assert(!startup && find(Look,"Startup animation").level()==0.f);
+    const int beforeSignIn=saves;find(Startup,"Sign-in at startup").change(1);
+    assert(!signIn && saves==beforeSignIn+1 && !startup);
     const int oldMoves=moves;find(Memory,"Move software between console and microSD").run();assert(moves==oldMoves+1);
     find(Display,"Brightness").change(1);assert(brightnessWritten>.59f && brightnessWritten<.61f);
     assert(find(settings360::Audio,"Pair headphones or a speaker").run);

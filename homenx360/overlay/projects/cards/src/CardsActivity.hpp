@@ -5,6 +5,7 @@
 #include "Mtp.hpp"
 #include "Settings.hpp"
 #include "SettingsLayout.hpp"
+#include "AvatarScene.hpp"
 #include "GuideLayout.hpp"
 #include "../../menu/src/social/DirectMessageView.hpp"
 #include "Spotify.hpp"
@@ -514,6 +515,23 @@ private:
     // Up / down, left / right, A and B on a list of rows; close() shuts it.
     void listInput(std::vector<MenuItem>& items, int& sel, const std::function<void()>& close);
     void openUsers();
+    void openUserTools();
+    void openProfiles(bool atStartup=false);
+    void updateProfiles(float dt);
+    void pollProfileJobs();
+    void loadProfiles();
+    void drawProfiles(nxui::Renderer& r);
+    void drawCharacter(nxui::Renderer& r,const avatar360::Look& look,float x,float y,float scale,float yaw,bool wave=false,bool portrait=false,float alpha=1.f);
+    void confirmProfile();
+    void saveProfileAvatar();
+    avatar360::Session m_profiles;
+    avatar360::Assets m_profileAssets;
+    std::future<std::array<avatar360::Model,6>> m_profileAssetJob;
+    bool m_profileAssetsFailed=false;
+    std::vector<User> m_profileUsers;
+    std::future<std::vector<User>> m_profileJob;
+    bool m_profileStartup=true,m_profilePending=false;
+    float m_profileScroll=0,m_profileRepeat=0,m_profileLoadTime=0,m_profileAge=0;
     void openNotifications();
     void startMove();
     void finishMove(bool keep);
