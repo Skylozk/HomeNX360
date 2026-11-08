@@ -419,12 +419,15 @@ std::string downloadLocked(const ReleaseInfo& release, std::atomic<float>& progr
 }
 
 std::string safeRelativePath(std::string raw) {return policy360::allowedPath(std::move(raw));}
+void copyFileContents(const std::filesystem::path& source,
+                      const std::filesystem::path& destination);
 
 std::vector<std::string> extractArchive(std::atomic<float>& progress,
                                         float progressBase,
                                         float progressSpan) {
     std::error_code ec;
     std::filesystem::remove_all(kStagingRoot, ec);
+    if(ec)throw std::runtime_error("Unable to clear the previous update staging folder: "+ec.message());
     std::filesystem::create_directories(kStagingRoot, ec);
     if (ec) throw std::runtime_error("Unable to create update staging directory");
 
@@ -507,15 +510,15 @@ std::vector<std::string> extractArchive(std::atomic<float>& progress,
         if(std::find(files.begin(),files.end(),alias)!=files.end())continue;
         if(std::string(alias)!=policy360::previewPaths[0] && !std::filesystem::is_regular_file(std::filesystem::path("sdmc:/")/alias))continue;
         const auto target=std::filesystem::path(kStagingRoot)/alias;std::filesystem::create_directories(target.parent_path());
-        std::filesystem::copy_file(std::filesystem::path(kStagingRoot)/"switch/SwitchU/bin/cardsnx.nro",target,std::filesystem::copy_options::overwrite_existing);files.push_back(alias);
+        copyFileContents(std::filesystem::path(kStagingRoot)/"switch/SwitchU/bin/cardsnx.nro",target);files.push_back(alias);
     }
     if(std::find(files.begin(),files.end(),"switch/HomeNX360/version.txt")==files.end()){
     const auto marker=std::filesystem::path(kStagingRoot)/"switch/HomeNX360/version.txt";std::filesystem::create_directories(marker.parent_path());
-    std::filesystem::copy_file(std::filesystem::path(kStagingRoot)/"switch/SwitchU/homenx360-version.txt",marker,std::filesystem::copy_options::overwrite_existing);files.push_back("switch/HomeNX360/version.txt");}
+    copyFileContents(std::filesystem::path(kStagingRoot)/"switch/SwitchU/homenx360-version.txt",marker);files.push_back("switch/HomeNX360/version.txt");}
     const auto updater=std::filesystem::path(kStagingRoot)/policy360::updaterPaths[0];
     if(std::filesystem::is_regular_file(updater))for(const char* alias:policy360::updaterPaths){
         if(std::string(alias)==policy360::updaterPaths[0] || !std::filesystem::is_regular_file(std::filesystem::path("sdmc:/")/alias))continue;
-        const auto destination=std::filesystem::path(kStagingRoot)/alias;std::filesystem::create_directories(destination.parent_path());std::filesystem::copy_file(updater,destination,std::filesystem::copy_options::overwrite_existing);files.push_back(alias);
+        const auto destination=std::filesystem::path(kStagingRoot)/alias;std::filesystem::create_directories(destination.parent_path());copyFileContents(updater,destination);files.push_back(alias);
     }
     progress.store(progressBase + progressSpan);
     return files;
@@ -581,6 +584,11 @@ void addPending(const std::filesystem::path& destination) {
 
 void copyFileContents(const std::filesystem::path& source,
                       const std::filesystem::path& destination) {
+    if(source.lexically_normal()==destination.lexically_normal())
+        throw std::runtime_error("Update source and destination are the same path");
+    // libnx/newlib's std::filesystem::copy_file may report File exists for
+    // an existing destination despite overwrite_existing. Use the same bounded
+    // stdio write path for staged NRO aliases as for installed replacements.
     std::FILE* input = std::fopen(source.string().c_str(), "rb");
     if (!input)
         throw std::runtime_error("Unable to open staged update file: "
@@ -775,9 +783,11 @@ UpdateInstallResult ReleaseUpdater::install(const ReleaseInfo& release,
         switchu::FileLog::log("[updater] installed version=%s preserveDisabled=%d",
                               release.version.c_str(), preserveDisabledOverride ? 1 : 0);
     } catch (const std::exception& ex) {
+        result.failedStage=stage.load();
         result.error = ex.what();
         switchu::FileLog::log("[updater] install failed: %s", ex.what());
     } catch (...) {
+        result.failedStage=stage.load();
         result.error = "Unknown update error";
         switchu::FileLog::log("[updater] install failed: unknown error");
     }

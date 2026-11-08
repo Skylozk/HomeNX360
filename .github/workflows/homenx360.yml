@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Optional prerelease tag, for example v0.9.0-preview.1'
+        description: 'Optional prerelease tag, for example v0.9.1-preview.1'
         required: false
         type: string
   pull_request:
@@ -78,6 +78,8 @@ jobs:
           python3 tests/updater360/make_fixtures.py /tmp/updater360-fixtures
           g++ -std=c++20 -O2 -Wno-deprecated-declarations -Itests/updater360 tests/updater360/updater360_test.cpp -lcurl -lminizip -lcrypto -lz -pthread -o /tmp/updater360-test
           /tmp/updater360-test /tmp/updater360-fixtures
+          g++ -std=c++20 -O2 tests/updater360/view360_test.cpp -o /tmp/updater-view360-test
+          /tmp/updater-view360-test projects/homenx360-updater/romfs
           python3 tests/updater360/package360_test.py
       - name: Configure
         working-directory: build/homenx360-source
@@ -115,6 +117,7 @@ jobs:
           cp homenx360/AVATAR-CATALOG-SOURCES.json build/artifacts/AVATAR-CATALOG-SOURCES.json
           cp homenx360/avatar-signin-preview.png build/artifacts/avatar-signin-preview.png
           cp homenx360/avatar-creator-preview.png build/artifacts/avatar-creator-preview.png
+          cp homenx360/updater-preview.png build/artifacts/updater-preview.png
           cp homenx360/RELEASE-NOTES.md build/artifacts/RELEASE-NOTES.md
           cd build/artifacts
           sha256sum * > SHA256SUMS.txt

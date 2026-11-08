@@ -19,6 +19,7 @@ struct UpdateInstallResult {
     bool success = false;
     std::string version;
     std::string error;
+    int failedStage = 0;
 };
 
 enum class UpdateWorkerStage : int {

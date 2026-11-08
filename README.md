@@ -36,6 +36,8 @@ extract **HomeNX360-avatar-catalog.zip** to the SD root.
 installation. Do not install the GitHub-generated source ZIP as an update.
 
 For automatic updates of both installations, launch **HomeNX360-Updater.nro**.
+If an older updater reports **File exists**, replace it manually with the latest
+updater NRO first. The new updater includes an NXE-style progress/error screen.
 [Updater instructions](homenx360/UPDATER-GUIDE.md).
 [Wallpaper selection and credits](homenx360/WALLPAPER-GUIDE.md).
 

@@ -1,5 +1,5 @@
 local updater_version = os.getenv("HOMENX360_RELEASE_TAG")
-if not updater_version or updater_version == "" then updater_version = "v0.9.0-preview.1" end
+if not updater_version or updater_version == "" then updater_version = "v0.9.1-preview.1" end
 -- Standalone HomeNX360 release updater. It does not depend on the HOME daemon.
 target("HomeNX360-Updater")
     set_kind("binary")
@@ -20,4 +20,5 @@ target("HomeNX360-Updater")
     set_values("switch.version", updater_version:gsub("^v", ""):sub(1,15))
     set_values("switch.icon", "projects/cards/icon.jpg")
     set_values("switch.format", "nro")
+    set_values("switch.romfs", "projects/homenx360-updater/romfs")
 target_end()

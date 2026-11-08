@@ -1,36 +1,28 @@
-# HomeNX360 v0.9.0-preview.1 — tabbed avatar editor and HomeNX360 branding
+# HomeNX360 v0.9.1-preview.1 — updater staging repair and NXE updater screen
 
-Replaces the long avatar settings list with an NXE-style editor: Headwear, Hair,
-Clothes, Accessories, Face, Body and Props tabs, eight real item thumbnails per
-page, and a central live avatar. All 33 customization fields remain accessible.
-Includes 2,420 original-model previews for supported items and body types.
+Fixes the reported **File exists** failure when preparing a staged copy of
+HomeNX360-preview.nro. Preview/updater aliases and version markers use a bounded
+stdio copy which replaces an existing staging file. Errors clearing a previous
+staging folder are now reported directly. Host regression checks cover repeated
+replacement and rejection of copying a file onto itself without truncating it.
 
-L/R changes categories; Y/Minus changes options (or category on a single-option
-tab); ZL/ZR turns item pages. D-pad/stick browses, A uses, X uses and saves, B
-cancels, Plus randomizes. The right stick rotates; press it for full-body/close-up.
-Touch is supported. Thumbnail browsing is a temporary try-on until accepted or
-saved. The existing per-profile wardrobe format and Nintendo profile identity are
-preserved. Read AVATAR-GUIDE.md for controls and thumbnail fidelity limits.
+Adds a green-and-silver updater screen with the approved HomeNX360 logo, version
+details, five progress steps, download progress/size/speed, readable errors, and
+pause/retry controls. The updater still updates both preview and HOME while
+preserving settings and saved avatars. This release still downloads the complete
+update package; it does not introduce smaller incremental updates.
 
-Adds the approved green-and-silver **HomeNX360** logo to the app, updater and
-loader NRO icons. The homebrew menu names are **HomeNX360**, **HomeNX360 Updater**
-and **HomeNX360 Loader**. The primary download is **HomeNX360.nro**; the older
-HomeNX360-preview.nro filename remains an identical compatibility download.
-Internal installation/configuration paths are preserved for existing saves and
-updates. Source builds also brand the related manager/toggle launchers.
+**To repair an older updater:** manually download **HomeNX360-Updater.nro** from
+this release, replace the old updater NRO on the SD card, then launch it. The old
+updater cannot repair its own staging failure before installing this fix.
+Alternatively, extract HomeNX360-update.zip to the SD root and restart for HOME.
+Read UPDATER-GUIDE.md for paths, controls and the HOME restart requirement.
 
-Update through HomeNX360 Updater for both preview and HOME, or extract the full
-HomeNX360-update.zip to the SD root. Restart after updating HOME. Standalone
-manual installs need HomeNX360.nro plus the updated HomeNX360-avatar-catalog.zip
-for the new thumbnails and expanded wardrobe. Use full-memory homebrew launch.
-The updater still downloads the complete package, including the wardrobe.
+Retains v0.9.0's category-based avatar editor, 2,420 item thumbnails, live try-on,
+full-body/zoom/rotation, profile saves, HomeNX360 launcher names/icons, and all
+eleven NXE wallpapers. The avatar/editor and original media are unchanged.
 
-Native builds and checks cover all editor fields, navigation/paging, try-on and
-save/cancel behavior, thumbnail decoding, package placement and the actual NRO
-names/icons. Hardware rendering, memory and firmware compatibility require Switch
-testing; the reference preview is software-rendered, not a console capture.
-
-Retains all eleven NXE wallpapers, original NXE-era startup, Guide, settings,
-Discord Friends functionality, 1,108 working Marketplace items and 166 animated
-props. These original/community media remain credited separately from GPL code.
-One supplied Star-Lord shirt could not be decoded and remains excluded.
+Native builds, staged-file replacement and updater policy/install checks pass.
+UI tests render all nine states with real font/logo assets and check framebuffer
+bounds and long messages. Reference images are software-rendered. The reported
+Switch failure guided this repair; the fix and new UI still require device testing.
