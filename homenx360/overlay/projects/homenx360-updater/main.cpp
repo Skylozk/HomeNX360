@@ -9,7 +9,7 @@
 #include <future>
 #include <string>
 #include <switchu/file_log.hpp>
-extern "C" {size_t __nx_heap_size=0x06000000;}
+// Use libnx's adaptive heap for applet and full-application launches.
 extern "C" void userAppInit(){timeInitialize();}
 extern "C" void userAppExit(){timeExit();}
 using switchu::manager::ReleaseUpdater;
