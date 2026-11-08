@@ -121,3 +121,12 @@ A or touch opens a conversation; A/X in the chat opens the reply keyboard.
 X in Friends opens HomeNX's existing Discord sign-in and account controls.
 The standalone NRO shows the HOME requirement and an external Discord shortcut.
 Read `DISCORD-GUIDE.md` for setup, paging, controls and testing limits.
+
+## Expanded avatar wardrobe
+
+The full update includes 809 built-in assets and 1,108 working Marketplace items
+from the supplied collection. The large catalog stays on SD. For the standalone
+app, install the preview NRO and extract HomeNX360-avatar-catalog.zip to the SD
+root; a lone NRO includes only the legacy starters. Use full-memory homebrew
+launch mode. See AVATAR-GUIDE.md for controls, the one excluded source file and
+rendering limits. Back up config/CardsNX/ before upgrading or rolling back.

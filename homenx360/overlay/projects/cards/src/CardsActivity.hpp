@@ -526,7 +526,7 @@ private:
     void saveProfileAvatar();
     avatar360::Session m_profiles;
     avatar360::Assets m_profileAssets;
-    std::future<std::array<avatar360::Model,6>> m_profileAssetJob;
+    std::future<avatar360::AssetData> m_profileAssetJob;
     bool m_profileAssetsFailed=false;
     std::vector<User> m_profileUsers;
     std::future<std::vector<User>> m_profileJob;

@@ -18,6 +18,8 @@ permissions:
 
 jobs:
   build:
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     container: devkitpro/devkita64
     timeout-minutes: 90
@@ -31,7 +33,7 @@ jobs:
       - name: Install build tools
         run: |
           apt-get update
-          apt-get install -y curl gcc g++ zip unzip zstd cmake ninja-build python3
+          apt-get install -y curl gcc g++ zip unzip zstd cmake ninja-build python3 zlib1g-dev nlohmann-json3-dev gh
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: 3.1.2
@@ -56,9 +58,13 @@ jobs:
           /tmp/settings360-test
           g++ -std=c++20 -DSWITCHU_MENU tests/settings360_test.cpp -o /tmp/settings360-home-test
           /tmp/settings360-home-test
-          g++ -std=c++20 -O2 tests/avatar360_test.cpp -o /tmp/avatar360-test
+          g++ -std=c++20 -O2 tests/avatar360_test.cpp -lz -o /tmp/avatar360-test
           /tmp/avatar360-test projects/cards/romfs/avatars
           python3 tests/avatar_media360_test.py
+          g++ -std=c++20 -O2 -idirafter lib/nxui/include tests/avatar_catalog360_test.cpp -lz -o /tmp/avatar-catalog360-test
+          /tmp/avatar-catalog360-test media/avatar-catalog
+          g++ -std=c++20 -O2 tests/avatar_settings360_test.cpp -o /tmp/avatar-settings360-test
+          /tmp/avatar-settings360-test
       - name: Configure
         working-directory: build/homenx360-source
         run: xmake f --yes -vD -p cross -m release -a aarch64 --toolchain=devkita64 --homebrew=n --root
@@ -78,6 +84,7 @@ jobs:
         run: python3 tools/package_dashboard360.py --output ../artifacts --revision "$SOURCE_REVISION"
         env:
           SOURCE_REVISION: ${{ github.sha }}
+          HOMENX360_RELEASE_TAG: ${{ inputs.release_tag }}
       - name: Package complete corresponding source and checksums
         run: |
           python3 tools/package_source360.py build/homenx360-source build/artifacts/HomeNX360-source.zip
@@ -87,29 +94,17 @@ jobs:
           cp homenx360/SETTINGS-REFERENCES.md build/artifacts/SETTINGS-REFERENCES.md
           cp homenx360/DISCORD-GUIDE.md build/artifacts/DISCORD-GUIDE.md
           cp homenx360/AVATAR-GUIDE.md build/artifacts/AVATAR-GUIDE.md
+          cp homenx360/AVATAR-CATALOG-SOURCES.json build/artifacts/AVATAR-CATALOG-SOURCES.json
           cp homenx360/avatar-signin-preview.png build/artifacts/avatar-signin-preview.png
           cp homenx360/avatar-creator-preview.png build/artifacts/avatar-creator-preview.png
           cp homenx360/RELEASE-NOTES.md build/artifacts/RELEASE-NOTES.md
           cd build/artifacts
           sha256sum * > SHA256SUMS.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: HomeNX360-experimental
-          path: build/artifacts/*
-          retention-days: 30
-
-  release:
-    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
-    needs: build
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: HomeNX360-experimental
-          path: artifacts
+      # The complete wardrobe makes the update/source archives large. Publish
+      # directly from this tested build instead of copying them through Actions
+      # artifact storage and a second runner.
       - name: Publish tested build files as a prerelease
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -117,4 +112,16 @@ jobs:
           RELEASE_COMMIT: ${{ github.sha }}
         run: |
           python3 -c 'import os,re; assert re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:-preview\.[0-9]+)?",os.environ["RELEASE_TAG"]), "Invalid release tag"'
-          gh release create "$RELEASE_TAG" artifacts/* --target "$RELEASE_COMMIT" --prerelease --title "HomeNX360 $RELEASE_TAG" --notes-file artifacts/RELEASE-NOTES.md
+          gh release create "$RELEASE_TAG" build/artifacts/* --target "$RELEASE_COMMIT" --draft --prerelease --title "HomeNX360 $RELEASE_TAG" --notes-file build/artifacts/RELEASE-NOTES.md
+          gh release edit "$RELEASE_TAG" --draft=false
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'workflow_dispatch' || inputs.release_tag == ''
+        with:
+          name: HomeNX360-preview-and-validation
+          path: |
+            build/artifacts/HomeNX360-preview.nro
+            build/artifacts/*.json
+            build/artifacts/*.md
+            build/artifacts/*.png
+            build/artifacts/SHA256SUMS.txt
+          retention-days: 14

@@ -21,3 +21,11 @@ for shorts. It retains original meshes and skin appearance,
 resamples textures to at most 384 pixels, and samples idle/greeting bone motion
 at 15 Hz. The six reports in `projects/cards/romfs/avatars/` contain source and
 bank SHA-256 hashes. The software renderer and profile UI are original code.
+
+The expanded catalog in `media/avatar-catalog/` is derived from the public
+Xbox 360 system-update avatar packs and the archived Marketplace collection
+specified in AVATAR-CATALOG-SOURCES.json. Item artwork belongs to Microsoft
+and the respective publishers. Original package/asset hashes are preserved in
+`source-packages.json`. Source conversion uses the separately obtained, pinned
+avatar-aura offline tool; its decoder credits Xenia and libmspack. None of the
+Windows tools bundled in the Marketplace archive are shipped or executed.

@@ -8,13 +8,14 @@ inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 - The recorded original NXE-era Xbox 360 startup.
 - A centered NXE Guide with animated blades, profile/clock, green selection and an added Discord Friends blade.
 - Full-screen NXE settings with the original Console Settings categories, animated submenus and real HomeNX controls.
-- Full-body Xbox 360 avatars, an NXE-style profile sign-in row and a custom per-profile creator.
+- Full-body Xbox 360 avatars, an NXE-style sign-in row, and an expanded creator with built-in/Marketplace clothing, facial options and animated props.
 - Real Switch games, homebrew, friends, media and settings actions.
 
 This is an NXE-inspired adaptation, not an exact reproduction of every Xbox
 screen. Existing HomeNX dialogs and Nintendo applets retain their interfaces.
 The startup uses recorded Xbox media, credited separately from the GPL code.
-Avatar meshes and animations are also Microsoft media exported through 360sona;
+Avatar meshes and animations are media from the original packs, the supplied
+Marketplace archive and legacy 360sona exports;
 see [the avatar guide](homenx360/AVATAR-GUIDE.md) for controls and fidelity limits.
 Xbox Live services and Xbox firmware are not included.
 [Startup recording, analysis and fidelity limits](homenx360/STARTUP-REFERENCES.md).
@@ -27,7 +28,8 @@ Xbox Live services and Xbox firmware are not included.
 ## Download
 
 Open [Releases](https://github.com/Skylozk/HomeNX360/releases) and choose the
-NXE preview. Download **HomeNX360-preview.nro** to try the standalone app first.
+NXE preview. For the standalone app, download **HomeNX360-preview.nro** and
+extract **HomeNX360-avatar-catalog.zip** to the SD root.
 **HomeNX360-update.zip** contains the SD card update for an existing HomeNX
 installation. Do not install the GitHub-generated source ZIP as an update.
 

@@ -1,0 +1,26 @@
+{
+  "built_in_system_update": {
+    "archive_url": "https://download.digiex.net/Consoles/Xbox360/Dashboards/SystemUpdate_17559_USB.zip",
+    "archive_sha256": "38885a3ab6b9854fb4fa31d5ddf21a4fddfd4cfb25e219060cfb0c2fb31f208f",
+    "archive_bytes": 115992188,
+    "container": "$SystemUpdate/FFFE07DF00000002",
+    "container_sha256": "9dcef5b4cc309eafee50c8ec2b0453e2d835d776f667269ecb2c4d11d93cd8d6",
+    "packs": {
+      "AvatarAssetPackLegacyV1.toc": "b05f2f4cd4412ff758f9024bea6dbcc090dd8067f36ea332b8ffd2d5c7262ffa",
+      "AvatarAssetPack.toc": "a8c90b3db5c6349a55fcb72eda47e08e4940f88fabda4ff73025d9728832daa8"
+    }
+  },
+  "marketplace": {
+    "archive_url": "https://archive.org/download/xbox-360-marketplace-avatar-items-collection/Xbox%20360%20Marketplace%20Avatar%20Items%20Collection.rar",
+    "archive_sha256": "91714de41b0dc432744f2ed4fd08d30e498f292cee377a7029b98dbb43695a11",
+    "archive_bytes": 161467615,
+    "source_page": "https://archive.org/details/xbox-360-marketplace-avatar-items-collection",
+    "unique_items": 1109,
+    "bundled_programs_used": false
+  },
+  "offline_decoder": {
+    "repository": "https://github.com/panedivitasei/avatar-aura",
+    "revision": "2d2e4a4cfccd795b8ed3e14a19a942c83d298ad5",
+    "patch": "overlay/tools/avatar_catalog/prepare_converter.py"
+  }
+}

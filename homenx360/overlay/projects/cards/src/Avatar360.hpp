@@ -21,7 +21,18 @@ inline constexpr std::array<const char*,6> modelFiles={"regular","player","fan",
 inline int donor(int character,int variation){return (character%2)+2*((character/2+variation)%3);}
 struct Look {
     std::array<int,FeatureCount> value={0,0,0,0,0,0,1,2,2};
-    void normalize(){for(int i=0;i<FeatureCount;++i)value[i]=std::clamp(value[i],0,choices[i]-1);}
+    // Version 0.7's nine integers remain intact until the full creator is saved.
+    // Catalog selections use stable asset keys, never positions in a sorted list.
+    bool expanded=false;
+    std::array<std::string,21> items{};
+    // body, skin, hair, iris, brows, lips, facial hair, shadow, height, build, feature1, feature2
+    std::array<int,12> colors={0,5,2,3,2,2,2,0,2,2,16,27};
+    void normalize(){
+        for(int i=0;i<FeatureCount;++i)value[i]=std::clamp(value[i],0,choices[i]-1);
+        constexpr int counts[]={2,24,32,32,32,32,32,32,5,5,32,32};
+        for(int i=0;i<12;++i)colors[i]=std::clamp(colors[i],0,counts[i]-1);
+        for(auto& key:items)if(key.size()>40 || key.find_first_not_of("0123456789abcdefm-")!=std::string::npos)key.clear();
+    }
     void cycle(int field,int delta){if(field>=0 && field<FeatureCount){const auto n=choices[field];value[field]=((value[field]+delta)%n+n)%n;if(field==Character)for(int k=Hair;k<=Shoes;++k)value[k]=0;}}
     bool operator==(const Look&)const=default;
 };

@@ -1,5 +1,5 @@
 // Included inside namespace cards. Profile names and launch identities come
-// from Nintendo accounts; avatar appearances are app-local, keyed by full UID.
+// from Nintendo accounts; full catalog appearances are app-local, keyed by full UID.
 namespace {
 std::string profile360Id(AccountUidLike uid){
     char text[33];std::snprintf(text,sizeof(text),"%016llX%016llX",
@@ -16,9 +16,12 @@ void CardsActivity::openProfiles(bool startup){
     if(!m_profileAssets.ready && !m_profileAssetJob.valid()){
         const std::string base=std::string(kAssets)+"avatars/";
         m_profileAssetJob=std::async(std::launch::async,[base](){
-            offScreenCore();std::array<avatar360::Model,6> models;
-            try{for(size_t i=0;i<models.size();++i)avatar360::loadModel(base+avatar360::modelFiles[i]+".avb",models[i]);}catch(...){models={};}
-            threadDone();return models;
+            offScreenCore();avatar360::AssetData data;
+            try{
+                for(size_t i=0;i<data.models.size();++i)avatar360::loadModel(base+avatar360::modelFiles[i]+".avb",data.models[i]);
+                data.catalog.load("sdmc:/switch/SwitchU/cards/avatars/catalog");
+            }catch(...){data={};}
+            threadDone();return data;
         });
     }
     m_audio.play("show_modal");
@@ -39,6 +42,10 @@ void CardsActivity::confirmProfile(){
     setUser(user->uid);m_guideName=user->name;m_profiles.signedIn();m_audio.play("activation");
 }
 void CardsActivity::saveProfileAvatar(){
+    if(m_profiles.draft.expanded){
+        auto* preview=m_profileAssets.request(m_profiles.draft);
+        if(!preview || !preview->avatar.model.valid() || !preview->avatar.error.empty()){say(preview && !preview->avatar.error.empty()?preview->avatar.error:"Wait for the outfit to finish loading.");return;}
+    }
     // Revalidate the target account before persisting; editing another
     // profile's appearance must never silently change the active account.
     const auto user=std::find_if(m_profileUsers.begin(),m_profileUsers.end(),[&](const auto& u){return profile360Id(u.uid)==m_profiles.editingId;});
@@ -56,7 +63,7 @@ void CardsActivity::pollProfileJobs(){
         m_profileScroll=float(avatar360::firstVisible(m_profiles.selected,int(m_profiles.profiles.size())));
     }
     if(m_profileAssetJob.valid() && m_profileAssetJob.wait_for(std::chrono::seconds(0))==std::future_status::ready){
-        try{m_profileAssets.models=m_profileAssetJob.get();}catch(...){m_profileAssets.models={};}
+        try{auto data=m_profileAssetJob.get();m_profileAssets.models=std::move(data.models);m_profileAssets.catalog=std::move(data.catalog);}catch(...){m_profileAssets.models={};}
         m_profileAssetsFailed=false;for(const auto& model:m_profileAssets.models)m_profileAssetsFailed|=!model.valid();
         m_profileAssets.ready=!m_profileAssetsFailed;
     }
@@ -65,10 +72,22 @@ void CardsActivity::updateProfiles(float dt){
     using S=avatar360::Screen;using B=nxui::Button;auto& input=app().input();
     m_profileAge+=std::max(0.f,dt);
     pollProfileJobs();
+    m_profileAssets.pump(app().gpu(),app().renderer());
     if(!m_profileAssetsFailed && m_profileAssets.ready && !m_profileAssets.available()){
         m_profileAssets.upload(app().gpu(),app().renderer());m_profileLoadTime+=dt;
         if(m_profileLoadTime>15.f)m_profileAssetsFailed=true;
     }
+    auto editAvatar=[&](){
+        if(!m_profileAssets.catalog.ready){say("Install the complete update ZIP to use the expanded avatar catalog.");return;}
+        m_profiles.edit(m_settings.profileAvatars);m_profileAssets.catalog.initialize(m_profiles.draft);
+    };
+    auto randomizeAvatar=[&](){
+        auto& look=m_profiles.draft;uint32_t seed=uint32_t(armGetSystemTick());
+        auto next=[&](){seed^=seed<<13;seed^=seed>>17;seed^=seed<<5;return seed;};if(!seed)seed=0x360360;
+        for(int i=0;i<12;++i)look.colors[i]=next()%avatar360::colorCount(i);
+        m_profileAssets.catalog.initialize(look);
+        for(int g=0;g<21;++g){auto options=m_profileAssets.catalog.options(g,look.colors[0]);if(!options.empty()){const auto* item=options[next()%options.size()];look.items[g]=item?item->key:"";}}
+    };
     const auto previous=m_profiles.screen;
     auto close=[&](){m_profiles.screen=S::Closed;};
     const bool footerTouch=input.touchUp() && input.touchY()>=643;
@@ -81,12 +100,12 @@ void CardsActivity::updateProfiles(float dt){
         const bool left=input.isDown(B::DLeft)||input.isDown(B::LStickL),right=input.isDown(B::DRight)||input.isDown(B::LStickR);
         if(left||right){m_profiles.move(right?1:-1);m_audio.play("navigation");}
         if(input.isDown(B::A))confirmProfile();
-        else if(input.isDown(B::X))m_profiles.edit(m_settings.profileAvatars);
+        else if(input.isDown(B::X))editAvatar();
         if(input.touchUp()){
             const float x=input.touchX(),y=input.touchY();
             if(std::abs(input.touchDeltaX())>60)m_profiles.move(input.touchDeltaX()<0?1:-1);
             else if(y>=643){
-                if(x<200)confirmProfile();else if(x<390)m_profiles.back();else if(x<640)m_profiles.edit(m_settings.profileAvatars);else{close();openUserTools();}
+                if(x<200)confirmProfile();else if(x<390)m_profiles.back();else if(x<640)editAvatar();else{close();openUserTools();}
             }else for(int i=0;i<int(m_profiles.profiles.size());++i)if(avatar360::profileBox(i,m_profileScroll).contains(x,y)){
                 if(i==m_profiles.selected)confirmProfile();else m_profiles.selected=i;break;
             }
@@ -99,18 +118,23 @@ void CardsActivity::updateProfiles(float dt){
         if(up||down||left||right){vertical=down-up;horizontal=right-left;m_profileRepeat=.4f;}
         else if(held && (m_profileRepeat-=dt)<=0){m_profileRepeat=.14f;vertical=(input.isHeld(B::DDown)||input.isHeld(B::LStickD))-(input.isHeld(B::DUp)||input.isHeld(B::LStickU));horizontal=(input.isHeld(B::DRight)||input.isHeld(B::LStickR))-(input.isHeld(B::DLeft)||input.isHeld(B::LStickL));}
         else if(!held)m_profileRepeat=0;
-        m_profiles.field=std::clamp(m_profiles.field+vertical,0,int(avatar360::FeatureCount)-1);
-        if(horizontal)m_profiles.draft.cycle(m_profiles.field,horizontal);
+        m_profiles.field=std::clamp(m_profiles.field+vertical,0,int(avatar360::CFieldCount)-1);
+        if(input.isDown(B::ZL))horizontal=-10;
+        if(input.isDown(B::ZR))horizontal=10;
+        if(horizontal)m_profileAssets.catalog.cycle(m_profiles.draft,m_profiles.field,horizontal);
         if(input.isHeld(B::L))m_profiles.yaw-=dt*1.8f;
         if(input.isHeld(B::R))m_profiles.yaw+=dt*1.8f;
-        if(input.isDown(B::A))m_profiles.draft.cycle(m_profiles.field,1);
-        if(input.isDown(B::Y))m_profiles.draft=avatar360::randomLook(uint32_t(armGetSystemTick()));
+        if(input.isDown(B::A))m_profileAssets.catalog.cycle(m_profiles.draft,m_profiles.field,1);
+        if(input.isDown(B::Y))randomizeAvatar();
         if(input.isDown(B::X))saveProfileAvatar();
         if(input.touchUp()){
             const float x=input.touchX(),y=input.touchY();
-            if(y>=643){if(x<230)saveProfileAvatar();else if(x<430)m_profiles.back();else if(x<690)m_profiles.draft=avatar360::randomLook(uint32_t(armGetSystemTick()));}
+            if(y>=643){if(x<230)saveProfileAvatar();else if(x<430)m_profiles.back();else if(x<690)randomizeAvatar();}
             else if(x<580 && std::abs(input.touchDeltaX())>12)m_profiles.yaw+=input.touchDeltaX()*.009f;
-            else for(int i=0;i<avatar360::FeatureCount;++i)if(avatar360::editorRow(i,0).contains(x,y)){m_profiles.field=i;m_profiles.draft.cycle(i,x<900?-1:1);break;}
+            else {
+                const int top=std::clamp(m_profiles.field-8,0,int(avatar360::CFieldCount)-9);
+                for(int i=top;i<std::min(top+9,int(avatar360::CFieldCount));++i)if(avatar360::editorRow(i,top).contains(x,y)){m_profiles.field=i;m_profileAssets.catalog.cycle(m_profiles.draft,i,x<900?-1:1);break;}
+            }
         }
     }
     const float target=avatar360::firstVisible(m_profiles.selected,int(m_profiles.profiles.size()));
@@ -118,8 +142,12 @@ void CardsActivity::updateProfiles(float dt){
     if(previous!=S::Closed && !m_profiles.open()){m_profileAssets.releaseTextures();wantArt();}
 }
 void CardsActivity::drawCharacter(nxui::Renderer& renderer,const avatar360::Look& look,float x,float y,float scale,float yaw,bool wave,bool portrait,float alpha){
-    avatar360::drawCharacter(m_profileAssets,renderer,look,x,y,scale,yaw,
+    const bool drawn=avatar360::drawCharacter(m_profileAssets,renderer,look,x,y,scale,yaw,
         m_settings.motion?(wave?m_profiles.welcomeTime:m_profileAge+look.value[avatar360::Character]*1.3f):0.f,alpha,wave,portrait);
+    if(!drawn && look.expanded){
+        const auto* entry=m_profileAssets.request(look);const std::string message=!m_profileAssets.catalog.ready?"Install the complete avatar catalog.":entry && !entry->avatar.error.empty()?entry->avatar.error:"Loading outfit...";
+        textMid(renderer,m_fBody,fit(m_fBody,message,450,.7f),x-110,y-170,{.2f,.23f,.22f,1},.7f);
+    }
 }
 void CardsActivity::drawProfiles(nxui::Renderer& r){
     using S=avatar360::Screen;if(!m_profiles.open())return;
@@ -145,15 +173,19 @@ void CardsActivity::drawProfiles(nxui::Renderer& r){
         const auto* profile=m_profiles.current();
         drawCharacter(r,m_profiles.draft,330,575,310,m_profiles.yaw);
         if(profile)centered(m_fLabel,fit(m_fLabel,profile->name,440),330,606,dark,1.1f);
-        for(int i=0;i<avatar360::FeatureCount;++i){
-            const auto row=avatar360::editorRow(i,0);const bool chosen=i==m_profiles.field;
+        const int top=std::clamp(m_profiles.field-8,0,int(avatar360::CFieldCount)-9);
+        for(int i=top;i<std::min(top+9,int(avatar360::CFieldCount));++i){
+            const auto row=avatar360::editorRow(i,top);const bool chosen=i==m_profiles.field;
             if(chosen)r.drawGradientRect({row.x,row.y,row.w,row.h},{.49f,.76f,.08f,1},{.28f,.53f,.02f,1});
-            textMid(r,m_fBody,avatar360::featureNames[i],row.x+12,row.y+21,chosen?white:dark,.87f);
-            const std::string value="<  "+avatar360::featureValue(m_profiles.draft,i)+"  >";
-            textMid(r,m_fBody,value,row.x+row.w-12-measured(m_fBody,value).x*.78f,row.y+21,chosen?white:dark,.78f);
+            textMid(r,m_fBody,avatar360::catalogFieldNames[i],row.x+12,row.y+12,chosen?white:dark,.64f);
+            const std::string value="<  "+fit(m_fBody,m_profileAssets.catalog.label(m_profiles.draft,i),390,.72f)+"  >";
+            textMid(r,m_fBody,value,row.x+row.w-12-measured(m_fBody,value).x*.72f,row.y+29,chosen?white:dark,.72f);
         }
-        textMid(r,m_fBody,"L / R  Rotate avatar",665,574,dark,.82f);
-        textMid(r,m_fBody,"Drag the avatar to turn it.",665,606,muted,.78f);
+        r.drawRect({1188,140,3,396},{.35f,.39f,.36f,.35f});
+        r.drawRect({1187,140+396.f*top/avatar360::CFieldCount,5,396.f*9/avatar360::CFieldCount},green);
+        textMid(r,m_fBody,"L / R  Rotate   ZL / ZR  Skip 10",665,566,dark,.76f);
+        textMid(r,m_fBody,m_profileAssets.catalog.counter(m_profiles.draft,m_profiles.field),1080,602,muted,.75f);
+        textMid(r,m_fBody,std::to_string(m_profileAssets.catalog.items.size())+" catalog assets",665,602,muted,.75f);
         footer(88,"X","Save avatar",{.05f,.37f,.72f,1});footer(320,"B","Cancel",{.75f,.08f,.07f,1});footer(520,"Y","Randomize",{.84f,.66f,.04f,1});return;
     }
     if(welcome){

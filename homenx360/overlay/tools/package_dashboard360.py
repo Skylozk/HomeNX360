@@ -6,17 +6,23 @@ import zipfile
 import shutil
 import json
 import hashlib
+import os
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--daemon-provenance', type=Path)
 parser.add_argument('--revision', default='local working tree')
+parser.add_argument('--version', default=os.environ.get('HOMENX360_RELEASE_TAG') or 'development')
 args = parser.parse_args()
 output = args.output.resolve()
 release = root / 'build/cross/aarch64/release'
 
+version_file=root/'build/homenx360-version.txt'
+version_file.parent.mkdir(parents=True,exist_ok=True)
+version_file.write_text(args.version+'\n')
 files = {
+    'switch/SwitchU/homenx360-version.txt': version_file,
     'switch/SwitchU/bin/menu/main': release / 'exefs/switchu-menu/main',
     'switch/SwitchU/bin/menu/main.npdm': release / 'exefs/switchu-menu/main.npdm',
     'atmosphere/contents/0100000000001000/exefs.nsp': release / 'switchu-daemon.nsp',
@@ -29,6 +35,17 @@ for folder in ('fonts', 'icons', 'shaders', 'certs', 'boot', 'avatars'):
         raise SystemExit(f'Missing CardsNX assets: {base}')
     for p in base.rglob('*'):
         if p.is_file(): files['switch/SwitchU/cards/' + str(p.relative_to(base.parent))] = p
+# The large wardrobe stays on SD rather than inside the preview NRO/ROMFS.
+# Both app and HOME resolve this same bounded, lazily loaded catalog.
+catalog = root / 'media/avatar-catalog'
+if not (catalog / 'index.avc').is_file() or not (catalog / 'SHA256.json').is_file():
+    raise SystemExit('Missing validated avatar catalog')
+for relative, expected in json.loads((catalog / 'SHA256.json').read_text()).items():
+    p = catalog / relative
+    if p.parent != catalog or not p.is_file() or hashlib.sha256(p.read_bytes()).hexdigest() != expected:
+        raise SystemExit(f'Avatar catalog integrity mismatch: {relative}')
+for p in catalog.iterdir():
+    if p.is_file(): files['switch/SwitchU/cards/avatars/catalog/' + p.name] = p
 for folder in ('fonts', 'icons', 'i18n', 'shaders'):
     base = root / 'romfs' / folder
     for p in base.rglob('*'):
@@ -61,6 +78,7 @@ manifest = {'name': 'HomeNX 360 experimental',
             'upstream_commit': '94f2bd56698fed40f2897131ea09463775840767',
             'hardware_tested': False,
             'dashboard_style': 'NXE',
+            'release_tag': args.version,
             'frontend_source_revision': args.revision,
             'sha256': {name: hashlib.sha256(p.read_bytes()).hexdigest() for name, p in sorted(files.items())}}
 if args.daemon_provenance:
@@ -79,4 +97,9 @@ with zipfile.ZipFile(output / 'HomeNX360-update.zip', 'w', zipfile.ZIP_DEFLATED)
     z.writestr('config/SwitchU/frontend.txt', 'cards\n')
     z.writestr('switch/SwitchU/dashboard360-build.json', manifest_text)
     z.write(root / 'README-360.md', 'INSTALL-360.md')
-print('Packaged preview NRO and HomeNX update:', output)
+with zipfile.ZipFile(output / 'HomeNX360-avatar-catalog.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+    prefix='switch/SwitchU/cards/avatars/catalog/'
+    for name,p in sorted(files.items()):
+        if name.startswith(prefix): z.write(p,name)
+    z.write(root / 'AVATAR-GUIDE.md','AVATAR-GUIDE.md')
+print('Packaged preview NRO, complete update and standalone avatar catalog:', output)

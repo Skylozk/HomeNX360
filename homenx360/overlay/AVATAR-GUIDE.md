@@ -1,56 +1,102 @@
-# Full-body profiles and avatar creator
+# Full-body profiles and expanded avatar creator
 
-Open Profiles from My Xbox or the Guide. Each real Switch profile has a
-full-body Xbox 360 avatar and its Nintendo profile name on the gray NXE-style
-sign-in floor. A selects the profile used to launch games and shows its greeting.
-Left/Right changes selection; X edits that profile's avatar; Y opens the existing
-Nintendo user-management tools; B returns. The row scrolls for up to eight users.
-Touch a character to select it, then touch again to sign in, or swipe the row.
+Open Profiles from My Xbox or the Guide. A signs into the selected real Switch
+profile; X edits its avatar; Y opens Nintendo user management; B returns. The
+NXE-style row shows full-body characters and the profiles' actual names. Touch,
+swipe, and the existing startup sign-in setting are supported.
 
-The profile picker also follows the recorded startup on a fresh app launch or
-console boot. Returning HOME from a running game keeps the current account.
-Console Settings → Startup and Shutdown → Sign-in at startup controls this.
+## Included catalog
 
-## Creator controls
+This update contains 809 original built-in assets, including 89 hat-compatible
+hair companions, plus 1,108 working Marketplace items from the collection supplied
+by the user. There are 1,917 catalog entries / 1,828 directly selectable assets,
+before gender filtering and the additional None/Default choices. The 166 props
+include three built-in props and 163 Marketplace props.
 
-Up/Down selects a feature, Left/Right or A changes it, L/R rotates the full-body
-preview, Y randomizes, X saves, and B cancels the draft. Touch the row's left or
-right side to change it; drag the character to rotate. Footer buttons work by
-touch too. Saving an avatar for another profile does not sign into that profile.
+Independent options include hairstyles, tops, bottoms, shoes, outfits/costumes,
+hats, gloves, glasses, wristwear, earrings, rings, eyes, eyebrows, mouths, facial
+hair, face features/paint, eye shadow, noses, chins, ears, and props. The creator
+also has male/female bodies, 24 skin tones, 32 hair/feature colours, and five
+height/build settings. Costume slots hide the clothes or hair they replace;
+editing a covered individual slot removes the conflicting costume. Hats select
+the original companion hair meshes. Clothes retain their body-hiding patches.
 
-Six original-style face/body presets are included. Hair, top, trousers and shoes
-can be combined within each of the two body families; accessories can be toggled,
-and hair colour and height/build adjusted. Hair colour offers Original, Black,
-Brown, Blonde, Ginger and Silver. This is a compact custom creator, not Microsoft's
-entire avatar catalog or every facial slider. Preset names identify the exported
-starter wardrobes. Actual profile names always come from the Switch.
-Hat-cut hairstyles keep their matching cap; the accessories switch controls
-the starter's glasses, watch and earrings.
+The source archive contains 1,109 Marketplace packages. One female Star-Lord
+T-shirt (`00000008-1e75-92c2-cc55-01ed524607d4`) fails LZX decompression and is
+excluded from the menus. Its name and failure are retained in `catalog.json`.
+This collection is a subset of the historical Marketplace, not its entire
+worldwide catalog. No missing item is represented by a nonfunctional menu entry.
 
-Appearances are stored per full Nintendo account UID in CardsNX's existing
-settings under `profileAvatars`. They do not overwrite Nintendo profile pictures,
-Miis, account names or saved games. Back up `config/CardsNX/` to preserve them.
+## Controls and saved appearances
 
-## Artwork and rendering
+Up/Down selects one of 33 creator fields. Left/Right or A changes the selection;
+ZL/ZR skips ten choices, L/R rotates the full-body preview, Y randomizes, X saves,
+and B cancels. The list scrolls; touch the displayed row's left/right side to
+change it, or drag the character to rotate. Footer buttons support touch.
 
-These are Xbox 360 avatar meshes, skin weights, textures and animations exported
-through the public demo of [360sona](https://360sona.com/), by Ezra Kruger.
-[About 360sona](https://360sona.com/about.html) describes the original artwork and
-export capability. No account or online renderer is required inside HomeNX360.
-Microsoft owns the original avatar artwork and animations; the GPL code license
-does not grant rights to those media. See `media/avatars/AVATAR-MEDIA-NOTICE.md`.
+Existing six-starter appearances remain unchanged until edited and saved. Opening
+an old appearance in the expanded creator starts a new draft with its body type;
+Cancel restores the saved starter. New saves use stable catalog asset IDs, per
+full Nintendo profile UID. Editing another user's appearance does not sign into
+that user. Nintendo names, pictures, Miis and saved games are unchanged.
+Back up `config/CardsNX/` before updating or rolling back.
 
-The native renderer retains the original mesh detail and uses baked lighting,
-384-pixel maximum textures and animation sampled at 15 Hz with interpolation.
-It holds the relaxed standing pose between idle gestures and plays the original
-greeting after sign-in. The exact four faces/outfits in the user's screenshot
-are not all included. Lighting, font metrics and the Switch controls also differ;
-this release does not claim a pixel-identical screenshot recreation.
-Original hair colour retains the exported surface; optional dyes use a native
-colour shader and are approximations of the console's colour treatment. Some
-mixed wardrobe/hairstyle combinations may still intersect.
+## Installation
 
-The converter, unchanged exports, native banks and hashes accompany the source.
-Reference previews use the native CPU skinning/projection with a software depth
-buffer; they are not photos or captures from Switch hardware. Both native builds
-and host checks can be verified here; physical Switch rendering remains untested.
+The large wardrobe is stored outside the NRO at:
+
+`sd:/switch/SwitchU/cards/avatars/catalog/`
+
+Extract the complete **HomeNX360-update.zip** to the SD root for an existing
+HomeNX installation. To try only the standalone app, install
+**HomeNX360-preview.nro** and extract **HomeNX360-avatar-catalog.zip** to the SD
+root. Both app and HOME use the same catalog. A lone NRO retains the old starters
+but needs these SD files for the expanded creator. Use full-memory homebrew
+launch mode for this larger creator; applet-mode memory and physical Switch
+rendering have not been verified here.
+
+Only equipped catalog meshes/masks are loaded, with one background conversion
+job, a bounded appearance cache and one GPU texture upload per frame. A loading
+label appears while a new outfit loads; failed files cannot be saved as a valid
+preview. The full catalog is never loaded into GPU memory at once.
+
+## Rendering and source
+
+Original artwork comes from the public Xbox system-update avatar packs and the
+user-selected archived Marketplace collection. The six legacy starters remain
+credited to exports through Ezra Kruger's [360sona](https://360sona.com/).
+Original media rights belong to Microsoft and the respective item publishers;
+the code license does not grant rights to that artwork.
+
+Native meshes keep their skin weights and original face/clothing textures.
+The Switch renderer uses simplified lighting, textures up to 384 pixels,
+15 Hz interpolated skeletal clips and compact animation storage. Props play
+original skeletal performances and are hidden during the sign-in wave. Facial
+feature images use their selected neutral frame; original animated expression
+tracks, facial positioning sliders, Marketplace purchasing and Xbox Live are not
+implemented. This is not a pixel-identical Xbox renderer.
+
+The source includes the converted files, source package hashes, bounded decoders,
+offline conversion scripts and native tests. `AVATAR-CATALOG-SOURCES.json`
+records the source URLs and hashes. No bundled Windows utility, Xbox firmware
+program or account patcher was executed. Reference PNGs use the native CPU
+geometry/lighting with a software depth buffer; they are not Switch captures.
+
+To rebuild the media in a prepared source checkout, install Python with numpy,
+Pillow and libarchive-c, Rust, Git and libarchive, then use:
+
+```sh
+python3 tools/avatar_catalog/fetch_sources.py AVATAR-CATALOG-SOURCES.json sources
+git clone https://github.com/panedivitasei/avatar-aura converter
+git -C converter checkout 2d2e4a4cfccd795b8ed3e14a19a942c83d298ad5
+python3 tools/avatar_catalog/prepare_converter.py converter
+cargo build --manifest-path converter/Cargo.toml --release --bin avatarextract
+python3 tools/avatar_catalog/import_marketplace.py sources/marketplace.rar closet --converter converter/target/release/avatarextract
+python3 tools/avatar_catalog/build_catalog.py --converter converter/target/release/avatarextract --toc sources/AvatarAssetPack.toc --legacy sources/AvatarAssetPackLegacyV1.toc --closet closet --output rebuilt-catalog
+python3 tools/avatar_catalog/finalize_catalog.py rebuilt-catalog
+```
+
+Inspect the failure inventory before replacing a shipped catalog. The source
+padding and large-mesh fixes are applied to the offline converter by the prepare
+script. The upstream decoder carries its own Xenia/libmspack notices; it is an
+offline tool, not the renderer shipped on Switch.

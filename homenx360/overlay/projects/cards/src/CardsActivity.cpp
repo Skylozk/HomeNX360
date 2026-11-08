@@ -9917,6 +9917,7 @@ void CardsActivity::updateStorage() {
 // The Guide's Friends blade shares HomeNX's DM service and reply keyboard.
 #include "GuideDiscord.inc"
 #include "Settings360.inc"
+// Original asset catalog, per-profile creator and lazy wardrobe loading.
 #include "Profiles360.inc" // Native profiles with clothing-fitted full-body avatars
 
 } // namespace cards

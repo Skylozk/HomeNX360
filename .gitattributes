@@ -1,2 +1,5 @@
 # Unified patches contain significant context-marker spaces.
 homenx360/HomeNX360.patch -whitespace
+*.avb binary
+*.avp binary
+*.avc binary

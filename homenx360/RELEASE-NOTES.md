@@ -1,37 +1,30 @@
-# HomeNX360 full-body avatar preview 2
+# HomeNX360 v0.8.0-preview.1 — expanded avatar wardrobe
 
-Preview 2 corrects stale HOME shader packaging found during download verification.
-The tested native binaries and avatar media are unchanged; the HOME shader copies
-now match the shaders embedded in the NRO. The manifest records both frontend and
-packaging revisions. Future builds always compile shaders from the checked-out
-GLSL and reject mismatched shader sets before packaging.
+Adds the original built-in clothing, hair, accessory and facial-feature catalog,
+plus 1,108 working Marketplace items from the supplied archive. There are 1,917
+assets, including hat-compatible hair meshes, and 166 original animated props.
+The creator has 33 fields, scrolling, ten-item jumps, full-body rotation, colour,
+skin tone, face-feature colours, height/build, save/cancel and per-profile appearances.
 
-Adds full-body Xbox 360 avatars to an NXE-style profile sign-in screen, using
-real Switch profile names and launch identities. Six face/body starters, mixed
-hairstyles/clothing/shoes, accessories, natural hair colours, height and build
-are available in a custom per-profile creator. Avatars use original meshes,
-baked textures, idle motion and a greeting exported through 360sona.
+Costumes replace their covered clothing slots; hats use companion hairstyles.
+Original clothing-hiding patches and actual nose/chin/ear geometry changes are
+retained. Equipped items load in the background from SD; the large wardrobe is
+not embedded into the preview NRO. Legacy saved avatars remain unchanged until
+they are edited and saved with the expanded creator.
 
-**Profiles:** Left/Right selects, A signs in, X edits, Y opens Nintendo user
-tools, B returns. **Creator:** Up/Down chooses a feature, Left/Right changes it,
-L/R rotates, Y randomizes, X saves, B cancels. Touch is supported. Saving another
-profile's appearance does not change the signed-in account or Nintendo Miis.
-Sign-in follows startup on a fresh app launch/console boot; returning HOME from
-a game keeps the current account. Startup and Shutdown has a sign-in toggle.
+**Existing HomeNX:** extract **HomeNX360-update.zip** to the SD root.
+**Standalone app:** install **HomeNX360-preview.nro** and extract
+**HomeNX360-avatar-catalog.zip** to the SD root. The NRO alone does not contain
+the expanded wardrobe. Back up `config/CardsNX/`; use full-memory homebrew launch
+mode. Read AVATAR-GUIDE.md and INSTALL.md for controls and rollback.
 
-Download **HomeNX360-preview.nro** for the standalone app, or install the complete
-**HomeNX360-update.zip** for HOME. The update includes the required avatars
-folder. Back up the existing installation and config/CardsNX/ first; read
-INSTALL.md and AVATAR-GUIDE.md. Source, media credits, hashes and reference
-previews are included. Existing NXE settings, Discord Friends and startup remain.
+This is the supplied Marketplace collection, not the entire historical store.
+One female Star-Lord shirt fails source decompression and is excluded. Simplified
+lighting, texture resolution and neutral facial-expression frames differ from
+the Xbox renderer; face-position sliders and Xbox Live services are not included.
+Hardware rendering, memory use and firmware compatibility require Switch testing.
 
-This compact creator does not include every original facial slider/catalog item
-or the exact four characters in the supplied screenshot. Optional hair dyes,
-lighting and font metrics differ; some mixed items may intersect. Preview PNGs
-are software reference renders using the native geometry, not Switch captures.
-Physical Switch rendering and firmware compatibility remain unverified.
-
-Original avatar artwork/animations belong to Microsoft; exported media are
-credited separately from the GPL code. 360sona is by Ezra Kruger. No Xbox Live
-services, online avatar-rendering dependency or Nintendo account modification is
-included. Integrated Discord still requires the HOME frontend.
+Original artwork belongs to Microsoft and the respective publishers. Source URLs,
+package/file hashes, conversion tools, corresponding source and software-rendered
+reference images accompany the release. Existing startup, Guide, settings and
+Discord Friends functionality remain covered by regression checks.

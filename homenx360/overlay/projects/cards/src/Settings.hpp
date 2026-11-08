@@ -185,12 +185,18 @@ struct Settings {
             if(j.contains("profileAvatars") && j["profileAvatars"].is_object())
                 for(const auto& [id,values]:j["profileAvatars"].items()) {
                     if(profileAvatars.size()>=32)break;
-                    if(!avatar360::validId(id) || !values.is_array() || values.size()!=avatar360::FeatureCount)continue;
+                    if(!avatar360::validId(id))continue;
                     avatar360::Look look;bool valid=true;
-                    for(int i=0;i<avatar360::FeatureCount;++i) {
-                        if(!values[i].is_number_integer()){valid=false;break;}
-                        try {look.value[i]=values[i].get<int>();} catch(...) {valid=false;break;}
-                    }
+                    auto integers=[](const auto& array,size_t count){return array.is_array() && array.size()==count && std::all_of(array.begin(),array.end(),[](const auto& n){return n.is_number_integer();});};
+                    try {
+                        if(integers(values,avatar360::FeatureCount))look.value=values.get<decltype(look.value)>();
+                        else if(values.is_object() && values.value("version",0)==2 && integers(values.at("starter"),avatar360::FeatureCount) && integers(values.at("colors"),12) && values.at("items").is_array() && values.at("items").size()==21 && std::all_of(values.at("items").begin(),values.at("items").end(),[](const auto& key){return key.is_string();})){
+                            look.value=values.at("starter").get<decltype(look.value)>();
+                            look.items=values.at("items").get<decltype(look.items)>();
+                            look.colors=values.at("colors").get<decltype(look.colors)>();
+                            look.expanded=true;
+                        }else valid=false;
+                    }catch(...){valid=false;}
                     if(valid){look.normalize();profileAvatars[id]=look;}
                 }
             const char* const keys[4] = {"orderGames", "orderHomebrew", "orderNintendo", "orderMedia"};
@@ -216,7 +222,10 @@ struct Settings {
         j["lastPage"] = lastPage;
         j["profileSignIn"]=profileSignIn;
         j["profileAvatars"]=nlohmann::json::object();
-        for(const auto& [id,look]:profileAvatars)if(avatar360::validId(id))j["profileAvatars"][id]=look.value;
+        for(const auto& [id,look]:profileAvatars)if(avatar360::validId(id)){
+            if(look.expanded)j["profileAvatars"][id]={{"version",2},{"starter",look.value},{"items",look.items},{"colors",look.colors}};
+            else j["profileAvatars"][id]=look.value;
+        }
         j["lockGameBanner"] = lockGameBanner;
         writeLater(kPath, j.dump(2));
     }

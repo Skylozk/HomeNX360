@@ -218,7 +218,7 @@ private:
     static constexpr int SHADER_COUNT = (int)ShaderProgram::Count;
     dk::Shader m_vertShaders[SHADER_COUNT];
     dk::Shader m_fragShaders[SHADER_COUNT];
-    static constexpr uint32_t AVATAR_STREAM_SIZE=4u*1024u*1024u;
+    static constexpr uint32_t AVATAR_STREAM_SIZE=8u*1024u*1024u;
     dk::UniqueMemBlock m_avatarStream[GpuDevice::NUM_FB];
     uint32_t m_avatarUsed=0;
     ShaderProgram m_curShader = ShaderProgram::Basic;
