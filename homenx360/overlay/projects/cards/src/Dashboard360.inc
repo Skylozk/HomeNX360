@@ -247,7 +247,14 @@ void CardsActivity::drawDashBoot(nxui::Renderer& r) {
 }
 
 void CardsActivity::drawDashboard(nxui::Renderer& r) {
-    const nxui::Color green(0.29f,0.62f,0.02f,1), dark(0.17f,0.20f,0.16f,1);
+    const bool wallpaper=m_wallTex && m_wallTex->valid() && !m_settings.wallpaper.empty();
+    const nxui::Color green(0.29f,0.62f,0.02f,1), dark=wallpaper?kWhite:nxui::Color(0.17f,0.20f,0.16f,1);
+    if(wallpaper){
+        drawCover(r,m_wallTex.get(),{0,0,1280,720},0,kWhite);
+        // Keep navigation readable while leaving the wallpaper's own horizon intact.
+        r.drawGradientRect({0,0,1280,245},{0,0,0,.30f},{0,0,0,0});
+        r.drawGradientRect({0,600,1280,120},{0,0,0,.10f},{0,0,0,.68f});
+    }else{
     r.drawGradientRect({0,0,1280,492},{0.24f,0.47f,0.08f,1},{0.79f,0.85f,0.72f,1});
     // Soft circular green motif and a bright reflective horizon.
     for (int ring=0;ring<6;++ring) {
@@ -260,6 +267,7 @@ void CardsActivity::drawDashboard(nxui::Renderer& r) {
         }
     }
     r.drawGradientRect({0,492,1280,228},{0.92f,0.94f,0.89f,1},{0.56f,0.61f,0.54f,1});
+    }
     const float p=m_settings.motion?nxe::ease(m_dashIn):1.f;
     for (int i=0;i<8;++i) {
         const float before=218+(i-m_dashPrevTab)*35.f;

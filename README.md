@@ -9,6 +9,7 @@ inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 - A centered NXE Guide with animated blades, profile/clock, green selection and an added Discord Friends blade.
 - Full-screen NXE settings with the original Console Settings categories, animated submenus and real HomeNX controls.
 - Full-body Xbox 360 avatars, an NXE-style sign-in row, and an expanded creator with built-in/Marketplace clothing, facial options and animated props.
+- Eleven included NXE wallpapers with thumbnail selection, custom pictures and a saved choice shared by app and HOME.
 - Real Switch games, homebrew, friends, media and settings actions.
 
 This is an NXE-inspired adaptation, not an exact reproduction of every Xbox
@@ -35,6 +36,7 @@ installation. Do not install the GitHub-generated source ZIP as an update.
 
 For automatic updates of both installations, launch **HomeNX360-Updater.nro**.
 [Updater instructions](homenx360/UPDATER-GUIDE.md).
+[Wallpaper selection and credits](homenx360/WALLPAPER-GUIDE.md).
 
 Read [installation and rollback instructions](homenx360/INSTALL.md).
 Atmosphere 1.12.1 / system 22.5.0 was reported by the user; this combination

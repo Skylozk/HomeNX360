@@ -68,7 +68,7 @@ public:
 }
 int main(){
     using namespace cards;using namespace cards::settings360;
-    CardsActivity app;int volume=60,saves=0,moves=0;bool startup=true,signIn=true;
+    CardsActivity app;int volume=60,saves=0,moves=0,themePicker=0,customPicker=0;bool startup=true,signIn=true;
     auto callback=CardsActivity::action("Preview startup",[](){});
     auto toggle=callback;toggle.label="Startup animation";toggle.kind=CardsActivity::MenuItem::Toggle;
     toggle.run={};toggle.level=[&](){return startup?1.f:0.f;};toggle.change=[&](int){startup=!startup;++saves;};
@@ -77,7 +77,7 @@ int main(){
     auto inert=[](const char* name){return CardsActivity::info(name,[](){return "real getter fixture";});};
     app.m_sheet={
         {"Home","home",{inert("Custom pages"),inert("Sort games")}},
-        {"Look","gear",{inert("Clock"),inert("Animations"),toggle,signInToggle,callback,inert("Launch animation")}},
+        {"Look","gear",{inert("Clock"),inert("Animations"),toggle,signInToggle,callback,inert("Launch animation"),CardsActivity::action("Change Theme",[&](){++themePicker;}),CardsActivity::action("Background",[&](){++customPicker;})}},
         {"Lock screen","moon",{inert("Lock screen")}},
         {"Sound","music",{CardsActivity::slider("Music volume",[&](){return volume;},[&](int v){volume=v;++saves;},"Volume")}},
         {"Notifications","bell",{inert("Notification cards")}},
@@ -126,6 +126,9 @@ int main(){
         assert(it!=rows.end());return *it;
     };
     auto& music=find(settings360::Audio,"Music volume");const int oldSaves=saves;
+    const auto beforeTheme=themePicker,beforeCustom=customPicker;
+    find(Look,"Change Theme").run();find(Look,"Background").run();
+    assert(themePicker==beforeTheme+1 && customPicker==beforeCustom+1);
     music.change(1);assert(volume==70 && saves==oldSaves+1 && music.value()=="70%");
     volume=30;assert(music.value()=="30%");
     find(Startup,"Startup animation").change(1);

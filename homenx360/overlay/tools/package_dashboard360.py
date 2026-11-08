@@ -32,7 +32,7 @@ files = {
     'switch/SwitchU/bin/cardsnx.nro': release / 'CardsNX.nro',
     'switch/SwitchU/bin/homenx-loader.nro': release / 'HomeNX-Loader.nro',
 }
-for folder in ('fonts', 'icons', 'shaders', 'certs', 'boot', 'avatars'):
+for folder in ('fonts', 'icons', 'shaders', 'certs', 'boot', 'avatars', 'wallpapers'):
     base = root / 'build/cards-romfs' / folder
     if not base.is_dir():
         raise SystemExit(f'Missing CardsNX assets: {base}')

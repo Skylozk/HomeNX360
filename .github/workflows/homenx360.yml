@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Optional prerelease tag, for example v0.8.1-preview.1'
+        description: 'Optional prerelease tag, for example v0.8.2-preview.1'
         required: false
         type: string
   pull_request:
@@ -63,6 +63,9 @@ jobs:
           /tmp/settings360-test
           g++ -std=c++20 -DSWITCHU_MENU tests/settings360_test.cpp -o /tmp/settings360-home-test
           /tmp/settings360-home-test
+          g++ -std=c++20 -O2 -idirafter lib/nxui/include tests/wallpaper360_test.cpp -o /tmp/wallpaper360-test
+          /tmp/wallpaper360-test projects/cards/romfs/wallpapers
+          python3 -c 'import hashlib,json,pathlib; p=pathlib.Path("projects/cards/romfs/wallpapers"); m=json.loads((p/"SOURCES.json").read_text()); assert len(m["items"])==11; assert all(hashlib.sha256((p/x["file"]).read_bytes()).hexdigest()==x["sha256"] for x in m["items"])'
           g++ -std=c++20 -O2 tests/avatar360_test.cpp -lz -o /tmp/avatar360-test
           /tmp/avatar360-test projects/cards/romfs/avatars
           python3 tests/avatar_media360_test.py
@@ -105,6 +108,7 @@ jobs:
           cp homenx360/DISCORD-GUIDE.md build/artifacts/DISCORD-GUIDE.md
           cp homenx360/AVATAR-GUIDE.md build/artifacts/AVATAR-GUIDE.md
           cp homenx360/UPDATER-GUIDE.md build/artifacts/UPDATER-GUIDE.md
+          cp homenx360/WALLPAPER-GUIDE.md build/artifacts/WALLPAPER-GUIDE.md
           cp homenx360/AVATAR-CATALOG-SOURCES.json build/artifacts/AVATAR-CATALOG-SOURCES.json
           cp homenx360/avatar-signin-preview.png build/artifacts/avatar-signin-preview.png
           cp homenx360/avatar-creator-preview.png build/artifacts/avatar-creator-preview.png

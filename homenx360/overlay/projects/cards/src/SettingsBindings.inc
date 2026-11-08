@@ -69,7 +69,7 @@ void CardsActivity::buildNxeSettings() {
     link(Preferences,"Pictures",Pictures,"Change game card artwork and manage downloaded pictures.","sys_album");
     link(Preferences,"Updates",Updates,"Manage HomeNX and homebrew updates. The upstream HomeNX updater replaces this custom dashboard.","download");
     link(Preferences,"System Info",SystemInfo,"View the real system and HomeNX versions.","dots");
-    append(Look,"Look",{"Highlight colour","Launch animation","Animations","Startup animation","Preview startup"});
+    append(Look,"Look",{"Change Theme","Background","Highlight colour","Launch animation","Animations","Startup animation","Preview startup"});
     append(Home,"Home",{"Custom pages","Sort games","Ask who's playing","Keep homebrew open","Look for new software","Hidden cards","Reset my order"});
     append(Lock,"Lock screen");
     append(Notifications,"Notifications");

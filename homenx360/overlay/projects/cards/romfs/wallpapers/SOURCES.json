@@ -1,0 +1,102 @@
+{
+  "references": [
+    "https://news.xbox.com/en-us/2008/11/19/top-10-things-to-do-when-you-get-the-new-xbox-experience/",
+    "https://archive.org/details/Xbox_360_Themes_Archivev.1"
+  ],
+  "items": [
+    {
+      "id": "night",
+      "label": "NXE Night",
+      "file": "night.png",
+      "source": "https://raw.githubusercontent.com/StonedModder/Aurora-Coverflow-Layouts/39fa0c7ffe55f0f111d7886245b297f18730ca8b/Aurora/User/Backgrounds/NXE_Night.png",
+      "sha256": "71121c9117cfb252ff665a534e566b83622f5a8cca376a9a7adc38579764e049",
+      "kind": "community-preserved NXE Night background"
+    },
+    {
+      "id": "halo3-mythic",
+      "label": "Halo 3 - Mythic",
+      "file": "halo3-mythic.jpg",
+      "source": "https://archive.org/download/Xbox_360_Themes_Archivev.1/Xbox%20360%20Themes/Halo%203%20%284D5307E6%29/Halo%203%20Mythic%20Theme%20%28Premium%29/Wallpaper1.png",
+      "source_sha1": "49139d678e1a6fcbb55474d1754ed8612bc35650",
+      "sha256": "ab1db659c5222b796d0b2fc3478b524a9151982eed2716ed5de4b9c5abc82863",
+      "kind": "original theme wallpaper; static image only"
+    },
+    {
+      "id": "halo3-splatter",
+      "label": "Halo 3 - Splatter Spree",
+      "file": "halo3-splatter.jpg",
+      "source": "https://archive.org/download/Xbox_360_Themes_Archivev.1/Xbox%20360%20Themes/Halo%203%20%284D5307E6%29/Halo%203%20Splatter%20Spree%20Theme%20%28Premium%29/Wallpaper1.png",
+      "source_sha1": "af22e7a2c0f3e372201ba5b78493484aea13022b",
+      "sha256": "e7d8b9631944fff226d7e607fe62f196f1d2533e89d12156c2b613faa6265936",
+      "kind": "original theme wallpaper; static image only"
+    },
+    {
+      "id": "gears2-beauty",
+      "label": "Gears 2 - Destroyed Beauty",
+      "file": "gears2-beauty.jpg",
+      "source": "https://archive.org/download/Xbox_360_Themes_Archivev.1/Xbox%20360%20Themes/Gears%20of%20War%202%20%284D53082D%29/Gears%202%20-%20Destroyed%20Beauty%20%28Premium%29/Wallpaper1.png",
+      "source_sha1": "f0e61dfbe7d0acddab63a9f2748dee803454bb43",
+      "sha256": "11036bfa07a553a8233561d126bbb87cd2900dcd25e97f8cefb097eeed69848d",
+      "kind": "original theme wallpaper; static image only"
+    },
+    {
+      "id": "banjo-kazooie",
+      "label": "Banjo-Kazooie",
+      "file": "banjo-kazooie.jpg",
+      "source": "https://archive.org/download/Xbox_360_Themes_Archivev.1/Xbox%20360%20Themes/Banjo-Kazooie%20%2858410954%29/Banjo-Kazooie%20Premium%20Theme/Wallpaper1.png",
+      "source_sha1": "9faf80e61ee65492a50edb2a5eafc4ebc28d218a",
+      "sha256": "1a31ddf0c2759d0a0eaac0099a401adb775fc4f405efac2b9880deee7ef82f91",
+      "kind": "original theme wallpaper; static image only"
+    },
+    {
+      "id": "fable2-albion",
+      "label": "Fable II - Albion",
+      "file": "fable2-albion.jpg",
+      "source": "https://archive.org/download/Xbox_360_Themes_Archivev.1/Xbox%20360%20Themes/Fable%20II%20Gioco%20dell%27Anno%20%284D5307F1%29/Fable%20II%20%E2%80%93%20Albion%20Theme%20%28Premium%29/Wallpaper1.png",
+      "source_sha1": "cc7a8966c55092dd968f71fecbc923a03b632857",
+      "sha256": "a498afc08c34c85c8b14a0dcfc8104904a4a69f0ab67a51f094d72cd00e6ce07",
+      "kind": "original theme wallpaper; static image only"
+    },
+    {
+      "id": "winter-holiday",
+      "label": "Winter Holiday",
+      "file": "winter-holiday.jpg",
+      "source": "https://archive.org/download/Xbox_360_Themes_Archivev.1/Xbox%20360%20Themes/Xbox%20360%20Community%20%280001F83D%29/Winter%20Holiday%20Theme/wallpaper1.png",
+      "source_sha1": "aaccdb207c3276be3055a5306e139a5fd62a01e7",
+      "sha256": "0bcd8bbac8227e058de37fbb3f33ffbf2542b0a26adbf1a7132945244c8d49be",
+      "kind": "original theme wallpaper; static image only"
+    },
+    {
+      "id": "rings-orange",
+      "label": "NXE Rings - Orange",
+      "file": "rings-orange.png",
+      "source": "https://raw.githubusercontent.com/riquenunes/pegasus-theme-npe/4c6c0d87e766f8f231e93507a94254447d3bebbe/assets/images/wallpapers/1.png",
+      "sha256": "30415cd6e860e76c7d1a2ebe3fd49d44e91bf49255723eb0e97c63da3080aa83",
+      "kind": "community NXE wallpaper variant, not an unmodified default theme"
+    },
+    {
+      "id": "rings-green",
+      "label": "NXE Rings - Green",
+      "file": "rings-green.png",
+      "source": "https://raw.githubusercontent.com/riquenunes/pegasus-theme-npe/4c6c0d87e766f8f231e93507a94254447d3bebbe/assets/images/wallpapers/2.png",
+      "sha256": "8ed8d16bc4ff716d2eac1e648bcc4a2a9ee99a62ca223f26e3f35328317a5f0e",
+      "kind": "community NXE wallpaper variant, not an unmodified default theme"
+    },
+    {
+      "id": "rings-blue",
+      "label": "NXE Rings - Blue",
+      "file": "rings-blue.png",
+      "source": "https://raw.githubusercontent.com/riquenunes/pegasus-theme-npe/4c6c0d87e766f8f231e93507a94254447d3bebbe/assets/images/wallpapers/3.png",
+      "sha256": "0991e5be0e43a94b1e0b8d35565e700e458bfa8386b63b77c3239a389dcd5477",
+      "kind": "community NXE wallpaper variant, not an unmodified default theme"
+    },
+    {
+      "id": "rings-purple",
+      "label": "NXE Rings - Purple",
+      "file": "rings-purple.png",
+      "source": "https://raw.githubusercontent.com/riquenunes/pegasus-theme-npe/4c6c0d87e766f8f231e93507a94254447d3bebbe/assets/images/wallpapers/4.png",
+      "sha256": "487cce4a2241dc05bc33c513c66aa85045349b6ce362f1c438bb6905311b71a4",
+      "kind": "community NXE wallpaper variant, not an unmodified default theme"
+    }
+  ]
+}

@@ -77,7 +77,7 @@ struct Settings {
     bool introDone = false;     // the first-time intro was shown
     bool profileSignIn = true;
     avatar360::Wardrobe profileAvatars;
-    std::string wallpaper;      // one picture behind everything ("" = each game's art)
+    std::string wallpaper;      // "" = classic NXE, "nxe:<id>" = bundled art, else a custom picture path
     std::map<std::string, std::string> names; // + > Rename: by title ID (hex) or .nro path
     std::vector<std::string> sheetOrder; // Settings' tabs by name, in his order (new ones after)
     std::string user;         // who games start as (hex), "" = the last one who played

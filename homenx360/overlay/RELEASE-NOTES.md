@@ -1,4 +1,21 @@
-# HomeNX360 v0.8.1-preview.1 — automatic updater and expanded avatars
+# HomeNX360 v0.8.2-preview.1 — NXE wallpapers
+
+Adds eleven offline wallpapers with thumbnail previews under **System Settings →
+HomeNX Preferences → Dashboard → Change Theme**. Includes NXE Night, four NXE
+ring variants, Halo 3 Mythic and Splatter Spree, Gears 2 Destroyed Beauty,
+Banjo-Kazooie, Fable II Albion and Winter Holiday. Choose Classic NXE to restore
+the default, or Background for your own pictures. Selections save across launches
+and work in both preview and HOME.
+
+Fixes the NXE renderer ignoring the saved wallpaper and a pending image decode
+restoring an old picture after the default was selected. Wallpapers preserve
+their own horizon, with navigation shading for readability.
+
+The preview embeds every wallpaper; the full update installs matching HOME media.
+Source URLs and hashes accompany the media. These are static backgrounds; premium
+3D scenes and animation are not reproduced. See WALLPAPER-GUIDE.md for controls.
+
+Retains the automatic updater and expanded avatars:
 
 Adds **HomeNX360-Updater.nro**. Launch it to check this repository's releases
 and automatically update both the standalone preview and the HomeNX dashboard.

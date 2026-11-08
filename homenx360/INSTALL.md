@@ -12,6 +12,11 @@ Profiles now show original-style full-body Xbox 360 avatars with a per-profile
 creator. See `AVATAR-GUIDE.md` for controls, media credits and fidelity limits.
 See [the reference log](NXE-REFERENCES.md) for the evidence and remaining gaps.
 
+Choose an included wallpaper under **System Settings → HomeNX Preferences →
+Dashboard → Change Theme**. **Background** selects your own pictures. See
+`WALLPAPER-GUIDE.md` for controls, source credits and installation details.
+
+
 ## Your console
 
 Reported configuration: Atmosphere 1.12.1, system 22.5.0, HomeNX already installed.

@@ -8,7 +8,7 @@ with tempfile.TemporaryDirectory(prefix='homenx360-package-') as temporary:
  for name,offset,magic in [('CardsNX.nro',16,b'NRO0'),('HomeNX-Loader.nro',16,b'NRO0'),('HomeNX360-Updater.nro',16,b'NRO0'),('exefs/switchu-menu/main',0,b'NSO0'),('switchu-daemon.nsp',0,b'PFS0')]:
   p=release/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(bytes(offset)+magic+b'fixture')
  (release/'exefs/switchu-menu/main.npdm').write_bytes(b'npdm')
- for folder in ['fonts','icons','shaders','certs','boot','avatars']:
+ for folder in ['fonts','icons','shaders','certs','boot','avatars','wallpapers']:
   p=root/'build/cards-romfs'/folder;p.mkdir(parents=True,exist_ok=True);(p/('basic_fsh.dksh' if folder=='shaders' else 'fixture.dat')).write_bytes(b'fixture')
  for folder in ['fonts','icons','i18n','shaders']:
   p=root/'romfs'/folder;p.mkdir(parents=True,exist_ok=True);(p/('basic_fsh.dksh' if folder=='shaders' else 'fixture.dat')).write_bytes(b'fixture')
@@ -24,6 +24,7 @@ with tempfile.TemporaryDirectory(prefix='homenx360-package-') as temporary:
   assert archive.read('switch/HomeNX360/version.txt')==archive.read('switch/SwitchU/homenx360-version.txt')==b'v0.8.1-preview.1\n'
   assert archive.read('switch/HomeNX360-Updater/HomeNX360-Updater.nro')==(out/'HomeNX360-Updater.nro').read_bytes()
   assert 'config/CardsNX/settings.json' not in archive.namelist()
+  assert archive.read('switch/SwitchU/cards/wallpapers/fixture.dat')==b'fixture'
  with zipfile.ZipFile(out/'HomeNX360-avatar-catalog.zip') as archive:
   assert all(p=='AVATAR-GUIDE.md' or p.startswith('switch/SwitchU/cards/avatars/catalog/') for p in archive.namelist())
  print('Package contracts: both app locations, updater, version markers, hashes, profile exclusion and catalog-only archive passed.')

@@ -78,3 +78,7 @@ Xbox 360 avatar meshes, textures and animations are also Microsoft material,
 exported through the public 360sona editor by Ezra Kruger. These assets are
 separate from the GPL code. See media/avatars/AVATAR-MEDIA-NOTICE.md and the six
 source/bank hash reports in projects/cards/romfs/avatars/.
+
+Xbox 360 wallpaper and game theme images are separate media, not GPL code.
+See projects/cards/romfs/wallpapers/WALLPAPER-MEDIA-NOTICE.md and SOURCES.json
+for copyright credits, community adaptations, original download URLs and hashes.

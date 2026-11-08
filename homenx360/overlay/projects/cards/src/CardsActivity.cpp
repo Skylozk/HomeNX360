@@ -2,6 +2,7 @@
 #include "Dashboard360.hpp"
 #include "GuideLayout.hpp"
 #include "SettingsScene.hpp"
+#include "Wallpaper360.hpp"
 
 #include "social/NotificationLog.hpp"
 
@@ -2899,13 +2900,15 @@ void CardsActivity::renameCard(const Game& g) {
 
 // Settings > Look > Background: one picture behind everything, read on a thread.
 void CardsActivity::loadWallpaper() {
-    const std::string path = m_settings.wallpaper;
+    // Discard a previous decode before clearing, so restoring the default cannot
+    // be undone when an older asynchronous wallpaper finishes loading.
+    if (m_wallJob.valid()) { m_wallJob.wait(); m_wallJob.get(); }
+    const std::string path = wallpaper360::resolve(m_settings.wallpaper, kAssets);
     if (path.empty()) {
         if (m_wallTex) app().gpu().waitIdle(); // it may still be drawing
         m_wallTex.reset();
         return;
     }
-    if (m_wallJob.valid()) m_wallJob.wait();
     m_wallJob = std::async(std::launch::async, [path]() {
         offScreenCore();
         return readPicture(path, 1280);
@@ -2943,6 +2946,8 @@ void CardsActivity::loadLockPicture() {
         return readPicture(path, 1280);
     });
 }
+
+#include "Wallpapers360.inc"
 
 // The pictures to choose: his own (sdmc:/config/CardsNX/backgrounds) and the
 // newest screenshots in the Album (its folders are the date: newest first).
@@ -3974,7 +3979,7 @@ void CardsActivity::updatePicker() {
         }
         return;
     }
-    if (in.isDown(B::X) && m_pickWall == 1 && m_pickChoices.size() > 1) { // Shuffle
+    if (in.isDown(B::X) && (m_pickWall == 1 || m_pickWall == 4) && m_pickChoices.size() > 1) { // Shuffle
         pickChoice(1 + static_cast<int>(armGetSystemTick() % (m_pickChoices.size() - 1))); // (not "none")
         return;
     }
@@ -4066,7 +4071,7 @@ void CardsActivity::drawPicker(nxui::Renderer& r) {
     r.drawRoundedRectOutline(card, nxui::Color(1.f, 1.f, 1.f, 0.16f * a), 34.f, 1.5f);
     const float dy = card.y - kPickCard.y;
     icon(r, "tag", kPickCard.x + 46.f, kPickCard.y + 46.f + dy, 26.f, kWhite.withAlpha(a));
-    const std::string title = m_pickWall == 3 ? "Album" : m_pickWall == 2 ? "Lock screen picture" : m_pickWall == 1 ? "Background"
+    const std::string title = m_pickWall == 4 ? "Change Theme" : m_pickWall == 3 ? "Album" : m_pickWall == 2 ? "Lock screen picture" : m_pickWall == 1 ? "Background"
                             : m_pickHero     ? "Background picture"
                             : m_pickCover    ? "Card picture" : "Title picture";
     textMid(r, m_fTitle, title, kPickCard.x + 72.f, kPickCard.y + 46.f + dy, kWhite.withAlpha(a));
@@ -4077,7 +4082,8 @@ void CardsActivity::drawPicker(nxui::Renderer& r) {
     const std::string what = m_pickWall == 3 ? trf("{count} screenshots, page {n} of {pages}",
                                                    {std::to_string(shots), std::to_string(m_galleryPage + 1),
                                                     std::to_string(std::max(1, (shots + kGalleryPage - 1) / kGalleryPage))})
-                           : m_pickWall ? "Yours (config/CardsNX/backgrounds) and your newest screenshots"
+                           : m_pickWall == 4 ? "Xbox 360 NXE wallpapers"
+                           : m_pickWall ? "Your pictures and newest screenshots"
                            : m_pickQuery.empty() ? m_pickGame.name
                            : m_pickQuery[0] == '#' ? m_pickLabel : trf("Results for \"{words}\"", {m_pickQuery});
     textMid(r, m_fBody, fit(m_fBody, what, kPickCard.x + kPickCard.width - 60.f - hintW - nameX), nameX,
@@ -4103,7 +4109,7 @@ void CardsActivity::drawPicker(nxui::Renderer& r) {
         r.drawRoundedRectOutline(tile, chosen ? accent(ring * ta) : nxui::Color(1.f, 1.f, 1.f, 0.10f * ta), 18.f,
                                  chosen ? 2.5f : 1.f);
         // The picture at its own shape, above its label (if it has one).
-        const char* label = c.own ? (m_pickWall == 2 ? "Frosted HOME" : m_pickWall == 1 ? "Each game's art"
+        const char* label = c.own ? (m_pickWall == 2 ? "Frosted HOME" : m_pickWall ? "Classic NXE"
                                      : m_pickCover || m_pickHero ? "Automatic" : "Its own icon")
                           : c.before ? (m_pickWall ? "In use" : "The one before")
                           : !c.label.empty() ? c.label.c_str() : nullptr;
@@ -4125,6 +4131,7 @@ void CardsActivity::drawPicker(nxui::Renderer& r) {
     }
     if (m_pickChoices.size() <= (m_pickWall == 3 ? 0u : 1u)) {
         const std::string none = m_pickWall == 3 ? "No screenshots yet: press the Capture button."
+                                 : m_pickWall == 4 ? "Reinstall the complete update to restore the wallpaper files."
                                  : m_pickWall ? "Put pictures in sdmc:/config/CardsNX/backgrounds, or take a screenshot."
                                  : m_key.empty() ? "Pictures to choose come from SteamGridDB: add a key in Settings > Look."
                                  : m_pickQuery.empty() ? "SteamGridDB has no pictures for this game. Y to search another name."
@@ -5563,9 +5570,13 @@ void CardsActivity::buildSettings() {
         }, "When a game starts"));
     look.rows.push_back(choice("Glass", [this]() { return std::string(kGlassNames[std::clamp(m_settings.glass, 0, 2)]); },
         [this, save](int d) { m_settings.glass = (m_settings.glass + d + 3) % 3; save(); }, "Buttons, the bar and the panel"));
+    auto nxeWall=action("Change Theme",[this](){openNxeWallpapers();});
+    nxeWall.value=[this](){return wallpaper360::label(m_settings.wallpaper);};
+    nxeWall.detail="Choose an included Xbox 360 NXE wallpaper. A applies it; B goes back without changing it.";
+    look.rows.push_back(std::move(nxeWall));
     MenuItem wall = action("Background", [this]() { openWallpapers(); });
     wall.value = [this]() {
-        return m_settings.wallpaper.empty() ? std::string("Each game's art") : std::filesystem::path(m_settings.wallpaper).filename().string();
+        return wallpaper360::label(m_settings.wallpaper);
     };
     wall.detail = "One picture behind everything: yours (sdmc:/config/CardsNX/backgrounds) or a screenshot";
     look.rows.push_back(std::move(wall));
