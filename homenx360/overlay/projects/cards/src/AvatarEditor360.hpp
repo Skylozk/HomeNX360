@@ -52,11 +52,11 @@ struct Browser {
     void optionOrTab(const CatalogIndex& index,const Look& draft,int delta){if(tabs[tab].count>1)setting(index,draft,delta);else category(index,draft,delta);}
     void browse(const CatalogIndex& index,const Look& draft,int at){
         focus=std::clamp(at,0,std::max(0,count(index,draft,field())-1));preview=draft;
-        const int delta=focus-selected(index,draft,field());if(delta)index.cycle(preview,field(),delta);
+        const int delta=focus-selected(index,draft,field());index.cycle(preview,field(),delta);
     }
     void move(const CatalogIndex& index,const Look& draft,int horizontal,int vertical){browse(index,draft,focus+horizontal*4+vertical);}
     void turn(const CatalogIndex& index,const Look& draft,int delta){browse(index,draft,focus+delta*pageSize);}
-    void use(const CatalogIndex& index,Look& draft){draft=preview;synchronize(index,draft);}
+    void use(const CatalogIndex& index,Look& draft){draft=preview;index.cycle(draft,field(),0);synchronize(index,draft);}
 };
 inline constexpr bool coversAllFields(){std::array<int,CFieldCount> seen{};for(const auto& tab:tabs)for(int i=0;i<tab.count;++i){if(tab.fields[i]<0 || tab.fields[i]>=CFieldCount)return false;++seen[tab.fields[i]];}for(int n:seen)if(n!=1)return false;return true;}
 static_assert(coversAllFields(),"Every saved avatar customization must remain reachable exactly once");

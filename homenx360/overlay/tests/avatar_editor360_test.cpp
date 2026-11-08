@@ -39,6 +39,14 @@ int main(int argc,char**argv){
         for(bool field:reached)assert(field);
         browser.category(index,draft,1);assert(browser.tab==0 && browser.field()==CHat);
         browser.category(index,draft,-1);assert(browser.tab==6);
+        // Re-selecting a stored hat must still remove a costume which currently
+        // hides it. Both the temporary try-on and explicit Use resolve coverage.
+        auto outfit=std::find_if(index.items.begin(),index.items.end(),[&](const auto& item){return item.group==20 && (item.bodies&(body+1)) && (item.categories&64);});
+        assert(outfit!=index.items.end());Look covered=draft;covered.items[20]=outfit->key;
+        editor::Browser hat;hat.begin(index,covered);const auto original=covered;
+        hat.browse(index,covered,hat.focus);assert(covered==original && hat.preview.items[20].empty());
+        hat.use(index,covered);assert(covered.items[20].empty());
+        covered=original;hat.begin(index,covered);hat.use(index,covered);assert(covered.items[20].empty());
         // Browsing is a temporary try-on. Canceling the session preserves the save.
         const std::string id="00000000000000010000000000000002";Wardrobe wardrobe{{id,draft}};Session session;session.begin(false);session.loaded({{id,"Player"}},id);session.edit(wardrobe);index.initialize(session.draft);
         browser.begin(index,session.draft);browser.browse(index,session.draft,editor::count(index,draft,CHat)-1);browser.use(index,session.draft);session.back();assert(wardrobe.at(id)==draft);
