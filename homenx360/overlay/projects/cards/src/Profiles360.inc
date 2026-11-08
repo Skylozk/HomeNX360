@@ -80,13 +80,7 @@ void CardsActivity::updateProfiles(float dt){
     auto editAvatar=[&](){
         if(!m_profileAssets.catalog.ready){say("Install the complete update ZIP to use the expanded avatar catalog.");return;}
         m_profiles.edit(m_settings.profileAvatars);m_profileAssets.catalog.initialize(m_profiles.draft);
-    };
-    auto randomizeAvatar=[&](){
-        auto& look=m_profiles.draft;uint32_t seed=uint32_t(armGetSystemTick());
-        auto next=[&](){seed^=seed<<13;seed^=seed>>17;seed^=seed<<5;return seed;};if(!seed)seed=0x360360;
-        for(int i=0;i<12;++i)look.colors[i]=next()%avatar360::colorCount(i);
-        m_profileAssets.catalog.initialize(look);
-        for(int g=0;g<21;++g){auto options=m_profileAssets.catalog.options(g,look.colors[0]);if(!options.empty()){const auto* item=options[next()%options.size()];look.items[g]=item?item->key:"";}}
+        m_avatarEditor.begin(m_profileAssets.catalog,m_profiles.draft);m_editorShown.reset();
     };
     const auto previous=m_profiles.screen;
     auto close=[&](){m_profiles.screen=S::Closed;};
@@ -111,32 +105,9 @@ void CardsActivity::updateProfiles(float dt){
             }
         }
     }else if(m_profiles.screen==S::Editor){
-        int vertical=0,horizontal=0;
-        const bool up=input.isDown(B::DUp)||input.isDown(B::LStickU),down=input.isDown(B::DDown)||input.isDown(B::LStickD);
-        const bool left=input.isDown(B::DLeft)||input.isDown(B::LStickL),right=input.isDown(B::DRight)||input.isDown(B::LStickR);
-        const bool held=input.isHeld(B::DLeft)||input.isHeld(B::DRight)||input.isHeld(B::DUp)||input.isHeld(B::DDown)||input.isHeld(B::LStickL)||input.isHeld(B::LStickR)||input.isHeld(B::LStickU)||input.isHeld(B::LStickD);
-        if(up||down||left||right){vertical=down-up;horizontal=right-left;m_profileRepeat=.4f;}
-        else if(held && (m_profileRepeat-=dt)<=0){m_profileRepeat=.14f;vertical=(input.isHeld(B::DDown)||input.isHeld(B::LStickD))-(input.isHeld(B::DUp)||input.isHeld(B::LStickU));horizontal=(input.isHeld(B::DRight)||input.isHeld(B::LStickR))-(input.isHeld(B::DLeft)||input.isHeld(B::LStickL));}
-        else if(!held)m_profileRepeat=0;
-        m_profiles.field=std::clamp(m_profiles.field+vertical,0,int(avatar360::CFieldCount)-1);
-        if(input.isDown(B::ZL))horizontal=-10;
-        if(input.isDown(B::ZR))horizontal=10;
-        if(horizontal)m_profileAssets.catalog.cycle(m_profiles.draft,m_profiles.field,horizontal);
-        if(input.isHeld(B::L))m_profiles.yaw-=dt*1.8f;
-        if(input.isHeld(B::R))m_profiles.yaw+=dt*1.8f;
-        if(input.isDown(B::A))m_profileAssets.catalog.cycle(m_profiles.draft,m_profiles.field,1);
-        if(input.isDown(B::Y))randomizeAvatar();
-        if(input.isDown(B::X))saveProfileAvatar();
-        if(input.touchUp()){
-            const float x=input.touchX(),y=input.touchY();
-            if(y>=643){if(x<230)saveProfileAvatar();else if(x<430)m_profiles.back();else if(x<690)randomizeAvatar();}
-            else if(x<580 && std::abs(input.touchDeltaX())>12)m_profiles.yaw+=input.touchDeltaX()*.009f;
-            else {
-                const int top=std::clamp(m_profiles.field-8,0,int(avatar360::CFieldCount)-9);
-                for(int i=top;i<std::min(top+9,int(avatar360::CFieldCount));++i)if(avatar360::editorRow(i,top).contains(x,y)){m_profiles.field=i;m_profileAssets.catalog.cycle(m_profiles.draft,i,x<900?-1:1);break;}
-            }
-        }
+        updateAvatarEditor(dt);
     }
+    if(previous==S::Editor && m_profiles.screen!=S::Editor){app().gpu().waitIdle();m_avatarThumbs.clear();m_editorShown.reset();}
     const float target=avatar360::firstVisible(m_profiles.selected,int(m_profiles.profiles.size()));
     m_profileScroll+=(target-m_profileScroll)*(m_settings.motion?std::min(1.f,dt*12.f):1.f);
     if(previous!=S::Closed && !m_profiles.open()){m_profileAssets.releaseTextures();wantArt();}
@@ -169,25 +140,7 @@ void CardsActivity::drawProfiles(nxui::Renderer& r){
         centered(m_fBody,"Reinstall the complete HomeNX360 update, including the avatars folder.",640,370,white,.85f);
         footer(88,"B","Back",{.75f,.08f,.07f,1});footer(280,"Y","Manage users",{.84f,.66f,.04f,1});return;
     }
-    if(edit){
-        const auto* profile=m_profiles.current();
-        drawCharacter(r,m_profiles.draft,330,575,310,m_profiles.yaw);
-        if(profile)centered(m_fLabel,fit(m_fLabel,profile->name,440),330,606,dark,1.1f);
-        const int top=std::clamp(m_profiles.field-8,0,int(avatar360::CFieldCount)-9);
-        for(int i=top;i<std::min(top+9,int(avatar360::CFieldCount));++i){
-            const auto row=avatar360::editorRow(i,top);const bool chosen=i==m_profiles.field;
-            if(chosen)r.drawGradientRect({row.x,row.y,row.w,row.h},{.49f,.76f,.08f,1},{.28f,.53f,.02f,1});
-            textMid(r,m_fBody,avatar360::catalogFieldNames[i],row.x+12,row.y+12,chosen?white:dark,.64f);
-            const std::string value="<  "+fit(m_fBody,m_profileAssets.catalog.label(m_profiles.draft,i),390,.72f)+"  >";
-            textMid(r,m_fBody,value,row.x+row.w-12-measured(m_fBody,value).x*.72f,row.y+29,chosen?white:dark,.72f);
-        }
-        r.drawRect({1188,140,3,396},{.35f,.39f,.36f,.35f});
-        r.drawRect({1187,140+396.f*top/avatar360::CFieldCount,5,396.f*9/avatar360::CFieldCount},green);
-        textMid(r,m_fBody,"L / R  Rotate   ZL / ZR  Skip 10",665,566,dark,.76f);
-        textMid(r,m_fBody,m_profileAssets.catalog.counter(m_profiles.draft,m_profiles.field),1080,602,muted,.75f);
-        textMid(r,m_fBody,std::to_string(m_profileAssets.catalog.items.size())+" catalog assets",665,602,muted,.75f);
-        footer(88,"X","Save avatar",{.05f,.37f,.72f,1});footer(320,"B","Cancel",{.75f,.08f,.07f,1});footer(520,"Y","Randomize",{.84f,.66f,.04f,1});return;
-    }
+    if(edit){drawAvatarEditor(r);return;}
     if(welcome){
         const auto* profile=m_profiles.current();if(profile){drawCharacter(r,avatar360::forProfile(m_settings.profileAvatars,profile->id),400,575,310,0,true);textMid(r,m_fDashNav,"Welcome,",700,342,white,.8f);textMid(r,m_fDashNav,fit(m_fDashNav,profile->name,450,.9f),700,400,white,.9f);}
         footer(88,"A","Continue",green);return;

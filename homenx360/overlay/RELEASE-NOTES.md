@@ -1,53 +1,36 @@
-# HomeNX360 v0.8.2-preview.1 — NXE wallpapers
+# HomeNX360 v0.9.0-preview.1 — tabbed avatar editor and HomeNX360 branding
 
-Adds eleven offline wallpapers with thumbnail previews under **System Settings →
-HomeNX Preferences → Dashboard → Change Theme**. Includes NXE Night, four NXE
-ring variants, Halo 3 Mythic and Splatter Spree, Gears 2 Destroyed Beauty,
-Banjo-Kazooie, Fable II Albion and Winter Holiday. Choose Classic NXE to restore
-the default, or Background for your own pictures. Selections save across launches
-and work in both preview and HOME.
+Replaces the long avatar settings list with an NXE-style editor: Headwear, Hair,
+Clothes, Accessories, Face, Body and Props tabs, eight real item thumbnails per
+page, and a central live avatar. All 33 customization fields remain accessible.
+Includes 2,420 original-model previews for supported items and body types.
 
-Fixes the NXE renderer ignoring the saved wallpaper and a pending image decode
-restoring an old picture after the default was selected. Wallpapers preserve
-their own horizon, with navigation shading for readability.
+L/R changes categories; Y/Minus changes options (or category on a single-option
+tab); ZL/ZR turns item pages. D-pad/stick browses, A uses, X uses and saves, B
+cancels, Plus randomizes. The right stick rotates; press it for full-body/close-up.
+Touch is supported. Thumbnail browsing is a temporary try-on until accepted or
+saved. The existing per-profile wardrobe format and Nintendo profile identity are
+preserved. Read AVATAR-GUIDE.md for controls and thumbnail fidelity limits.
 
-The preview embeds every wallpaper; the full update installs matching HOME media.
-Source URLs and hashes accompany the media. These are static backgrounds; premium
-3D scenes and animation are not reproduced. See WALLPAPER-GUIDE.md for controls.
+Adds the approved green-and-silver **HomeNX360** logo to the app, updater and
+loader NRO icons. The homebrew menu names are **HomeNX360**, **HomeNX360 Updater**
+and **HomeNX360 Loader**. The primary download is **HomeNX360.nro**; the older
+HomeNX360-preview.nro filename remains an identical compatibility download.
+Internal installation/configuration paths are preserved for existing saves and
+updates. Source builds also brand the related manager/toggle launchers.
 
-Retains the automatic updater and expanded avatars:
+Update through HomeNX360 Updater for both preview and HOME, or extract the full
+HomeNX360-update.zip to the SD root. Restart after updating HOME. Standalone
+manual installs need HomeNX360.nro plus the updated HomeNX360-avatar-catalog.zip
+for the new thumbnails and expanded wardrobe. Use full-memory homebrew launch.
+The updater still downloads the complete package, including the wardrobe.
 
-Adds **HomeNX360-Updater.nro**. Launch it to check this repository's releases
-and automatically update both the standalone preview and the HomeNX dashboard.
-It preserves settings/avatars, verifies downloads, resumes interrupted downloads
-and restores replaced files after reported installation errors. Read
-UPDATER-GUIDE.md for standard app locations and the HOME restart requirement.
+Native builds and checks cover all editor fields, navigation/paging, try-on and
+save/cancel behavior, thumbnail decoding, package placement and the actual NRO
+names/icons. Hardware rendering, memory and firmware compatibility require Switch
+testing; the reference preview is software-rendered, not a console capture.
 
-Also includes the original built-in clothing, hair, accessory and facial-feature catalog,
-plus 1,108 working Marketplace items from the supplied archive. There are 1,917
-assets, including hat-compatible hair meshes, and 166 original animated props.
-The creator has 33 fields, scrolling, ten-item jumps, full-body rotation, colour,
-skin tone, face-feature colours, height/build, save/cancel and per-profile appearances.
-
-Costumes replace their covered clothing slots; hats use companion hairstyles.
-Original clothing-hiding patches and actual nose/chin/ear geometry changes are
-retained. Equipped items load in the background from SD; the large wardrobe is
-not embedded into the preview NRO. Legacy saved avatars remain unchanged until
-they are edited and saved with the expanded creator.
-
-**Existing HomeNX:** extract **HomeNX360-update.zip** to the SD root.
-**Standalone app:** install **HomeNX360-preview.nro** and extract
-**HomeNX360-avatar-catalog.zip** to the SD root. The NRO alone does not contain
-the expanded wardrobe. Back up `config/CardsNX/`; use full-memory homebrew launch
-mode. Read AVATAR-GUIDE.md and INSTALL.md for controls and rollback.
-
-This is the supplied Marketplace collection, not the entire historical store.
-One female Star-Lord shirt fails source decompression and is excluded. Simplified
-lighting, texture resolution and neutral facial-expression frames differ from
-the Xbox renderer; face-position sliders and Xbox Live services are not included.
-Hardware rendering, memory use and firmware compatibility require Switch testing.
-
-Original artwork belongs to Microsoft and the respective publishers. Source URLs,
-package/file hashes, conversion tools, corresponding source and software-rendered
-reference images accompany the release. Existing startup, Guide, settings and
-Discord Friends functionality remain covered by regression checks.
+Retains all eleven NXE wallpapers, original NXE-era startup, Guide, settings,
+Discord Friends functionality, 1,108 working Marketplace items and 166 animated
+props. These original/community media remain credited separately from GPL code.
+One supplied Star-Lord shirt could not be decoded and remains excluded.

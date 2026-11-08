@@ -17,6 +17,7 @@ with tempfile.TemporaryDirectory(prefix='homenx360-package-') as temporary:
  (root/'README-360.md').write_text('Install fixture');(root/'AVATAR-GUIDE.md').write_text('Avatar fixture')
  out=root/'out';subprocess.run([sys.executable,str(root/'tools/package_dashboard360.py'),'--output',str(out),'--revision','fixture','--version','v0.8.1-preview.1'],check=True)
  manifest=json.loads((out/'BUILD-MANIFEST.json').read_text());assert manifest['release_tag']=='v0.8.1-preview.1'
+ assert (out/'HomeNX360.nro').read_bytes()==(out/'HomeNX360-preview.nro').read_bytes()
  with zipfile.ZipFile(out/'HomeNX360-update.zip') as archive:
   assert len(archive.namelist())==len(set(archive.namelist()))
   for path,h in manifest['sha256'].items():assert hashlib.sha256(archive.read(path)).hexdigest()==h

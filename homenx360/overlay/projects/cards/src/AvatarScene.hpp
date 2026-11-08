@@ -14,6 +14,7 @@ struct Assets {
     CatalogIndex catalog;
     struct Entry {CatalogAvatar avatar;std::vector<std::unique_ptr<nxui::Texture>> textures;uint64_t used=0;};
     std::map<std::string,Entry> cache;
+    static bool drawable(const Entry* e){return e && e->avatar.error.empty() && !e->textures.empty() && std::none_of(e->textures.begin(),e->textures.end(),[](const auto& texture){return !texture;});}
     std::deque<Look> pending;
     std::future<CatalogAvatar> job;std::string jobKey;uint64_t frame=0;
     static std::vector<uint8_t> decodeImage(const std::string& path){
@@ -63,7 +64,7 @@ struct Assets {
     bool available()const{if(!ready)return false;for(size_t i=0;i<models.size();++i){if(!models[i].valid() || textures[i].size()!=models[i].images.size())return false;for(const auto& t:textures[i])if(!t)return false;}return true;}
 };
 inline bool drawCatalogCharacter(Assets& assets,nxui::Renderer& renderer,const Look& look,float x,float base,float scale,float yaw,float time,float alpha,bool wave,bool portrait){
-    auto* e=assets.request(look);if(!e || !e->avatar.error.empty() || e->textures.empty() || std::any_of(e->textures.begin(),e->textures.end(),[](const auto& t){return !t;}))return false;
+    auto* e=assets.request(look);if(!Assets::drawable(e))return false;
     const auto& model=e->avatar.model;const auto world=model.pose(time,wave),skin=retarget(model,model,world);if(skin.empty())return false;
     renderer.beginAvatarPass();bool ok=true;
     for(int transparent=0;transparent<2;++transparent)for(const auto& part:model.parts){

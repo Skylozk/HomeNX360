@@ -6,6 +6,8 @@
 #include "Settings.hpp"
 #include "SettingsLayout.hpp"
 #include "AvatarScene.hpp"
+#include "AvatarEditor360.hpp"
+#include "AvatarThumbnails360.hpp"
 #include "GuideLayout.hpp"
 #include "../../menu/src/social/DirectMessageView.hpp"
 #include "Spotify.hpp"
@@ -68,6 +70,13 @@ public:
     nxui::Widget* focusRoot() override; // HomeNX's screens when one is open; else it reads the buttons itself
 
 private:
+    avatar360::editor::Browser m_avatarEditor;
+    avatar360::ThumbnailCache m_avatarThumbs;
+    std::optional<avatar360::Look> m_editorShown;
+    float m_editorTop=1.4f;
+    void updateAvatarEditor(float dt);
+    void drawAvatarEditor(nxui::Renderer& renderer);
+    void randomizeProfileAvatar();
     // Xbox 360 dashboard shell. Existing launchers, workers and modal screens
     // remain owned by CardsActivity.
     nxui::Font m_fDashNav;

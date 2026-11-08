@@ -6019,7 +6019,7 @@ void CardsActivity::buildSettings() {
     m_updateInstalled = switchu::manager::ReleaseUpdater::installedVersion(); // (a file: not every frame)
     updates.rows.push_back(info("Installed", [this]() { return m_updateInstalled; }));
 #else
-    updates.rows.push_back(info("CardsNX", []() { return std::string(HOMENX_BUILD); }));
+    updates.rows.push_back(info("HomeNX360", []() { return std::string(HOMENX_BUILD); }));
 #endif
     MenuItem upd = action("HomeNX updates", [this]() {
 #ifdef SWITCHU_MENU
@@ -6058,7 +6058,7 @@ void CardsActivity::buildSettings() {
     m_sheet.push_back(std::move(updates));
 
     Section about{"About", "dots", {}};
-    about.rows.push_back(info("CardsNX", []() { return std::string(HOMENX_BUILD); }));
+    about.rows.push_back(info("HomeNX360", []() { return std::string(HOMENX_BUILD); }));
     about.rows.push_back(info("System version", [this]() { return m_console.firmware.empty() ? std::string("-") : m_console.firmware; }));
     about.rows.push_back(info("Atmosphere", [this]() { return m_console.atmosphere.empty() ? std::string("-") : m_console.atmosphere; }));
     about.rows.push_back(info("Games", [this]() { return std::to_string(m_pages[kGames].size()); }));
@@ -6076,7 +6076,7 @@ void CardsActivity::buildSettings() {
         m_settings.save();
     }, "config/CardsNX/perf.log: slow frames and start-up times"));
 #ifndef SWITCHU_MENU
-    about.rows.push_back(action("Close CardsNX", [this]() {
+    about.rows.push_back(action("Close HomeNX360", [this]() {
         m_settings.save();
         app().requestExit();
     }));
@@ -9929,6 +9929,7 @@ void CardsActivity::updateStorage() {
 #include "GuideDiscord.inc"
 #include "Settings360.inc"
 // Original asset catalog, per-profile creator and lazy wardrobe loading.
+#include "AvatarEditor360.inc"
 #include "Profiles360.inc" // Native profiles with clothing-fitted full-body avatars
 
 } // namespace cards

@@ -29,10 +29,34 @@ worldwide catalog. No missing item is represented by a nonfunctional menu entry.
 
 ## Controls and saved appearances
 
-Up/Down selects one of 33 creator fields. Left/Right or A changes the selection;
-ZL/ZR skips ten choices, L/R rotates the full-body preview, Y randomizes, X saves,
-and B cancels. The list scrolls; touch the displayed row's left/right side to
-change it, or drag the character to rotate. Footer buttons support touch.
+The NXE-style editor has seven category tabs: **Headwear, Hair, Clothes,
+Accessories, Face, Body, and Props**. All 33 customization fields remain available.
+Eight item thumbnails surround the live avatar, with pages for the full collection.
+The 2,420 thumbnail files use the original meshes, face masks and native lighting;
+items supporting both body types have matching male/female previews.
+
+- **L/R:** previous/next category tab.
+- **Y / Minus:** next/previous option within a category, such as hairstyle/hair
+  colour or shirt/trousers/shoes/costume. On the single-option Headwear and Props
+  tabs these buttons switch categories; the footer says Next tab.
+- **D-pad / left stick:** browse the two columns of item previews.
+- **ZL/ZR:** previous/next page of eight choices.
+- **A:** use the item currently being tried on in the draft.
+- **X:** use the current preview and save the complete avatar to this profile.
+- **B:** cancel the editor and keep the previously saved appearance.
+- **Plus:** randomize the draft.
+- **Right stick left/right:** rotate. Press the right stick to toggle full-body
+  and close-up views. Tall hats adjust the full-body framing automatically.
+
+Browsing only tries an item on the central avatar; A accepts it into the draft.
+Changing category cancels an unaccepted try-on. X includes the current try-on when
+saving. Tap a tab or field arrows to navigate. Tap an item once to preview and
+again to use it. Drag the avatar to rotate; page arrows and footer controls are
+also touchable. Colours show swatches. Height/build show shape indicators.
+
+Thumbnail pictures show a neutral sample avatar; the live character shows your
+own skin/hair colours and current clothes. The last ready live avatar stays visible
+while a new item loads, with a short Updating preview label.
 
 Existing six-starter appearances remain unchanged until edited and saved. Opening
 an old appearance in the expanded creator starts a new draft with its body type;
@@ -49,7 +73,7 @@ The large wardrobe is stored outside the NRO at:
 
 Extract the complete **HomeNX360-update.zip** to the SD root for an existing
 HomeNX installation. To try only the standalone app, install
-**HomeNX360-preview.nro** and extract **HomeNX360-avatar-catalog.zip** to the SD
+**HomeNX360.nro** (the older HomeNX360-preview.nro filename is also supplied) and extract **HomeNX360-avatar-catalog.zip** to the SD
 root. Both app and HOME use the same catalog. A lone NRO retains the old starters
 but needs these SD files for the expanded creator. Use full-memory homebrew
 launch mode for this larger creator; applet-mode memory and physical Switch
@@ -58,7 +82,9 @@ rendering have not been verified here.
 Only equipped catalog meshes/masks are loaded, with one background conversion
 job, a bounded appearance cache and one GPU texture upload per frame. A loading
 label appears while a new outfit loads; failed files cannot be saved as a valid
-preview. The full catalog is never loaded into GPU memory at once.
+preview. The full catalog is never loaded into GPU memory at once. Item pictures use a
+separate bounded cache, with only the visible eight requested, and stay on SD
+rather than inside the preview NRO.
 
 ## Rendering and source
 
@@ -100,3 +126,8 @@ Inspect the failure inventory before replacing a shipped catalog. The source
 padding and large-mesh fixes are applied to the offline converter by the prepare
 script. The upstream decoder carries its own Xenia/libmspack notices; it is an
 offline tool, not the renderer shipped on Switch.
+
+To rebuild the item previews after regenerating catalog models, compile
+`tools/build_avatar_thumbnails.cpp` with C++20, zlib and the bundled nxui include
+directory, then run it with the catalog input and output directories. Merge the
+`thumb-*.png` files into the flat catalog folder and regenerate SHA256.json.

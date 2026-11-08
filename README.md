@@ -1,4 +1,4 @@
-# HomeNX 360 — NXE preview
+# HomeNX360 — NXE preview
 
 An experimental native Nintendo Switch dashboard for an existing HomeNX install,
 inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
@@ -8,8 +8,9 @@ inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 - The recorded original NXE-era Xbox 360 startup.
 - A centered NXE Guide with animated blades, profile/clock, green selection and an added Discord Friends blade.
 - Full-screen NXE settings with the original Console Settings categories, animated submenus and real HomeNX controls.
-- Full-body Xbox 360 avatars, an NXE-style sign-in row, and an expanded creator with built-in/Marketplace clothing, facial options and animated props.
+- Full-body Xbox 360 avatars and a tabbed NXE-style creator with real item thumbnails, live try-on, built-in/Marketplace clothing, facial options and animated props.
 - Eleven included NXE wallpapers with thumbnail selection, custom pictures and a saved choice shared by app and HOME.
+- Shared HomeNX360 launcher artwork and clear HomeNX360 / Updater / Loader app names.
 - Real Switch games, homebrew, friends, media and settings actions.
 
 This is an NXE-inspired adaptation, not an exact reproduction of every Xbox
@@ -29,7 +30,7 @@ Xbox Live services and Xbox firmware are not included.
 ## Download
 
 Open [Releases](https://github.com/Skylozk/HomeNX360/releases) and choose the
-NXE preview. For the standalone app, download **HomeNX360-preview.nro** and
+NXE preview. For the standalone app, download **HomeNX360.nro** and
 extract **HomeNX360-avatar-catalog.zip** to the SD root.
 **HomeNX360-update.zip** contains the SD card update for an existing HomeNX
 installation. Do not install the GitHub-generated source ZIP as an update.

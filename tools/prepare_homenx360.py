@@ -59,6 +59,16 @@ def main():
         if source.count(anchor) != 1:
             raise SystemExit('The pinned CardsNX ROMFS copy hook changed')
         xmake.write_text(source.replace(anchor, anchor + '\n        os.cp(path.join(os.projectdir(), "projects/cards/romfs/wallpapers"), romfs_dir)'))
+    xmake = dest / 'xmake.lua'
+    source = xmake.read_text()
+    for old, new in [('CardsNX', 'HomeNX360'), ('HomeNX-Loader', 'HomeNX360 Loader'),
+                     ('NXToggle', 'HomeNX360 Toggle'), ('Homebrew Manager', 'HomeNX360 Homebrew'),
+                     ('HomeNX', 'HomeNX360')]:
+        anchor = f'set_values("switch.name",    "{old}")'
+        if source.count(anchor) != 1:
+            raise SystemExit(f'The pinned NRO branding hook changed: {old}')
+        source = source.replace(anchor, anchor + f'\n    set_values("switch.display_name", "{new}")')
+    xmake.write_text(source)
     git('diff', '--check', cwd=dest)
     print(f'Prepared HomeNX 360 at {dest}\nUpstream: {COMMIT}')
 

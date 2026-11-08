@@ -95,6 +95,7 @@ else:
 manifest_text = json.dumps(manifest, indent=2) + '\n'
 (output / 'BUILD-MANIFEST.json').write_text(manifest_text)
 shutil.copy2(release / 'CardsNX.nro', output / 'HomeNX360-preview.nro')
+shutil.copy2(release / 'CardsNX.nro', output / 'HomeNX360.nro')
 shutil.copy2(release / 'HomeNX360-Updater.nro', output / 'HomeNX360-Updater.nro')
 shutil.copy2(root / 'README-360.md', output / 'INSTALL.md')
 with zipfile.ZipFile(output / 'HomeNX360-update.zip', 'w', zipfile.ZIP_DEFLATED) as z:

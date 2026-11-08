@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Optional prerelease tag, for example v0.8.2-preview.1'
+        description: 'Optional prerelease tag, for example v0.9.0-preview.1'
         required: false
         type: string
   pull_request:
@@ -73,6 +73,8 @@ jobs:
           /tmp/avatar-catalog360-test media/avatar-catalog
           g++ -std=c++20 -O2 tests/avatar_settings360_test.cpp -o /tmp/avatar-settings360-test
           /tmp/avatar-settings360-test
+          g++ -std=c++20 -O2 -idirafter lib/nxui/include tests/avatar_editor360_test.cpp -lz -o /tmp/avatar-editor360-test
+          /tmp/avatar-editor360-test media/avatar-catalog
           python3 tests/updater360/make_fixtures.py /tmp/updater360-fixtures
           g++ -std=c++20 -O2 -Wno-deprecated-declarations -Itests/updater360 tests/updater360/updater360_test.cpp -lcurl -lminizip -lcrypto -lz -pthread -o /tmp/updater360-test
           /tmp/updater360-test /tmp/updater360-fixtures
@@ -92,6 +94,7 @@ jobs:
           xmake build --root -j2 CardsNX
           xmake build --root -j2 SwitchU
           xmake build --root -j2 HomeNX360-Updater
+          python3 tests/branding360_test.py
       - name: Package the existing-install update
         working-directory: build/homenx360-source
         run: python3 tools/package_dashboard360.py --output ../artifacts --revision "$SOURCE_REVISION"
@@ -135,6 +138,7 @@ jobs:
           name: HomeNX360-preview-and-validation
           path: |
             build/artifacts/HomeNX360-preview.nro
+            build/artifacts/HomeNX360.nro
             build/artifacts/HomeNX360-Updater.nro
             build/artifacts/*.json
             build/artifacts/*.md

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Rasterize preview_avatar360.cpp's native geometry; never used on Switch."""
-import argparse,io,struct
+import argparse,io,struct,json
 from pathlib import Path
 import numpy as np
 from PIL import Image,ImageDraw,ImageFont
-p=argparse.ArgumentParser(description=__doc__);p.add_argument('scene',type=Path);p.add_argument('output',type=Path);p.add_argument('--editor',action='store_true');p.add_argument('--catalog',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser(description=__doc__);p.add_argument('scene',type=Path);p.add_argument('output',type=Path);p.add_argument('--editor',action='store_true');p.add_argument('--catalog',action='store_true');p.add_argument('--browser',action='store_true');a=p.parse_args()
 data=a.scene.read_bytes();pos=0
 def unpack(fmt):
  global pos
@@ -20,6 +20,10 @@ top=np.array([.18,.22,.22]);mid=np.array([.56,.58,.57]);bottom=np.array([.88,.89
 rgb=np.empty((h,w,3),np.float32)
 for y in range(h):
  t=y/405 if y<405 else (y-405)/315;rgb[y,:,:]=(top*(1-t)+mid*t) if y<405 else (mid*(1-t)+bottom*t)
+if a.browser:
+ top=np.array([.21,.38,.015]);mid=np.array([.69,.80,.38]);bottom=np.array([.91,.93,.86])
+ for y in range(h):
+  t=y/470 if y<470 else (y-470)/250;rgb[y,:,:]=(top*(1-t)+mid*t) if y<470 else (mid*(1-t)+bottom*t)
 depth=np.ones((h,w),np.float32)
 for _ in range(parts):
  tex,blend,nv,ni=unpack('<4I');dye=np.array(unpack('<3f'));stride=8 if a.catalog else 5;vertices=np.frombuffer(data,dtype='<f4',count=nv*stride,offset=pos).reshape(nv,stride);pos+=nv*stride*4;indices=np.frombuffer(data,dtype='<u4',count=ni,offset=pos);pos+=ni*4;texture=textures[tex]
@@ -48,12 +52,12 @@ for _ in range(parts):
 im=Image.fromarray(np.uint8(np.clip(rgb,0,1)*255));d=ImageDraw.Draw(im)
 fontbase=Path(__file__).resolve().parents[1]/'projects/cards/romfs/fonts'
 def font(size,bold=False):return ImageFont.truetype(str(fontbase/('selawksb.ttf' if bold else 'selawkl.ttf')),size)
-d.text((1180,55),'customize avatar' if a.editor else 'sign in or out',font=font(38),anchor='ra',fill='white');d.text((1180,103),'Make this avatar yours' if a.editor else 'Choose your profile',font=font(19),anchor='ra',fill='white')
-if not a.editor:
+if not a.browser:d.text((1180,55),'customize avatar' if a.editor else 'sign in or out',font=font(38),anchor='ra',fill='white');d.text((1180,103),'Make this avatar yours' if a.editor else 'Choose your profile',font=font(19),anchor='ra',fill='white')
+if not a.editor and not a.browser:
  for i,name in enumerate(['Player one','Player two','Player three','Player four']):
   x=190+i*335;d.text((x,515),name,font=font(25,True),anchor='ma',fill='#252b29');d.text((x,559),'Signed in' if i==0 else 'Offline profile',font=font(18),anchor='ma',fill='#545955')
  d.line((135,597,245,597),fill='#5caa0f',width=3)
-else:
+elif not a.browser:
  names=['Face & body','Hairstyle','Hair colour','Top','Bottoms','Shoes','Accessories','Height','Build'];values=['The player','Ponytail','Original','Halo tee','Skinny jeans','Neon high-tops','On','3 / 5','3 / 5']
  if a.catalog:
   names=['Body type','Hairstyle','Hair colour','Tops','Bottoms','Shoes','Outfits & costumes','Headwear','Gloves'];values=['Male','Fauxhawk','2 / 32','Long Sleeved Tee','Khaki Chinos','High Top Sneakers','None','None','None']
@@ -67,6 +71,36 @@ else:
  if a.catalog:
   d.line((1188,140,1188,536),fill='#929a96',width=3);d.line((1188,140,1188,255),fill='#5caa0f',width=5);d.text((665,593),'1917 catalog assets',font=font(18),fill='#545c58')
  d.text((665,564),'L / R  Rotate   ZL / ZR  Skip 10' if a.catalog else 'L / R  Rotate avatar',font=font(20),fill='#252b29');d.text((330,598),'Player one',font=font(25,True),anchor='ma',fill='#252b29')
-for x,letter,label,color in ([(88,'X','Save avatar','#1065b9'),(320,'B','Cancel','#bf1512'),(520,'Y','Randomize','#d6a90a')] if a.editor else [(88,'A','Select','#5caa0f'),(270,'B','Back','#bf1512'),(440,'X','Edit avatar','#1065b9'),(680,'Y','Manage users','#d6a90a')]):
- d.ellipse((x-11,655,x+11,677),fill=color);d.text((x,657),letter,font=font(16,True),anchor='ma',fill='white');d.text((x+19,654),label,font=font(22),fill='#252b29')
+if not a.browser:
+ for x,letter,label,color in ([(88,'X','Save avatar','#1065b9'),(320,'B','Cancel','#bf1512'),(520,'Y','Randomize','#d6a90a')] if a.editor else [(88,'A','Select','#5caa0f'),(270,'B','Back','#bf1512'),(440,'X','Edit avatar','#1065b9'),(680,'Y','Manage users','#d6a90a')]):
+  d.ellipse((x-11,655,x+11,677),fill=color);d.text((x,657),letter,font=font(16,True),anchor='ma',fill='white');d.text((x+19,654),label,font=font(22),fill='#252b29')
+if a.browser:
+ ui=json.loads(Path(str(a.scene)+'.json').read_text())
+ d.text((65,8),'avatar editor',font=font(25),fill='white')
+ d.text((1195,17),'Player one',font=font(18),anchor='ra',fill='white')
+ for i,tab in enumerate(ui['tabs']):
+  x,y,tw,th=tab['box'];selected=i==ui['category']
+  d.rectangle((x,y,x+tw,y+th),fill='#75b51a' if selected else '#315809')
+  d.text((x+tw/2,y+th/2-10),tab['name'],font=font(21),anchor='ma',fill='white')
+  if selected:d.rectangle((x,y+th-3,x+tw,y+th),fill='#e7ff9b')
+ d.text((640,126),ui['field'],font=font(28),anchor='ma',fill='white')
+ d.text((78,133),'L / R  Category',font=font(17),fill='white')
+ d.text((1020,133),'Y / -  Options' if ui['option_count']>1 else 'Y / -  Category',font=font(17),fill='white')
+ d.text((400,129),'<',font=font(28),fill='white');d.text((864,129),'>',font=font(28),fill='white')
+ for tile in ui['tiles']:
+  x,y,tw,th=tile['box'];selected=tile['selected']
+  d.rectangle((x-2,y-2,x+tw+2,y+th+2),fill='#6db00a' if selected else '#485d35')
+  d.rectangle((x,y,x+tw,y+th),fill='#b4d280' if selected else '#abbc97')
+  picture=Image.open(Path(ui['catalog'])/tile['file']).convert('RGBA').resize((76,76),Image.Resampling.LANCZOS)
+  im.paste(picture,(int(x+34),int(y+2)),picture)
+  text=tile['name']
+  while d.textlength(text,font=font(13))>tw-12:text=text[:-2]+'…'
+  d.text((x+tw/2,y+77),text,font=font(13),anchor='ma',fill='#24341b')
+  if selected:d.rectangle((x-3,y-3,x+tw+3,y+th+3),outline='white',width=2)
+ d.text((113,385),'<',font=font(38),anchor='ma',fill='white');d.text((1172,385),'>',font=font(38),anchor='ma',fill='white')
+ d.text((272,625),f"Page {ui['page']+1} of {ui['pages']}",font=font(17),anchor='ma',fill='#24341b')
+ d.text((1008,625),'ZL / ZR  More',font=font(17),anchor='ma',fill='#24341b')
+ d.text((640,622),ui['name'],font=font(18),anchor='ma',fill='#24341b')
+ for x,letter,label,color in [(67,'A','Use','#6bb10b'),(223,'B','Cancel','#bf1512'),(383,'X','Save avatar','#1065b9'),(586,'Y','Options' if ui['option_count']>1 else 'Next tab','#d6a90a'),(795,'+','Randomize','#445439'),(1012,'R','Zoom / rotate','#445439')]:
+  d.ellipse((x-10,669,x+10,689),fill=color);d.text((x,670),letter,font=font(15,True),anchor='ma',fill='white');d.text((x+16,669),label,font=font(18),fill='#24341b')
 a.output.parent.mkdir(parents=True,exist_ok=True);im.save(a.output);print(a.output)

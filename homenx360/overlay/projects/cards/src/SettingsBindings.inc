@@ -45,7 +45,7 @@ void CardsActivity::buildNxeSettings() {
     append(AutoPlay,"Look",{"Launch animation"});
     append(AutoPlay,"Home",{"Ask who's playing","Keep homebrew open"});
     append(Remote,"Bluetooth");
-    append(SystemInfo,"About",{"CardsNX","System version","Atmosphere","Games","Homebrew","Free on the SD card","Terms, privacy, licenses","Performance log","Close CardsNX"});
+    append(SystemInfo,"About",{"HomeNX360","System version","Atmosphere","Games","Homebrew","Free on the SD card","Terms, privacy, licenses","Performance log","Close HomeNX360"});
     append(Memory,"Storage");
     append(Network,"Internet");
     append(Computers,"Console",{"Connect to a computer"});

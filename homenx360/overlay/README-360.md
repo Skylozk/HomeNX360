@@ -26,7 +26,7 @@ build for testing, not a verified firmware-specific release.
 
 ## Try the standalone app
 
-Copy `HomeNX360-preview.nro` into `sdmc:/switch/HomeNX360/` and run it through
+Copy `HomeNX360.nro` into `sdmc:/switch/HomeNX360/` and run it through
 your existing homebrew launcher with full application memory. This app does not
 replace HOME. It shares CardsNX's existing configuration and artwork cache;
 back up `config/CardsNX/` first. HOME-only functions such as HomeNX News are
@@ -139,3 +139,9 @@ rendering limits. Back up config/CardsNX/ before upgrading or rolling back.
 For future updates, launch HomeNX360-Updater.nro. It checks HomeNX360 releases
 and updates both the standard preview app and HOME files while preserving
 settings and avatar appearances. Read UPDATER-GUIDE.md; restart after a HOME update.
+
+The homebrew menu now shows **HomeNX360** with the shared green-and-silver logo.
+**HomeNX360 Updater** and **HomeNX360 Loader** share the icon and keep distinct
+function labels. The old HomeNX360-preview.nro filename remains a compatibility
+download. The avatar creator now uses category tabs and item thumbnail pages; see
+`AVATAR-GUIDE.md` for the new controls.

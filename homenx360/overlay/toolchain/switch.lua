@@ -49,6 +49,7 @@ rule("switch")
 
         local format  = target:values("switch.format") or "nro"
         local name    = target:values("switch.name")    or target:name()
+        local display = target:values("switch.display_name") or name
         local author  = target:values("switch.author")  or "unknown"
         local version = target:values("switch.version") or "1.0.0"
         local elf     = target:targetfile()
@@ -59,7 +60,7 @@ rule("switch")
             local nacpfile = path.join(outdir, name .. ".nacp")
             cprint("${color.build.target}generating${clear} %s", path.filename(nacpfile))
             os.vrunv(dkp_tool("nacptool"),
-                     {"--create", name, author, version, nacpfile})
+                     {"--create", display, author, version, nacpfile})
 
             local nrofile = path.join(outdir, name .. ".nro")
             local args    = {elf, nrofile, "--nacp=" .. nacpfile}
