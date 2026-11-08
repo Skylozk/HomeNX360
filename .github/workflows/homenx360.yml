@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Optional prerelease tag, for example v0.2.1-preview.1'
+        description: 'Optional prerelease tag, for example v0.8.1-preview.1'
         required: false
         type: string
   pull_request:
@@ -24,6 +24,7 @@ jobs:
     container: devkitpro/devkita64
     timeout-minutes: 90
     env:
+      HOMENX360_RELEASE_TAG: ${{ inputs.release_tag }}
       PKG_CONFIG_LIBDIR: /opt/devkitpro/portlibs/switch/lib/pkgconfig:/opt/devkitpro/libnx/lib/pkgconfig
       PKG_CONFIG_PATH: /opt/devkitpro/portlibs/switch/lib/pkgconfig:/opt/devkitpro/libnx/lib/pkgconfig
     steps:
@@ -33,7 +34,7 @@ jobs:
       - name: Install build tools
         run: |
           apt-get update
-          apt-get install -y curl gcc g++ zip unzip zstd cmake ninja-build python3 zlib1g-dev nlohmann-json3-dev gh
+          apt-get install -y curl gcc g++ zip unzip zstd cmake ninja-build python3 zlib1g-dev nlohmann-json3-dev gh libminizip-dev libcurl4-openssl-dev libssl-dev
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: 3.1.2
@@ -65,6 +66,10 @@ jobs:
           /tmp/avatar-catalog360-test media/avatar-catalog
           g++ -std=c++20 -O2 tests/avatar_settings360_test.cpp -o /tmp/avatar-settings360-test
           /tmp/avatar-settings360-test
+          python3 tests/updater360/make_fixtures.py /tmp/updater360-fixtures
+          g++ -std=c++20 -O2 -Wno-deprecated-declarations -Itests/updater360 tests/updater360/updater360_test.cpp -lcurl -lminizip -lcrypto -lz -pthread -o /tmp/updater360-test
+          /tmp/updater360-test /tmp/updater360-fixtures
+          python3 tests/updater360/package360_test.py
       - name: Configure
         working-directory: build/homenx360-source
         run: xmake f --yes -vD -p cross -m release -a aarch64 --toolchain=devkita64 --homebrew=n --root
@@ -79,6 +84,7 @@ jobs:
         run: |
           xmake build --root -j2 CardsNX
           xmake build --root -j2 SwitchU
+          xmake build --root -j2 HomeNX360-Updater
       - name: Package the existing-install update
         working-directory: build/homenx360-source
         run: python3 tools/package_dashboard360.py --output ../artifacts --revision "$SOURCE_REVISION"
@@ -94,6 +100,7 @@ jobs:
           cp homenx360/SETTINGS-REFERENCES.md build/artifacts/SETTINGS-REFERENCES.md
           cp homenx360/DISCORD-GUIDE.md build/artifacts/DISCORD-GUIDE.md
           cp homenx360/AVATAR-GUIDE.md build/artifacts/AVATAR-GUIDE.md
+          cp homenx360/UPDATER-GUIDE.md build/artifacts/UPDATER-GUIDE.md
           cp homenx360/AVATAR-CATALOG-SOURCES.json build/artifacts/AVATAR-CATALOG-SOURCES.json
           cp homenx360/avatar-signin-preview.png build/artifacts/avatar-signin-preview.png
           cp homenx360/avatar-creator-preview.png build/artifacts/avatar-creator-preview.png
@@ -120,6 +127,7 @@ jobs:
           name: HomeNX360-preview-and-validation
           path: |
             build/artifacts/HomeNX360-preview.nro
+            build/artifacts/HomeNX360-Updater.nro
             build/artifacts/*.json
             build/artifacts/*.md
             build/artifacts/*.png

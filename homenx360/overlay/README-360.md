@@ -130,3 +130,7 @@ app, install the preview NRO and extract HomeNX360-avatar-catalog.zip to the SD
 root; a lone NRO includes only the legacy starters. Use full-memory homebrew
 launch mode. See AVATAR-GUIDE.md for controls, the one excluded source file and
 rendering limits. Back up config/CardsNX/ before upgrading or rolling back.
+
+For future updates, launch HomeNX360-Updater.nro. It checks HomeNX360 releases
+and updates both the standard preview app and HOME files while preserving
+settings and avatar appearances. Read UPDATER-GUIDE.md; restart after a HOME update.

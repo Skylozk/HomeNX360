@@ -49,6 +49,9 @@ def main():
             target = dest / source.relative_to(overlay)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
+    if (dest / 'homenx360-updater.lua').is_file():
+        xmake = dest / 'xmake.lua'
+        xmake.write_text(xmake.read_text() + '\nincludes("homenx360-updater.lua")\n')
     git('diff', '--check', cwd=dest)
     print(f'Prepared HomeNX 360 at {dest}\nUpstream: {COMMIT}')
 

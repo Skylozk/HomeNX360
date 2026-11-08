@@ -1,6 +1,12 @@
-# HomeNX360 v0.8.0-preview.1 — expanded avatar wardrobe
+# HomeNX360 v0.8.1-preview.1 — automatic updater and expanded avatars
 
-Adds the original built-in clothing, hair, accessory and facial-feature catalog,
+Adds **HomeNX360-Updater.nro**. Launch it to check this repository's releases
+and automatically update both the standalone preview and the HomeNX dashboard.
+It preserves settings/avatars, verifies downloads, resumes interrupted downloads
+and restores replaced files after reported installation errors. Read
+UPDATER-GUIDE.md for standard app locations and the HOME restart requirement.
+
+Also includes the original built-in clothing, hair, accessory and facial-feature catalog,
 plus 1,108 working Marketplace items from the supplied archive. There are 1,917
 assets, including hat-compatible hair meshes, and 166 original animated props.
 The creator has 33 fields, scrolling, ten-item jumps, full-body rotation, colour,

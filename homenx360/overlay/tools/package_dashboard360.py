@@ -22,6 +22,9 @@ version_file=root/'build/homenx360-version.txt'
 version_file.parent.mkdir(parents=True,exist_ok=True)
 version_file.write_text(args.version+'\n')
 files = {
+    'switch/HomeNX360/HomeNX360.nro': release / 'CardsNX.nro',
+    'switch/HomeNX360/version.txt': version_file,
+    'switch/HomeNX360-Updater/HomeNX360-Updater.nro': release / 'HomeNX360-Updater.nro',
     'switch/SwitchU/homenx360-version.txt': version_file,
     'switch/SwitchU/bin/menu/main': release / 'exefs/switchu-menu/main',
     'switch/SwitchU/bin/menu/main.npdm': release / 'exefs/switchu-menu/main.npdm',
@@ -56,6 +59,7 @@ for name, p in files.items():
         raise SystemExit(f'Missing or empty build output: {p} (for {name})')
 for p, offset, magic in (
     (release / 'CardsNX.nro', 16, b'NRO0'),
+    (release / 'HomeNX360-Updater.nro', 16, b'NRO0'),
     (release / 'HomeNX-Loader.nro', 16, b'NRO0'),
     (release / 'exefs/switchu-menu/main', 0, b'NSO0'),
     (release / 'switchu-daemon.nsp', 0, b'PFS0'),
@@ -91,6 +95,7 @@ else:
 manifest_text = json.dumps(manifest, indent=2) + '\n'
 (output / 'BUILD-MANIFEST.json').write_text(manifest_text)
 shutil.copy2(release / 'CardsNX.nro', output / 'HomeNX360-preview.nro')
+shutil.copy2(release / 'HomeNX360-Updater.nro', output / 'HomeNX360-Updater.nro')
 shutil.copy2(root / 'README-360.md', output / 'INSTALL.md')
 with zipfile.ZipFile(output / 'HomeNX360-update.zip', 'w', zipfile.ZIP_DEFLATED) as z:
     for name, p in sorted(files.items()): z.write(p, name)

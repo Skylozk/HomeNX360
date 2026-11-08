@@ -33,6 +33,9 @@ extract **HomeNX360-avatar-catalog.zip** to the SD root.
 **HomeNX360-update.zip** contains the SD card update for an existing HomeNX
 installation. Do not install the GitHub-generated source ZIP as an update.
 
+For automatic updates of both installations, launch **HomeNX360-Updater.nro**.
+[Updater instructions](homenx360/UPDATER-GUIDE.md).
+
 Read [installation and rollback instructions](homenx360/INSTALL.md).
 Atmosphere 1.12.1 / system 22.5.0 was reported by the user; this combination
 has **not been tested on hardware here**. Builds are experimental prereleases.

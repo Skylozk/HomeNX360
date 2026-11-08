@@ -1,3 +1,10 @@
+Standalone updater validation (v0.8.1-preview.1):
+- Added a separate 1.6 MiB console NRO, adapted from the pinned upstream ReleaseUpdater. It selects complete releases from Skylozk/HomeNX360, including previews, using semantic version ordering and a mandatory GitHub SHA-256 digest. It never selects source/catalog ZIPs as an installation archive.
+- Both the canonical preview app and the existing HomeNX dashboard are updated. Existing standard preview aliases are refreshed, the disabled HOME override state is retained, and settings/avatar profile paths are outside the installation allowlist. HOME restart is required for loaded/pending files.
+- The bounded ZIP installer validates package completeness and CRCs, stages replacements, rolls back reported failures, defers files in use and supports cancellation before installation. Resumable downloads use verified HTTPS and only accept trusted repository assets.
+- Native updater NRO compilation passed. Host tests exercise semantic versions (stable vs preview and preview 10 vs 9), draft/incomplete/wrong-host/checksum rejection, path traversal restrictions, dual preview/HOME installation, profile preservation, rollback after a real filesystem rename collision, incomplete ZIP rejection and cancellation. Tests use temporary host files, not Switch services or live network calls.
+- Hardware network/TLS, SD behavior, in-use replacement and reboot handling remain unverified. Power-loss recovery is not claimed.
+
 Expanded catalog validation (v0.8.0-preview.1):
 - Read the original system-update avatar packs (1,282 current and 44 legacy entries); recorded archive/container/TOC hashes. Extracted only asset data. Imported all 1,109 packages from the user-supplied Marketplace RAR with per-package/raw-asset hashes; no bundled executables or account patchers were used.
 - Shipped 809 built-in assets and 1,108 working Marketplace assets. One female Star-Lord shirt fails LZX decoding and is excluded, with its source GUID and failure retained. 89 hat-compatible companions are assets rather than separate selectable hairstyles. 166 props retain skeletal performances.

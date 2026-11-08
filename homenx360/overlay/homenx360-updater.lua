@@ -1,0 +1,23 @@
+local updater_version = os.getenv("HOMENX360_RELEASE_TAG")
+if not updater_version or updater_version == "" then updater_version = "v0.8.1-preview.1" end
+assert(updater_version:match("^v%d+%.%d+%.%d+$") or updater_version:match("^v%d+%.%d+%.%d+%-preview%.%d+$"), "Invalid HomeNX360 version")
+-- Standalone HomeNX360 release updater. It does not depend on the HOME daemon.
+target("HomeNX360-Updater")
+    set_kind("binary")
+    if not is_plat("cross") then return end
+    set_toolchains("devkita64")
+    set_languages("c++20")
+    add_rules("switch")
+    add_includedirs("projects/common/include", "projects/homenx360-updater")
+    add_files("projects/homenx360-updater/*.cpp")
+    add_packages("libcurl", "nlohmann_json", "zlib")
+    add_links("minizip")
+    add_syslinks("nx")
+    add_cxxflags("-frtti", "-fexceptions", {force=true})
+    add_defines('HOMENX_BUILD="' .. updater_version .. '"')
+    set_values("switch.name", "HomeNX360-Updater")
+    set_values("switch.author", "HomeNX360 contributors")
+    set_values("switch.version", updater_version:gsub("^v", ""):sub(1,15))
+    set_values("switch.icon", "projects/cards/icon.jpg")
+    set_values("switch.format", "nro")
+target_end()
