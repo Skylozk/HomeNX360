@@ -19,6 +19,16 @@ int main(int argc,char**argv){
     installFiles(files,false,progress,0,1);assert(get("sdmc:/switch/HomeNX360-preview.nro")=="new-preview");assert(get("sdmc:/switch/HomeNX360/HomeNX360.nro")=="new-preview");assert(get("sdmc:/switch/HomeNX360-Updater.nro")=="new-updater");assert(ReleaseUpdater::installedVersion()=="v0.8.1-preview.1");assert(get("sdmc:/config/CardsNX/settings.json")=="saved avatars");
     // A later rename collision must restore an already replaced file.
     put("sdmc:/switch/SwitchU/first.bin","old");put(std::filesystem::path(kStagingRoot)/"switch/SwitchU/first.bin","new");put(std::filesystem::path(kStagingRoot)/"switch/SwitchU/collision.bin","new");std::filesystem::create_directories("sdmc:/switch/SwitchU/collision.bin");bool failed=false;try{installFiles({"switch/SwitchU/first.bin","switch/SwitchU/collision.bin"},false,progress,0,1);}catch(...){failed=true;}assert(failed);assert(get("sdmc:/switch/SwitchU/first.bin")=="old");assert(std::filesystem::is_directory("sdmc:/switch/SwitchU/collision.bin"));assert(get("sdmc:/config/CardsNX/settings.json")=="saved avatars");
+    // Pending replacements retry after a blocked destination is released. Entries
+    // owned by the original manager must survive this updater's restricted pass.
+    const std::string pendingPath="sdmc:/switch/SwitchU/pending.bin";
+    const std::string foreignPath="sdmc:/switch/OtherApp/other.nro";
+    put(pendingPath,"old");put(pendingPath+".homenx-pending","new");
+    put(pendingPath+".homenx-old/blocker","keep");
+    put(kPendingList,pendingPath+"\n"+foreignPath+"\n");
+    ReleaseUpdater::applyPending();assert(get(pendingPath)=="old");assert(get(pendingPath+".homenx-pending")=="new");assert(get(kPendingList)==pendingPath+"\n"+foreignPath+"\n");
+    std::filesystem::remove_all(pendingPath+".homenx-old");ReleaseUpdater::applyPending();
+    assert(get(pendingPath)=="new");assert(!std::filesystem::exists(pendingPath+".homenx-pending"));assert(get(kPendingList)==foreignPath+"\n");
     std::filesystem::copy_file(fixtures/"incomplete.zip",kArchivePath,std::filesystem::copy_options::overwrite_existing);failed=false;try{extractArchive(progress,0,1);}catch(...){failed=true;}assert(failed);
     ReleaseUpdater::requestCancel();std::filesystem::copy_file(fixtures/"valid.zip",kArchivePath,std::filesystem::copy_options::overwrite_existing);failed=false;try{extractArchive(progress,0,1);}catch(...){failed=true;}assert(failed);ReleaseUpdater::clearCancel();
     std::filesystem::current_path(cwd);std::filesystem::remove_all(root);std::cout<<"Updater versions, trusted release selection, path restrictions, dual installation, profile preservation, rollback, incomplete ZIP and cancellation passed. No network or Switch services used.\n";

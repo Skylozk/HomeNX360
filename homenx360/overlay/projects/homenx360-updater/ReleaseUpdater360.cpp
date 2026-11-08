@@ -804,7 +804,10 @@ void ReleaseUpdater::applyPending() {
         if(line.rfind("sdmc:/",0)!=0 || safeRelativePath(line.substr(6)).empty()){keep.push_back(line);continue;}
         const std::filesystem::path destination(line);
         const std::filesystem::path pending = line + kPendingSuffix;
-        if (!std::filesystem::exists(pending, ec)) continue;
+        ec.clear();
+        const bool exists = std::filesystem::exists(pending, ec);
+        if (ec) { keep.push_back(line); continue; }
+        if (!exists) continue;
         const std::filesystem::path old = line + ".homenx-old";
         std::filesystem::remove(old, ec);
         ec.clear();
@@ -812,7 +815,12 @@ void ReleaseUpdater::applyPending() {
             std::filesystem::rename(destination, old, ec);
         if (!ec) {
             std::filesystem::rename(pending, destination, ec);
-            if (ec) std::filesystem::rename(old, destination, ec); // put it back
+            if (ec) {
+                // A successful restoration must not erase the failed install:
+                // keep this queued so the next launch retries the pending file.
+                std::error_code restoreError;
+                std::filesystem::rename(old, destination, restoreError);
+            }
         }
         if (ec) {
             keep.push_back(line); // still in use (e.g. our own .nro); next start
