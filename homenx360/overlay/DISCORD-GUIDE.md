@@ -1,65 +1,75 @@
-# Discord DMs in the Guide
+# Discord chats inside the NXE Guide
 
-## Using Friends
+## Open your conversations
 
-1. Install the **HOME frontend** using `HomeNX360-update.zip` and `INSTALL.md`.
-2. Press **Y** to open the Guide, then use **Left/Right or L/R** to select **Friends**.
-3. If signed out, choose **Sign in to Discord**. This opens HomeNX's existing
-   Discord sign-in/account interface on the console. Existing saved accounts
-   are reused. No new login system or credential storage is introduced.
-4. Friends shows Discord direct and group DMs. **\*** marks unread conversations.
-   **More conversations / Previous conversations** pages through the inbox;
-   there is no fixed 30/40-conversation cutoff in this view.
-5. Select a DM with **A** or touch. It opens HomeNX's existing chat reader in
-   DM-only mode. Server navigation is hidden and server channels cannot be
-   opened through this mode.
-6. In the chat, **A or X** opens the reply keyboard. Enter text and submit it
-   to queue a message. Canceling or submitting blank text sends nothing.
-   HomeNX's existing sending/failed indicators show the request's status;
-   queued does not mean the recipient has received or read the message.
-7. **B** returns from the chat to the DM list, then closes that panel back to
-   the Guide. **X in the Friends blade** also opens the DM/account panel.
-   The Guide's Quick Launch Friends and Messages shortcuts open Friends too.
+1. Install the **HOME frontend** from **HomeNX360-update.zip**. The standalone
+   preview NRO does not include HomeNX's Discord service.
+2. Press **Y** for the Guide and use **Left/Right or L/R** to select **Friends**.
+3. Friends now opens the centered **Chat** screen: silver conversation rows,
+   a highlight in your profile's theme colour, and a gray detail pane.
+4. Sign in through HomeNX's existing Discord interface if asked. Existing saved
+   accounts are reused; this update adds no credential store or login mechanism.
+5. Your existing **direct messages and group DMs** appear in the list. Unread
+   conversations show an indicator and an Unread label. The right pane describes
+   the selected conversation. **More conversations / Previous conversations**
+   page through the inbox without a fixed total-conversation cutoff.
+6. Press **A** or touch a conversation to open its messages **inside the Guide**.
+   B returns to this same conversation list. B again closes the Guide.
 
-The list is the account's existing private conversations, not the complete
-Discord friend-relationship list. Starting a brand-new conversation by username,
-friend requests, voice calls and media composition are not added here.
+## Read and reply
 
-## Preview and ordinary Discord
+- **A or X:** open the reply keyboard. Explicitly submit text to queue it.
+  Canceling or submitting blank text sends nothing.
+- **Up / Down:** scroll message history. **L / R:** move a page at a time.
+- **ZL**, or the history heading: load an older page. A failed initial history
+  request can be retried through the same control. Up to the latest **200 cached
+  messages** are displayed; this is not an unlimited full-history browser.
+- **ZR:** jump to the newest messages. New arrivals follow automatically when
+  already at the bottom. Reading older messages keeps your visible position
+  stable; a notice appears when newer messages arrive below.
+- **Touch:** drag the message area to scroll, use its arrow controls, or tap
+  the Write a message bar to reply.
+- **B:** return to chats. **Y:** close the Guide and return to the dashboard.
+- **X in the conversation list:** open HomeNX's existing Discord/account panel.
 
-The standalone `.nro` does not embed HomeNX's Discord backend. Its Friends blade
-explains that HOME is required and offers the existing external Discord app
-shortcut, if SwitchCord is installed. Use the HOME update for integrated DMs.
+Message rows show author, timestamp, body text and Sending / Failed status.
+Queued or Sending does not claim that the recipient received or read a message.
+Text preserves line breaks; long words/URLs wrap at Unicode character boundaries.
+The Guide reader supports text replies. Image, GIF, sticker and attachment
+messages show a placeholder; open the ordinary Discord panel to view those media.
+Voice/video calls, Xbox LIVE parties, starting new group chats, friend requests,
+message editing and attachment composition are not implemented by this screen.
 
-The normal Discord entry elsewhere in HomeNX keeps its server navigation.
-The added Friends mode is restricted to DMs. Nintendo's Friends entry elsewhere
-in the dashboard retains its existing behavior.
+## Accounts and ordinary Discord
 
-## Routing and account changes
+The inbox contains existing Discord private conversations, rather than the
+complete friend-relationship list. The normal Discord entry elsewhere in HomeNX
+retains its server navigation and original reader. This new Guide screen uses
+only direct/group DMs; server channels are excluded by the service and Guide.
+Sign-in and account management retain HomeNX's existing interface.
 
-The Guide caches the rendered rows by channel ID, preserving order across
-presence/unread updates so a new message cannot swap the selected person.
-Refreshing the Guide clears conversations from a different account. Opening
-a conversation rechecks the active account and DM membership. The chat panel
-returns to its list if the account changes.
+The standalone preview shows a HOME-required explanation and can open the
+existing external Discord app shortcut if installed. It does not show fake DMs
+or send messages without the HOME service.
 
-A reply captures its account and channel when the keyboard opens. Submission
-rechecks connection state, account identity and DM membership before calling
-HomeNX's existing send operation. A change produces an on-screen message to
-reopen the conversation. Messages are queued only by explicit keyboard submit.
+## Routing and validation
 
-## Layout and validation
+Visible rows retain channel IDs across presence/unread updates, so changes in
+Discord's recent-chat order cannot redirect a selection. Opening a conversation
+rechecks the active account and DM membership. Signing out, disconnecting,
+changing accounts or removing the conversation returns the reader to the inbox.
 
-Friends is a requested extension to the original five-blade NXE Guide. The
-Guide now has six blades within a centered 738-pixel span; the active panel
-remains 548×316, with seven-row maximum and animated blade changes. The extra
-blade is not claimed to be an original Xbox feature. Chat and sign-in retain
-HomeNX's Discord interface.
+The reply keyboard captures the account and channel. Submission rechecks those
+values, the currently open conversation, connection state and DM membership.
+Messages are queued only on explicit submission. Async history/send completions
+are guarded by account, store and service lifetime before updating cached state.
+Chat rendering, list refresh, navigation and preview generation do not send chat
+messages. Visible newest messages use the existing Discord read acknowledgement.
 
-Host checks exercise the production DM model, routing and explicit-submit helper,
-including empty/signed-out/failed states, 241 conversations, group DMs, unread
-updates, duplicate/removed channels, account changes and server exclusion.
-The six-blade geometry and every visible row/blade touch target are checked.
-These tests use fake identities and an in-memory enqueue callback. No real
-account was accessed and no test messages were sent. Live Discord login,
-delivery and physical Switch behavior require testing on the user's console.
+Host checks cover production open/reply actions with fake identities and a
+memory-only send callback, account changes while typing, removed conversations,
+server exclusion, groups, empty/cancelled drafts, inbox paging, Unicode and long
+messages, layout/touch targets, stable history positions and new-message notices.
+The preview pictures contain fictional conversations and are software renders,
+not Switch screenshots. No live account was accessed or test message sent.
+Live login, delivery and physical Switch behavior still require device testing.

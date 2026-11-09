@@ -148,6 +148,16 @@ bool CardsActivity::dashInput(float dt) {
         if (m_guideClosing) return true;
         if (in.isDown(B::B)) { guideBack();return true; }
         if (in.isDown(B::Y)) { closeGuide(false);dashTab(1);return true; }
+        if(m_guideChat.active){
+            if(in.isDown(B::Plus)){closeGuide(true);return true;}
+            if(in.isDown(B::A) || in.isDown(B::X)){replyGuideConversation();return true;}
+            if(in.isDown(B::ZL)){loadGuideHistory();return true;}
+            if(in.isDown(B::ZR)){m_guideMessages.scroll(-m_guideMessages.maximum());return true;}
+            if(in.isDown(B::L))m_guideMessages.scroll(guidechat360::history.h*.85f);
+            if(in.isDown(B::R))m_guideMessages.scroll(-guidechat360::history.h*.85f);
+            if(down && direction>=2)m_guideMessages.scroll(direction==2?60.f:-60.f);
+            return true;
+        }
         if (in.isDown(B::X)) {
             if(m_guideTab==guide360::Friends) openDiscord(true);
             else {closeGuide(false);openUsers();}
@@ -187,6 +197,7 @@ bool CardsActivity::dashTouch() {
     if (m_pickOpen || m_spQrOpen || m_sheetOpen || m_notifOpen || m_quickOpen || m_powerOpen || m_dotsOpen
         || m_musicOpen || m_optOpen || !m_menu.empty() || m_moving) return handleTouch();
     auto& in=app().input();
+    if(m_dashGuide && guidechat360::conversationScreen(m_guideTab,m_guideView))return touchGuideChats();
     if (!in.touchUp()) return in.isTouching();
     const float x=in.touchX(), y=in.touchY();
     if (m_dashGuide) {

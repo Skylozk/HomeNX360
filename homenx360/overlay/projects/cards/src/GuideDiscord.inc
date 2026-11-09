@@ -56,8 +56,6 @@ void CardsActivity::activateGuideDm() {
         refreshGuideDms(true);return;
     }
     const auto found=std::find_if(dms.begin(),dms.end(),[&](const auto& dm){return dm.channelId==row.channelId;});
-    openDiscord(true);
-    if(m_discordPanel && m_discordPanel->isOpen())
-        m_discordPanel->openChat(found->channelId,0,found->name,found->avatarUrl);
+    openGuideConversation(found->channelId);
 #endif
 }

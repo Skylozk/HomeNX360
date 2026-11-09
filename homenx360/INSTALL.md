@@ -122,7 +122,10 @@ also closes it. The Media blade controls the real HomeNX music player.
 ## Discord Friends
 
 Guide → Friends lists Discord direct and group DMs in the HOME frontend.
-A or touch opens a conversation; A/X in the chat opens the reply keyboard.
+A or touch opens messages inside the centered silver Guide Chat screen.
+A/X replies, Up/Down scroll, L/R page, ZL loads older messages and ZR jumps to the
+newest. B returns to chats. The reader displays up to 200 cached text messages;
+media uses a placeholder and remains available in the ordinary Discord panel.
 X in Friends opens HomeNX's existing Discord sign-in and account controls.
 The standalone NRO shows the HOME requirement and an external Discord shortcut.
 Read `DISCORD-GUIDE.md` for setup, paging, controls and testing limits.

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Optional prerelease tag, for example v0.10.0-preview.1'
+        description: 'Optional prerelease tag, for example v0.11.0-preview.1'
         required: false
         type: string
   pull_request:
@@ -46,7 +46,7 @@ jobs:
         run: |
           git config --global --add safe.directory '*'
           python3 tools/prepare_homenx360.py
-      - name: Check controller navigation
+      - name: Check UI navigation, chat and updater
         working-directory: build/homenx360-source
         run: |
           g++ -std=c++20 tests/dashboard360_test.cpp -o /tmp/dashboard360-test
@@ -59,6 +59,10 @@ jobs:
           /tmp/guide-discord360-test
           g++ -std=c++20 -DSWITCHU_MENU tests/guide_discord360_test.cpp -o /tmp/guide-discord360-home-test
           /tmp/guide-discord360-home-test
+          g++ -std=c++20 -O2 tests/guide_chat360_test.cpp -o /tmp/guide-chat360-test
+          /tmp/guide-chat360-test
+          g++ -std=c++20 -O2 -DSWITCHU_MENU tests/guide_chat360_test.cpp -o /tmp/guide-chat360-home-test
+          /tmp/guide-chat360-home-test
           g++ -std=c++20 -O2 tests/theme360_test.cpp -o /tmp/theme360-test
           /tmp/theme360-test
           g++ -std=c++20 tests/settings360_test.cpp -o /tmp/settings360-test
@@ -120,6 +124,8 @@ jobs:
           cp homenx360/avatar-signin-preview.png build/artifacts/avatar-signin-preview.png
           cp homenx360/avatar-creator-preview.png build/artifacts/avatar-creator-preview.png
           cp homenx360/updater-preview.png build/artifacts/updater-preview.png
+          cp homenx360/guide-inbox-preview.png build/artifacts/guide-inbox-preview.png
+          cp homenx360/guide-chat-preview.png build/artifacts/guide-chat-preview.png
           cp homenx360/RELEASE-NOTES.md build/artifacts/RELEASE-NOTES.md
           cd build/artifacts
           sha256sum * > SHA256SUMS.txt

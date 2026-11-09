@@ -25,7 +25,7 @@ inline std::string plain(const std::string& s){return s;}
 class CardsActivity {
 public:
     float m_time=1,m_guideDmRefresh=-1,m_guideRowAt=0;
-    int m_dashGuideRow=0,openedDiscord=0;bool directOnly=false,closed=false;
+    int m_dashGuideRow=0,openedDiscord=0,guideOpened=0;std::uint64_t guideChannel=0;bool directOnly=false,closed=false;
     std::string m_guideNote;
     homenx::dmview::Inbox m_guideInbox;
     std::vector<homenx::dmview::Row> m_guideDmRows;
@@ -37,6 +37,7 @@ public:
     void openDiscord(bool only){++openedDiscord;directOnly=only;}
     void refreshGuideDms(bool force=false);
     void activateGuideDm();
+    void openGuideConversation(std::uint64_t id){++guideOpened;guideChannel=id;}
 };
 #include "../projects/cards/src/GuideDiscord.inc"
 }
@@ -106,15 +107,15 @@ int main() {
     // Discord can change its order between a rendered frame and activation.
     // The visible Alice row must still open Alice, with guild ID zero.
     guide.m_discord.channels={{22,"Bob"},{33,"Group DM"},{11,"Alice"}};
-    guide.activateGuideDm();assert(guide.directOnly && guide.m_discordPanel->channel==11 && guide.m_discordPanel->guild==0);
+    guide.activateGuideDm();assert(guide.guideOpened==1 && guide.guideChannel==11 && guide.openedDiscord==0 && guide.m_discordPanel->opened==0);
     guide.m_discord.channels={{22,"Bob"},{33,"Group DM"}};
-    const int wasOpened=guide.m_discordPanel->opened;
-    guide.activateGuideDm();assert(guide.m_discordPanel->opened==wasOpened && !guide.m_guideNote.empty());
+    const int wasOpened=guide.guideOpened;
+    guide.activateGuideDm();assert(guide.guideOpened==wasOpened && !guide.m_guideNote.empty());
     guide.m_discord.identity="account-b";
-    guide.activateGuideDm();assert(guide.m_discordPanel->opened==wasOpened);
+    guide.activateGuideDm();assert(guide.guideOpened==wasOpened);
     guide.m_discord.channels={{88,"New account DM"}};guide.refreshGuideDms(true);
     assert(guide.m_guideInbox.account=="account-b" && guide.m_guideDmRows[0].channelId==88);
-    guide.m_dashGuideRow=0;guide.activateGuideDm();assert(guide.m_discordPanel->channel==88);
+    guide.m_dashGuideRow=0;guide.activateGuideDm();assert(guide.guideChannel==88);
     guide.m_discord.channels.clear();
     for(int i=0;i<13;++i)guide.m_discord.channels.push_back({std::uint64_t(100+i),"DM"});
     guide.refreshGuideDms(true);guide.m_dashGuideRow=5;guide.activateGuideDm();

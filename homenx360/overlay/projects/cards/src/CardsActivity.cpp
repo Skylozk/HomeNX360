@@ -7782,7 +7782,7 @@ void CardsActivity::onUpdate(float dt) {
     if (m_dashGuide) {
         const float stepGuide=motion?std::min(dt,1.f/30.f)/0.18f:1.f;
         m_guideIn=std::clamp(m_guideIn+(m_guideClosing?-stepGuide:stepGuide),0.f,1.f);
-        if (m_guideClosing && m_guideIn<=0.f) { m_dashGuide=false;m_guideClosing=false; }
+        if (m_guideClosing && m_guideIn<=0.f) { m_dashGuide=false;m_guideClosing=false;m_guideChat.clear();m_guideMessages.clear();m_guideChatDrag=false; }
         step(m_guideTabIn,0.16f);
         m_guidePos=m_guideFrom+(m_guideTab-m_guideFrom)*nxe::ease(m_guideTabIn);
         m_guideRowAt+=(m_dashGuideRow-m_guideRowAt)*(motion?std::min(1.f,dt*24.f):1.f);
@@ -8229,7 +8229,8 @@ void CardsActivity::onUpdate(float dt) {
                                    alert.title, alert.text});
         }
         ++m_unread;
-        if (!(m_discordPanel && m_discordPanel->isActive())) notifyCard(alert.title, alert.text, "discord");
+        const bool readingGuide=m_dashGuide && m_guideChat.active && m_guideChat.target.account==m_discord.currentAccount() && m_guideChat.target.channel==alert.channelId;
+        if (!readingGuide && !(m_discordPanel && m_discordPanel->isActive())) notifyCard(alert.title, alert.text, "discord");
     }
     perfMark("discord");
     // News is ready.
@@ -9933,6 +9934,8 @@ void CardsActivity::updateStorage() {
 #include "Guide360.inc"
 // The Guide's Friends blade shares HomeNX's DM service and reply keyboard.
 #include "GuideDiscord.inc"
+#include "GuideChatActions.inc"
+#include "GuideChat.inc"
 #include "Settings360.inc"
 // Original asset catalog, per-profile creator and lazy wardrobe loading.
 #include "AvatarEditor360.inc"

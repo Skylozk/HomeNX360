@@ -7,6 +7,15 @@ The Discord update adds a sixth Friends blade at the user's request; see
 original five-blade target. The extended layout spans x271–1009, with Profile
 at x347, while retaining the original active-panel dimensions and row spacing.
 
+The later user-supplied Chat screenshot is the reference for the Friends screen:
+a white/silver header and conversation list, selected coloured row, black chat
+icons, gray right detail pane and controller prompts below. The native Chat
+adaptation uses an 896×528 frame at x192/y96 on the 1280×720 canvas. It lists only
+real Discord DMs/groups and opens a text-history/reply view inside that frame.
+Other blades retain the geometry below. Software preview pictures use fictional
+identities; live Discord and Switch rendering still require device testing.
+
+
 ## Images inspected
 
 The principal reference is the [original NXE Guide screenshot published with

@@ -18,15 +18,17 @@ void CardsActivity::openGuide() {
     m_dashGuide=true;m_guideClosing=false;m_guideIn=m_settings.motion?0.f:1.f;
     m_guideTab=2;m_guideView=0;m_guidePos=m_guideFrom=2.f;m_guideTabIn=1.f;m_dashGuideRow=0;m_guideRowAt=0.f;m_guideNote.clear();
     m_guideInbox={};m_guideDmRows.clear();m_guideDmRefresh=-1;
+    m_guideChat.clear();m_guideMessages.clear();m_guideChatDrag=false;
     m_guideSels[guide360::Friends]=0;
     m_audio.play("show_modal");
 }
 void CardsActivity::closeGuide(bool animate) {
     if (animate && m_settings.motion) m_guideClosing=true;
-    else { m_dashGuide=false;m_guideClosing=false;m_guideIn=0.f; }
+    else { m_dashGuide=false;m_guideClosing=false;m_guideIn=0.f;m_guideChat.clear();m_guideMessages.clear();m_guideChatDrag=false; }
     m_audio.play("hide_modal");
 }
 void CardsActivity::guideTab(int delta) {
+    m_guideChat.clear();m_guideMessages.clear();m_guideChatDrag=false;
     if (m_guideView==0) m_guideSels[m_guideTab]=m_dashGuideRow;
     m_guideFrom=m_guidePos;
     m_guideTab=guide360::wrap(m_guideTab+delta);m_guideView=0;
@@ -41,6 +43,7 @@ void CardsActivity::guideTab(int delta) {
     m_audio.play("tab_transition");
 }
 void CardsActivity::guideBack() {
+    if(m_guideChat.active){m_guideChat.clear();m_guideMessages.clear();m_guideChatDrag=false;m_guideNote.clear();m_audio.play("hide_modal");return;}
     if (m_guideView) {
         m_guideView=0;m_dashGuideRow=m_guideSels[m_guideTab];
         m_guideRowAt=static_cast<float>(m_dashGuideRow);m_guideNote.clear();
@@ -125,7 +128,7 @@ void CardsActivity::guideLabel(nxui::Renderer& r,const std::string& label,float 
     }
 }
 void CardsActivity::drawGuide(nxui::Renderer& r) {
-    if(m_guideTab==guide360::Friends && !m_guideView) refreshGuideDms();
+    if(m_guideTab==guide360::Friends && !m_guideView){refreshGuideDms();drawGuideChats(r);return;}
     const float a=nxe::ease(m_guideIn),shift=(1.f-a)*18.f;
     const auto white=nxui::Color(0.95f,0.97f,0.98f,a);
     const auto dark=nxui::Color(0.27f,0.31f,0.32f,a);

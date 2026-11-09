@@ -9,6 +9,7 @@
 #include "AvatarEditor360.hpp"
 #include "AvatarThumbnails360.hpp"
 #include "GuideLayout.hpp"
+#include "GuideChat360.hpp"
 #include "../../menu/src/social/DirectMessageView.hpp"
 #include "Spotify.hpp"
 
@@ -99,9 +100,22 @@ private:
     homenx::dmview::Inbox m_guideInbox;
     std::vector<homenx::dmview::Row> m_guideDmRows;
     homenx::dmview::State m_guideDmState=homenx::dmview::State::HomeRequired;
-    float m_guideDmRefresh=-1.f;
+    float m_guideDmRefresh=-1.f,m_guideChatRefresh=-1.f;
     void refreshGuideDms(bool force=false);
     void activateGuideDm();
+    guidechat360::Session m_guideChat;
+    guidechat360::Transcript m_guideMessages;
+    std::uint64_t m_guideChatVersion=~std::uint64_t(0);
+    bool m_guideChatLoading=false,m_guideChatOlder=false,m_guideChatError=false,m_guideChatStart=false,m_guideChatCapped=false;
+    bool m_guideChatDrag=false,m_guideChatDragged=false;
+    float m_guideChatDragY=0,m_guideChatDragOffset=0;
+    void openGuideConversation(std::uint64_t channel);
+    void refreshGuideConversation();
+    void replyGuideConversation();
+    void loadGuideHistory();
+    void drawGuideChats(nxui::Renderer& renderer);
+    bool touchGuideChats();
+
     void openGuide();
     void closeGuide(bool animate);
     void guideTab(int delta);

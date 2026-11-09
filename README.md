@@ -6,7 +6,7 @@ inspired by the Xbox 360's **2008 New Xbox Experience (NXE)**.
 - Vertical channels and overlapping cards with a reflective floor.
 - Animated card focus and vertical channel switching; respects Animations settings.
 - The recorded original NXE-era Xbox 360 startup.
-- A centered NXE Guide with animated blades, profile/clock, themed selection and an added Discord Friends blade.
+- A centered NXE Guide with animated blades, profile/clock, themed selection and a silver Chat screen for Discord DMs, group conversations and replies (HOME required).
 - Full-screen NXE settings with the original Console Settings categories, animated submenus and real HomeNX controls.
 - Full-body Xbox 360 avatars and a tabbed NXE-style creator with real item thumbnails, live try-on, built-in/Marketplace clothing, facial options and animated props.
 - Eleven included NXE wallpapers with thumbnail selection, custom pictures and per-profile colours/wallpapers shared by app and HOME.
