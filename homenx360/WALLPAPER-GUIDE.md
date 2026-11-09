@@ -2,8 +2,18 @@
 
 Open **System Settings → HomeNX Preferences → Dashboard → Change Theme**.
 Move with the D-pad or left stick, press A to apply, B to cancel, or X to pick a
-random wallpaper. The first tile, **Classic NXE**, restores the original green
-background. Tapping a thumbnail applies it. The choice is saved automatically.
+random wallpaper. The first tile, **Classic NXE**, restores the classic background in your chosen theme colour. Tapping a thumbnail applies it. The choice is saved automatically for the signed-in Switch profile.
+
+Use **Dashboard → Theme colour** to choose White, Blue, Green, Pink, Orange,
+Purple or Gold. Changes apply immediately to the dashboard, Guide, settings and
+avatar editor highlights. The classic background also changes colour; wallpaper
+images and avatar clothing retain their original colours.
+
+**Theme profile** shows whose theme you are editing. Sign in to a different real
+Switch profile to restore that profile's colour and wallpaper automatically.
+Existing saved colour/wallpaper choices become the default for profiles without
+a saved theme. **Reset profile theme** restores classic green and the classic
+background for the current profile only. Other settings remain shared.
 
 Eleven wallpapers are included: NXE Night; NXE Rings in green, orange, blue and
 purple; Halo 3 Mythic; Halo 3 Splatter Spree; Gears 2 Destroyed Beauty;
@@ -22,7 +32,7 @@ classic background remains the default until you choose another one.
 
 For your own pictures, use **Dashboard → Background**. Put JPG/PNG pictures in
 `sd:/config/CardsNX/backgrounds/` or choose a recent screenshot there. This picker
-is separate from the included collection. The selected background is shared by
+is separate from the included collection. Each profile's selected background is shared by
 the preview and HOME through CardsNX settings. Built-in choices use stable IDs,
 so the selection works in both launch modes.
 

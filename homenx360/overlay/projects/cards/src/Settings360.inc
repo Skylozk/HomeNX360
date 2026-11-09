@@ -20,14 +20,14 @@ void CardsActivity::drawSheet(nxui::Renderer& r) {
     const float slide=24*m_sheetDirection*(1-transition);
     const auto white=nxui::Color(0.93f,0.95f,0.96f,a);
     const auto muted=nxui::Color(0.70f,0.74f,0.76f,a);
-    background(paint,a);frame(paint,a);orb(paint,a);
+    background(paint,a,m_settings.accent);frame(paint,a);orb(paint,a,m_settings.accent);
     textMid(r,m_fGuide,titles[m_sheetSec],96,68,{0.1f,0.14f,0.10f,0.35f*a},1.3f);
     textMid(r,m_fGuide,titles[m_sheetSec],95,67,{0.88f,0.92f,0.80f,a},1.3f);
     auto& rows=m_sheet[m_sheetSec].rows;
     const int count=int(rows.size());
     m_sheetRow=std::clamp(m_sheetRow,0,std::max(0,count-1));
     r.pushClipRect({rowX-1,rowY,rowW+2,listBottom-rowY});
-    if(count) selection(paint,row(0,m_sheetScroll-m_sheetFocus*pitch,slide),a*transition);
+    if(count) selection(paint,row(0,m_sheetScroll-m_sheetFocus*pitch,slide),a*transition,m_settings.accent);
     for(int i=0;i<count;++i) {
         const auto b=row(i,m_sheetScroll,slide);
         if(b.y+b.h<=rowY || b.y>=listBottom) continue;
@@ -62,7 +62,7 @@ void CardsActivity::drawSheet(nxui::Renderer& r) {
             if(item.kind==MenuItem::Slider) {
                 const float level=item.level?clamp01(item.level()):0.f;
                 r.drawRect({720,252,260,6},{0.75f,0.80f,0.79f,0.35f*a});
-                r.drawRect({720,252,260*level,6},{0.61f,0.80f,0.18f,a});
+                r.drawRect({720,252,260*level,6},nxeColor({0.61f,0.80f,0.18f,a}));
                 r.drawRect({715+260*level,244,10,22},white);
             } else textMid(r,m_fBody,"Left / Right to change",738,y,muted,0.9f);
             y=310;

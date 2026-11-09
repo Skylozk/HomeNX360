@@ -60,16 +60,16 @@ void CardsActivity::drawAvatarEditor(nxui::Renderer& r){
     const auto& draft=m_profiles.draft;const int field=browser.field(),total=editor::count(index,draft,field),begin=browser.page()*8;
     const nxui::Color white{1,1,1,1},dark{.14f,.20f,.10f,1},muted{.30f,.36f,.25f,1},green{.39f,.69f,.035f,1};
     auto centered=[&](nxui::Font& font,const std::string& text,float x,float y,nxui::Color color,float scale=1.f){textMid(r,font,text,x-measured(font,text).x*scale/2,y,color,scale);};
-    r.drawGradientRect({0,0,1280,470},{.21f,.38f,.015f,1},{.69f,.80f,.38f,1});
-    r.drawGradientRect({0,470,1280,250},{.69f,.80f,.38f,1},{.91f,.93f,.86f,1});
+    r.drawGradientRect({0,0,1280,470},nxeColor({.21f,.38f,.015f,1}),nxeColor({.69f,.80f,.38f,1}));
+    r.drawGradientRect({0,470,1280,250},nxeColor({.69f,.80f,.38f,1}),nxeColor({.91f,.93f,.86f,1}));
     for(int stripe=0;stripe<24;++stripe)r.drawLine({float(stripe*61-350),0},{float(stripe*61+100),470},{1,1,1,.025f},2);
     textMid(r,m_fDashNav,"avatar editor",65,28,white,.65f);
     if(const auto* profile=m_profiles.current())textMid(r,m_fBody,fit(m_fBody,profile->name,380,.8f),1195-measured(m_fBody,fit(m_fBody,profile->name,380,.8f)).x*.8f,28,white,.8f);
     for(int tab=0;tab<int(editor::tabs.size());++tab){const auto b=editor::tabBox(tab);const bool current=tab==browser.tab;
-        if(current)r.drawGradientRect({b.x,b.y,b.w,b.h},{.58f,.85f,.12f,1},{.35f,.60f,.025f,1});
-        else r.drawRect({b.x,b.y,b.w,b.h},{.10f,.22f,.015f,.28f});
+        if(current)r.drawGradientRect({b.x,b.y,b.w,b.h},nxeColor({.58f,.85f,.12f,1}),nxeColor({.35f,.60f,.025f,1}));
+        else r.drawRect({b.x,b.y,b.w,b.h},nxeColor({.10f,.22f,.015f,.28f}));
         centered(m_fBody,editor::tabs[tab].name,b.x+b.w/2,b.y+b.h/2,white,.9f);
-        if(current)r.drawRect({b.x,b.y+b.h-3,b.w,3},{.91f,1,.61f,1});
+        if(current)r.drawRect({b.x,b.y+b.h-3,b.w,3},nxeColor({.91f,1,.61f,1}));
     }
     centered(m_fGuide,catalogFieldNames[field],640,143,white,.95f);
     textMid(r,m_fBody,"<",400,143,white);textMid(r,m_fBody,">",864,143,white);
@@ -77,8 +77,8 @@ void CardsActivity::drawAvatarEditor(nxui::Renderer& r){
     textMid(r,m_fBody,editor::tabs[browser.tab].count>1?"Y / -  Options":"Y / -  Category",1020,143,white,.7f);
     const int equipped=editor::selected(index,draft,field);bool missing=false;
     for(int tile=0;tile<8 && begin+tile<total;++tile){const int at=begin+tile;const auto b=editor::tileBox(tile);const bool focused=at==browser.focus;
-        r.drawRect({b.x-2,b.y-2,b.w+4,b.h+4},focused?green:nxui::Color(.22f,.31f,.17f,.5f));
-        r.drawGradientRect({b.x,b.y,b.w,b.h},focused?nxui::Color(.84f,.95f,.62f,1):nxui::Color(.76f,.82f,.69f,1),focused?nxui::Color(.53f,.76f,.23f,1):nxui::Color(.52f,.61f,.44f,1));
+        r.drawRect({b.x-2,b.y-2,b.w+4,b.h+4},focused?nxeColor(green):nxeColor({.22f,.31f,.17f,.5f}));
+        r.drawGradientRect({b.x,b.y,b.w,b.h},focused?nxeColor({.84f,.95f,.62f,1}):nxeColor({.76f,.82f,.69f,1}),focused?nxeColor({.53f,.76f,.23f,1}):nxeColor({.52f,.61f,.44f,1}));
         const int color=fieldColor(field);const auto picture=editor::thumbnail(index,draft,field,at);
         if(!picture.empty()){
             if(const auto* texture=m_avatarThumbs.request(picture))r.drawTexture(texture,{b.x+34,b.y+2,76,76});
@@ -92,7 +92,7 @@ void CardsActivity::drawAvatarEditor(nxui::Renderer& r){
             r.drawCircle({b.x+b.w/2,b.y+54-h},9,dark.withAlpha(.72f));
         }
         centered(m_fBody,fit(m_fBody,editor::name(index,draft,field,at),b.w-12,.57f),b.x+b.w/2,b.y+85,dark,.57f);
-        if(at==equipped)r.drawCircle({b.x+b.w-9,b.y+10},4,{.15f,.38f,.015f,1});
+        if(at==equipped)r.drawCircle({b.x+b.w-9,b.y+10},4,nxeColor({.15f,.38f,.015f,1}));
         if(focused)r.drawRoundedRectOutline({b.x-3,b.y-3,b.w+6,b.h+6},white,0,2);
     }
     centered(m_fDashNav,"<",113,405,white,.9f);centered(m_fDashNav,">",1172,405,white,.9f);

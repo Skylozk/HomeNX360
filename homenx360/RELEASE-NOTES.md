@@ -1,28 +1,30 @@
-# HomeNX360 v0.9.1-preview.1 — updater staging repair and NXE updater screen
+# HomeNX360 v0.10.0-preview.1 — per-profile themes and colour repair
 
-Fixes the reported **File exists** failure when preparing a staged copy of
-HomeNX360-preview.nro. Preview/updater aliases and version markers use a bounded
-stdio copy which replaces an existing staging file. Errors clearing a previous
-staging folder are now reported directly. Host regression checks cover repeated
-replacement and rejection of copying a file onto itself without truncating it.
+Fixes the theme colour control staying green. White, Blue, Green, Pink, Orange,
+Purple and Gold now change the dashboard, Guide, settings and avatar editor
+highlights immediately. The classic NXE background follows the selected colour.
+Wallpaper images, avatar clothing and controller button colours stay original.
 
-Adds a green-and-silver updater screen with the approved HomeNX360 logo, version
-details, five progress steps, download progress/size/speed, readable errors, and
-pause/retry controls. The updater still updates both preview and HOME while
-preserving settings and saved avatars. This release still downloads the complete
-update package; it does not introduce smaller incremental updates.
+Colour and wallpaper are saved separately for each real Switch profile and
+restored at sign-in, including after restarting. Preview and HOME share these
+saved settings. Existing global colour/wallpaper choices are preserved as the
+initial default for profiles without a saved theme; index zero remains White.
 
-**To repair an older updater:** manually download **HomeNX360-Updater.nro** from
-this release, replace the old updater NRO on the SD card, then launch it. The old
-updater cannot repair its own staging failure before installing this fix.
-Alternatively, extract HomeNX360-update.zip to the SD root and restart for HOME.
-Read UPDATER-GUIDE.md for paths, controls and the HOME restart requirement.
+Open **System Settings → HomeNX Preferences → Dashboard → Theme colour**.
+**Theme profile** identifies the selected profile; **Change Theme** chooses an
+included wallpaper, and **Background** chooses your own picture. **Reset profile
+theme** restores green/classic for the selected profile only. Other preferences
+remain shared. See WALLPAPER-GUIDE.md for details.
 
-Retains v0.9.0's category-based avatar editor, 2,420 item thumbnails, live try-on,
-full-body/zoom/rotation, profile saves, HomeNX360 launcher names/icons, and all
-eleven NXE wallpapers. The avatar/editor and original media are unchanged.
+Retains the v0.9.1 updater staging repair and progress/error screen, category-based
+avatar editor with 2,420 thumbnails, full wardrobe, branding, startup and eleven
+wallpapers. If your old updater reports **File exists**, manually replace
+**sd:/switch/HomeNX360-Updater/HomeNX360-Updater.nro** with the NRO from this
+release first. Then launch it to update both preview and HOME. Alternatively,
+extract **HomeNX360-update.zip** to the SD root. Restart after updating HOME.
 
-Native builds, staged-file replacement and updater policy/install checks pass.
-UI tests render all nine states with real font/logo assets and check framebuffer
-bounds and long messages. Reference images are software-rendered. The reported
-Switch failure guided this repair; the fix and new UI still require device testing.
+Checks cover legacy migration, two-profile switching, save/restart restoration,
+new-profile defaults, shared defaults, malformed entries, account limits and
+production settings scene colours. Native app/HOME builds and existing
+navigation/avatar/updater checks are required by the release build. Physical
+Switch rendering and firmware compatibility remain unverified here.

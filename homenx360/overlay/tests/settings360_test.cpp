@@ -68,16 +68,19 @@ public:
 }
 int main(){
     using namespace cards;using namespace cards::settings360;
-    CardsActivity app;int volume=60,saves=0,moves=0,themePicker=0,customPicker=0;bool startup=true,signIn=true;
+    CardsActivity app;int volume=60,saves=0,moves=0,themePicker=0,customPicker=0,themeAccent=2;bool startup=true,signIn=true;
     auto callback=CardsActivity::action("Preview startup",[](){});
     auto toggle=callback;toggle.label="Startup animation";toggle.kind=CardsActivity::MenuItem::Toggle;
     toggle.run={};toggle.level=[&](){return startup?1.f:0.f;};toggle.change=[&](int){startup=!startup;++saves;};
+    auto themeColour=callback;themeColour.label="Theme colour";themeColour.kind=CardsActivity::MenuItem::Choice;
+    themeColour.value=[&](){return std::to_string(themeAccent);};
+    themeColour.change=[&](int d){themeAccent=(themeAccent+d+7)%7;++saves;};
     auto signInToggle=toggle;signInToggle.label="Sign-in at startup";
     signInToggle.level=[&](){return signIn?1.f:0.f;};signInToggle.change=[&](int){signIn=!signIn;++saves;};
     auto inert=[](const char* name){return CardsActivity::info(name,[](){return "real getter fixture";});};
     app.m_sheet={
         {"Home","home",{inert("Custom pages"),inert("Sort games")}},
-        {"Look","gear",{inert("Clock"),inert("Animations"),toggle,signInToggle,callback,inert("Launch animation"),CardsActivity::action("Change Theme",[&](){++themePicker;}),CardsActivity::action("Background",[&](){++customPicker;})}},
+        {"Look","gear",{inert("Clock"),inert("Animations"),themeColour,inert("Theme profile"),CardsActivity::action("Reset profile theme",[&](){themeAccent=2;++saves;}),toggle,signInToggle,callback,inert("Launch animation"),CardsActivity::action("Change Theme",[&](){++themePicker;}),CardsActivity::action("Background",[&](){++customPicker;})}},
         {"Lock screen","moon",{inert("Lock screen")}},
         {"Sound","music",{CardsActivity::slider("Music volume",[&](){return volume;},[&](int v){volume=v;++saves;},"Volume")}},
         {"Notifications","bell",{inert("Notification cards")}},
@@ -125,6 +128,9 @@ int main(){
         const auto it=std::find_if(rows.begin(),rows.end(),[&](const auto& item){return item.label==label;});
         assert(it!=rows.end());return *it;
     };
+    find(Look,"Theme colour").change(1);assert(themeAccent==3 && find(Look,"Theme colour").value()=="3");
+    find(Look,"Reset profile theme").run();assert(themeAccent==2);
+    assert(find(Look,"Theme profile").kind==CardsActivity::MenuItem::Info);
     auto& music=find(settings360::Audio,"Music volume");const int oldSaves=saves;
     const auto beforeTheme=themePicker,beforeCustom=customPicker;
     find(Look,"Change Theme").run();find(Look,"Background").run();

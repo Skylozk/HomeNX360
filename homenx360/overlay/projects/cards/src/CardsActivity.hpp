@@ -575,6 +575,7 @@ private:
     bool cardRect(int index, nxui::Rect& card, float& chosen);
     const nxui::Texture* gameIconTexture();
     nxui::Color accent(float a = 1.f) const;
+    nxui::Color nxeColor(nxui::Color source) const;
     nxui::Color glassTint(float a = 1.f) const;
     bool isRunning(std::uint64_t id) const;
     std::uint64_t runningId() const;

@@ -1,20 +1,22 @@
 #pragma once
 #include "SettingsLayout.hpp"
+#include "Theme360.hpp"
 #include <cmath>
 
 // Shared drawing primitives for the native renderer and the host visual preview.
 namespace cards::settings360 {
-struct Color { float r,g,b,a=1; };
-template<class Paint> void background(Paint& p,float opacity) {
+using Color=theme360::Color;
+template<class Paint> void background(Paint& p,float opacity,int selected=theme360::defaultAccent) {
+    auto tint=[selected](Color c){return theme360::tint(c,selected);};
     for(int x=0;x<1280;x+=8) {
         const float u=(x+4)/1280.f;
         const float light=std::exp(-std::pow((u-0.40f)/0.32f,2.f));
         const Color top{0.10f+0.23f*light,0.17f+0.32f*light,0.025f+0.15f*u,opacity};
         const Color middle{0.35f+0.25f*light+0.02f*u,0.54f+0.18f*light-0.10f*u,0.10f+0.38f*u,opacity};
         const Color horizon{0.79f+0.16f*u,0.86f-0.04f*u,0.88f-0.36f*u,opacity};
-        p.gradient({float(x),0,8,270},top,middle);
-        p.gradient({float(x),270,8,168},middle,horizon);
-        p.gradient({float(x),438,8,282},horizon,{0.59f,0.61f,0.60f,opacity});
+        p.gradient({float(x),0,8,270},tint(top),tint(middle));
+        p.gradient({float(x),270,8,168},tint(middle),tint(horizon));
+        p.gradient({float(x),438,8,282},tint(horizon),{0.59f,0.61f,0.60f,opacity});
     }
     // Low contrast concentric circles, as in the original NXE settings theme.
     for(int i=0;i<42;++i) {
@@ -24,7 +26,7 @@ template<class Paint> void background(Paint& p,float opacity) {
             const float a=segment*6.2831853f/24,b=(segment+1)*6.2831853f/24;
             const float size=radius+ring*5.f;
             p.line(cx+std::cos(a)*size,cy+std::sin(a)*size,
-                   cx+std::cos(b)*size,cy+std::sin(b)*size,{0.95f,1,0.89f,0.032f*opacity},1.4f);
+                   cx+std::cos(b)*size,cy+std::sin(b)*size,tint({0.95f,1,0.89f,0.032f*opacity}),1.4f);
         }
     }
 }
@@ -34,12 +36,14 @@ template<class Paint> void frame(Paint& p,float opacity) {
     p.rounded(panel,{0.18f,0.24f,0.28f,opacity},4);
     p.gradient({196,112,886,480},{0.30f,0.36f,0.39f,opacity},{0.18f,0.23f,0.27f,opacity});
 }
-template<class Paint> void selection(Paint& p,Rect r,float opacity) {
-    p.rounded(r,{0.46f,0.63f,0.11f,opacity},4);
-    p.gradient({r.x+1,r.y+1,r.w-2,r.h-2},{0.67f,0.80f,0.36f,opacity},{0.36f,0.62f,0.015f,opacity});
-    p.gradient({r.x+1,r.y+1,r.w-2,r.h*0.47f},{0.94f,0.97f,0.83f,0.62f*opacity},{0.7f,0.85f,0.38f,0.f});
+template<class Paint> void selection(Paint& p,Rect r,float opacity,int selected=theme360::defaultAccent) {
+    auto tint=[selected](Color c){return theme360::tint(c,selected);};
+    p.rounded(r,tint({0.46f,0.63f,0.11f,opacity}),4);
+    p.gradient({r.x+1,r.y+1,r.w-2,r.h-2},tint({0.67f,0.80f,0.36f,opacity}),tint({0.36f,0.62f,0.015f,opacity}));
+    p.gradient({r.x+1,r.y+1,r.w-2,r.h*0.47f},tint({0.94f,0.97f,0.83f,0.62f*opacity}),tint({0.7f,0.85f,0.38f,0.f}));
 }
-template<class Paint> void orb(Paint& p,float opacity) {
+template<class Paint> void orb(Paint& p,float opacity,int selected=theme360::defaultAccent) {
+    auto tint=[selected](Color c){return theme360::tint(c,selected);};
     constexpr float cx=1157,cy=635,radius=25;
     for(int ring=0;ring<4;++ring) for(int segment=0;segment<40;++segment) {
         const float a=segment*6.2831853f/40,b=(segment+1)*6.2831853f/40;
@@ -58,8 +62,8 @@ template<class Paint> void orb(Paint& p,float opacity) {
     for(int y=-21;y<21;y+=2) {
         const float at=16.f*std::sqrt(std::abs(y)/21.f),width=3.5f+2*(1-std::abs(y)/21.f);
         for(int side:{-1,1}) {
-            p.rect({cx+side*at-width/2,cy+y,width,2},{0.28f,0.55f,0.015f,opacity});
-            p.rect({cx+side*at-width/2,cy+y,1,2},{0.63f,0.85f,0.16f,opacity});
+            p.rect({cx+side*at-width/2,cy+y,width,2},tint({0.28f,0.55f,0.015f,opacity}));
+            p.rect({cx+side*at-width/2,cy+y,1,2},tint({0.63f,0.85f,0.16f,opacity}));
         }
     }
 }

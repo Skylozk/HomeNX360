@@ -151,7 +151,7 @@ void CardsActivity::drawGuide(nxui::Renderer& r) {
     guideLabel(r,name,body.x+24,body.y+shift+155,white);
     r.drawCircle({body.x+24,body.y+shift+24},13,{0.50f,0.59f,0.63f,a});
     r.drawCircle({body.x+24,body.y+shift+24},10,{0.19f,0.26f,0.31f,a});
-    r.drawLine({body.x+15,body.y+shift+16},{body.x+23,body.y+shift+12},{0.55f,0.77f,0.15f,a},4);
+    r.drawLine({body.x+15,body.y+shift+16},{body.x+23,body.y+shift+12},nxeColor({0.55f,0.77f,0.15f,a}),4);
     // Real profile picture, console battery and clock replace the reference account.
     if(m_avatar && m_avatar->valid()) r.drawTexture(m_avatar.get(),{body.x+249,146+shift,48,48},white);
     else icon(r,"friends",body.x+273,170+shift,40,white);
@@ -168,9 +168,9 @@ void CardsActivity::drawGuide(nxui::Renderer& r) {
         textMid(r,m_fBody,"Discord Direct Messages",body.x+61,185+shift,white,0.95f);
     const float rowOpacity=a*(0.65f+0.35f*nxe::ease(m_guideTabIn));
     auto chosen=guide360::row(0,m_guideTab);chosen.x+=horizontal;chosen.y+=m_guideRowAt*43.f+shift;
-    r.drawRoundedRect({chosen.x,chosen.y,chosen.w,chosen.h},{90/255.f,155/255.f,3/255.f,rowOpacity},3);
-    r.drawGradientRect({chosen.x+1,chosen.y+1,chosen.w-2,19},{140/255.f,193/255.f,53/255.f,rowOpacity},{0.48f,0.70f,0.13f,rowOpacity});
-    r.drawLine({chosen.x+3,chosen.y+1},{chosen.x+chosen.w-3,chosen.y+1},{0.80f,0.90f,0.62f,0.45f*rowOpacity},1);
+    r.drawRoundedRect({chosen.x,chosen.y,chosen.w,chosen.h},nxeColor({90/255.f,155/255.f,3/255.f,rowOpacity}),3);
+    r.drawGradientRect({chosen.x+1,chosen.y+1,chosen.w-2,19},nxeColor({140/255.f,193/255.f,53/255.f,rowOpacity}),nxeColor({0.48f,0.70f,0.13f,rowOpacity}));
+    r.drawLine({chosen.x+3,chosen.y+1},{chosen.x+chosen.w-3,chosen.y+1},nxeColor({0.80f,0.90f,0.62f,0.45f*rowOpacity}),1);
     for(int i=0;i<int(rows.size());++i) {
         auto box=guide360::row(i,m_guideTab);box.x+=horizontal;box.y+=shift;
         const bool gameRow=m_guideTab==2 && !m_guideView && i==3 && current();

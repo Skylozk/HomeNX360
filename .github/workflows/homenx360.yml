@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Optional prerelease tag, for example v0.9.1-preview.1'
+        description: 'Optional prerelease tag, for example v0.10.0-preview.1'
         required: false
         type: string
   pull_request:
@@ -59,6 +59,8 @@ jobs:
           /tmp/guide-discord360-test
           g++ -std=c++20 -DSWITCHU_MENU tests/guide_discord360_test.cpp -o /tmp/guide-discord360-home-test
           /tmp/guide-discord360-home-test
+          g++ -std=c++20 -O2 tests/theme360_test.cpp -o /tmp/theme360-test
+          /tmp/theme360-test
           g++ -std=c++20 tests/settings360_test.cpp -o /tmp/settings360-test
           /tmp/settings360-test
           g++ -std=c++20 -DSWITCHU_MENU tests/settings360_test.cpp -o /tmp/settings360-home-test

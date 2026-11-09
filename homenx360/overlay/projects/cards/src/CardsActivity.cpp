@@ -106,17 +106,8 @@ const MediaApp kMediaApps[] = {
 };
 const char* const kSortNames[] = {"Last Played", "Title", "Most Played", "My Order"};
 constexpr int kSortCycle[] = {1, 3, 0, 2}; // The sort button, Settings > Home > Sort games: Title, My Order, Last Played, Most Played
-struct Accent {
-    const char* name;
-    nxui::Color color;
-};
-const Accent kAccents[] = {
-    {"White", nxui::Color(1.f, 1.f, 1.f, 1.f)},      {"Blue", nxui::Color(0.36f, 0.68f, 1.f, 1.f)},
-    {"Green", nxui::Color(0.30f, 0.86f, 0.47f, 1.f)}, {"Pink", nxui::Color(1.f, 0.46f, 0.72f, 1.f)},
-    {"Orange", nxui::Color(1.f, 0.63f, 0.26f, 1.f)},  {"Purple", nxui::Color(0.72f, 0.55f, 1.f, 1.f)},
-    {"Gold", nxui::Color(1.f, 0.84f, 0.36f, 1.f)},
-};
-constexpr int kAccentCount = sizeof(kAccents) / sizeof(kAccents[0]);
+constexpr auto& kAccents = theme360::palettes;
+constexpr int kAccentCount = int(kAccents.size());
 const char* const kGlassNames[] = {"Clear", "Frosted", "Dark"};
 const char* const kLaunchNames[] = {"Card jump", "Splash screen", "Card zoom", "Card flip", "Dive in", "Off"};
 // Each style's length against the zoom's (callers give the zoom's seconds).
@@ -691,6 +682,8 @@ bool CardsActivity::onCreate() {
         }
     }
     m_user = chosen;
+    m_settings.activateTheme(theme360::userId(chosen.uid[0],chosen.uid[1]));
+    applyTheme();
     const std::uint64_t tRest = armGetSystemTick();
 
     m_unread = notifications::unreadCount();
@@ -935,7 +928,13 @@ void CardsActivity::applyTheme() {
 }
 
 nxui::Color CardsActivity::accent(float a) const {
-    return nxui::Color(0.35f, 0.85f, 0.06f, a);
+    const auto c=theme360::accent(m_settings.accent,a);
+    return {c.r,c.g,c.b,c.a};
+}
+
+nxui::Color CardsActivity::nxeColor(nxui::Color source) const {
+    const auto c=theme360::tint({source.r,source.g,source.b,source.a},m_settings.accent);
+    return {c.r,c.g,c.b,c.a};
 }
 
 nxui::Color CardsActivity::glassTint(float a) const {
@@ -1003,6 +1002,7 @@ void CardsActivity::setUser(AccountUidLike uid) {
     std::snprintf(buf, sizeof(buf), "%016llX%016llX", static_cast<unsigned long long>(uid.uid[0]),
                   static_cast<unsigned long long>(uid.uid[1]));
     m_settings.user = buf;
+    if(m_settings.activateTheme(theme360::userId(uid.uid[0],uid.uid[1]))){applyTheme();loadWallpaper();}
     m_settings.save();
     loadAvatar();
 }
@@ -5554,14 +5554,20 @@ void CardsActivity::buildSettings() {
     m_sheet.push_back(std::move(home));
 
     Section look{"Look", "gear", {}};
-    look.rows.push_back(choice("Highlight colour",
+    auto themeProfile=info("Theme profile",[this](){return m_settings.themeProfile.empty()?std::string("Shared default"):m_guideName;});
+    themeProfile.detail="Colour and wallpaper are saved for the signed-in Switch profile and restored when you switch profiles.";
+    look.rows.push_back(std::move(themeProfile));
+    look.rows.push_back(choice("Theme colour",
         [this]() { return std::string(kAccents[std::clamp(m_settings.accent, 0, kAccentCount - 1)].name); },
         [this, save](int d) {
             m_settings.accent = (m_settings.accent + d + kAccentCount) % kAccentCount;
             applyTheme(); // HomeNX's screens in CardsNX too
             save();
         },
-        "The ring around what's chosen"));
+        "Menu highlights and the classic background change for this profile. Wallpaper pictures keep their colours."));
+    auto resetTheme=action("Reset profile theme",[this,save](){m_settings.accent=theme360::defaultAccent;m_settings.wallpaper.clear();applyTheme();loadWallpaper();save();});
+    resetTheme.detail="Restore classic green and the classic NXE background for this profile.";
+    look.rows.push_back(std::move(resetTheme));
     look.rows.push_back(choice("Launch animation",
         [this]() { return std::string(kLaunchNames[std::clamp(m_settings.launchStyle, 0, kLaunchStyles - 1)]); },
         [this, save](int d) {
@@ -5572,7 +5578,7 @@ void CardsActivity::buildSettings() {
         [this, save](int d) { m_settings.glass = (m_settings.glass + d + 3) % 3; save(); }, "Buttons, the bar and the panel"));
     auto nxeWall=action("Change Theme",[this](){openNxeWallpapers();});
     nxeWall.value=[this](){return wallpaper360::label(m_settings.wallpaper);};
-    nxeWall.detail="Choose an included Xbox 360 NXE wallpaper. A applies it; B goes back without changing it.";
+    nxeWall.detail="Choose an included Xbox 360 NXE wallpaper for this profile. A applies it; B goes back without changing it.";
     look.rows.push_back(std::move(nxeWall));
     MenuItem wall = action("Background", [this]() { openWallpapers(); });
     wall.value = [this]() {

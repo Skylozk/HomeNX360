@@ -155,7 +155,7 @@ void CardsActivity::drawProfiles(nxui::Renderer& r){
         drawCharacter(r,avatar360::forProfile(m_settings.profileAvatars,profile.id),x,490,chosen?210:200,chosen?-.08f:.08f,false,false,chosen?1.f:.8f);
         centered(m_fLabel,fit(m_fLabel,profile.name,260,chosen?1.15f:.95f),x,532,chosen?dark:muted,chosen?1.15f:.95f);
         centered(m_fBody,profile.id==profile360Id(m_user)?"Signed in":"Offline profile",x,568,chosen?dark:muted,.76f);
-        if(chosen)r.drawRect({x-55,597,110,3},green);
+        if(chosen)r.drawRect({x-55,597,110,3},accent());
     }
     r.popClipRect();
     footer(88,"A","Select",green);footer(270,"B","Back",{.75f,.08f,.07f,1});footer(440,"X","Edit avatar",{.05f,.37f,.72f,1});footer(680,"Y","Manage users",{.84f,.66f,.04f,1});

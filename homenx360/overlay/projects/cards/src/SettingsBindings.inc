@@ -62,14 +62,14 @@ void CardsActivity::buildNxeSettings() {
     link(Initial,"Network Settings",Network,"Review the current network and run a connection test.","wifi");
     m_sheet[Initial].rows.push_back(action("Done",[this](){backNxeSettings();}));
     m_sheet[Initial].rows.back().detail="Return to System Settings. Your console and saved data are not reset.";
-    link(Preferences,"Dashboard",Look,"Change dashboard transitions, startup playback, and launch animation.");
+    link(Preferences,"Dashboard",Look,"Change this profile's colour and wallpaper, dashboard transitions, and startup playback.");
     link(Preferences,"Games and Apps",Home,"Manage software, custom pages, sorting, and hidden cards.","pad");
     link(Preferences,"Lock Screen",Lock,"Configure the wake screen, password, pictures, and music.","moon");
     link(Preferences,"Notifications",Notifications,"Configure real HomeNX notifications and playtime milestones.","bell");
     link(Preferences,"Pictures",Pictures,"Change game card artwork and manage downloaded pictures.","sys_album");
     link(Preferences,"Updates",Updates,"Manage HomeNX and homebrew updates. The upstream HomeNX updater replaces this custom dashboard.","download");
     link(Preferences,"System Info",SystemInfo,"View the real system and HomeNX versions.","dots");
-    append(Look,"Look",{"Change Theme","Background","Highlight colour","Launch animation","Animations","Startup animation","Preview startup"});
+    append(Look,"Look",{"Theme profile","Change Theme","Background","Theme colour","Reset profile theme","Launch animation","Animations","Startup animation","Preview startup"});
     append(Home,"Home",{"Custom pages","Sort games","Ask who's playing","Keep homebrew open","Look for new software","Hidden cards","Reset my order"});
     append(Lock,"Lock screen");
     append(Notifications,"Notifications");

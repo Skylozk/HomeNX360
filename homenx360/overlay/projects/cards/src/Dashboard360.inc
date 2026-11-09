@@ -248,14 +248,14 @@ void CardsActivity::drawDashBoot(nxui::Renderer& r) {
 
 void CardsActivity::drawDashboard(nxui::Renderer& r) {
     const bool wallpaper=m_wallTex && m_wallTex->valid() && !m_settings.wallpaper.empty();
-    const nxui::Color green(0.29f,0.62f,0.02f,1), dark=wallpaper?kWhite:nxui::Color(0.17f,0.20f,0.16f,1);
+    const nxui::Color green=nxeColor({0.29f,0.62f,0.02f,1}), dark=wallpaper?kWhite:nxui::Color(0.17f,0.20f,0.16f,1);
     if(wallpaper){
         drawCover(r,m_wallTex.get(),{0,0,1280,720},0,kWhite);
         // Keep navigation readable while leaving the wallpaper's own horizon intact.
         r.drawGradientRect({0,0,1280,245},{0,0,0,.30f},{0,0,0,0});
         r.drawGradientRect({0,600,1280,120},{0,0,0,.10f},{0,0,0,.68f});
     }else{
-    r.drawGradientRect({0,0,1280,492},{0.24f,0.47f,0.08f,1},{0.79f,0.85f,0.72f,1});
+    r.drawGradientRect({0,0,1280,492},nxeColor({0.24f,0.47f,0.08f,1}),nxeColor({0.79f,0.85f,0.72f,1}));
     // Soft circular green motif and a bright reflective horizon.
     for (int ring=0;ring<6;++ring) {
         const float radius=520.f+ring*44.f;
@@ -263,10 +263,10 @@ void CardsActivity::drawDashboard(nxui::Renderer& r) {
             const float a=segment*3.14159265f/48.f, b=(segment+1)*3.14159265f/48.f;
             r.drawLine({970+std::cos(a)*radius,-170+std::sin(a)*radius*0.70f},
                        {970+std::cos(b)*radius,-170+std::sin(b)*radius*0.70f},
-                       {0.92f,1,0.79f,0.028f},13.f);
+                       nxeColor({0.92f,1,0.79f,0.028f}),13.f);
         }
     }
-    r.drawGradientRect({0,492,1280,228},{0.92f,0.94f,0.89f,1},{0.56f,0.61f,0.54f,1});
+    r.drawGradientRect({0,492,1280,228},nxeColor({0.92f,0.94f,0.89f,1}),nxeColor({0.56f,0.61f,0.54f,1}));
     }
     const float p=m_settings.motion?nxe::ease(m_dashIn):1.f;
     for (int i=0;i<8;++i) {
@@ -335,7 +335,7 @@ void CardsActivity::drawDashboard(nxui::Renderer& r) {
             // a single GPU batch instead of rebinding for every strip.
             eachStrip([&](float,float x,float y,float h,float w) {
                 r.drawRect({x+5,y+9,w,h},{0,0,0,0.17f*opacity});
-                r.drawGradientRect({x,y,w,h},{0.52f*bright,0.77f*bright,0.12f,opacity},green.withAlpha(opacity));
+                r.drawGradientRect({x,y,w,h},nxeColor({0.52f*bright,0.77f*bright,0.12f,opacity}),green.withAlpha(opacity));
                 if (offset==0.f) r.drawGradientRect({x,y+h+8,w,48},green.withAlpha(0.12f*opacity),green.withAlpha(0));
             });
             if (tex && tex->valid()) eachStrip([&](float u,float x,float y,float h,float w) {
@@ -369,7 +369,7 @@ void CardsActivity::drawDashboard(nxui::Renderer& r) {
     r.popClipRect();
     const int count=dashCount();
     textMid(r,m_fBody,std::to_string(count?m_dashTile+1:0)+" of "+std::to_string(count),302,625,dark,0.85f);
-    r.drawCircle({87,672},12,green);
+    r.drawCircle({87,672},12,{0.29f,0.62f,0.02f,1});
     textMid(r,m_fBadge,"A",81,672,kWhite,0.85f);
     textMid(r,m_fBody,"Select",108,672,dark,0.9f);
     textMid(r,m_fBody,"Y  Guide    B  My Xbox    ZL / ZR  Channels",264,672,dark,0.8f);

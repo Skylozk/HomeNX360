@@ -1,5 +1,6 @@
 #pragma once
 #include "Avatar360.hpp"
+#include "Theme360.hpp"
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
@@ -7,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -48,7 +50,7 @@ struct Settings {
     int sort = 1;             // 0 last played, 1 title, 2 most played, 3 my order (Plus > Move)
     int haze = 45;            // how much the background art is softened, 0..80
     bool boxArt = true;       // box covers on cards (off: the eShop banner)
-    int accent = 0;           // the focus colour (see kAccents)
+    int accent = theme360::defaultAccent; // the active profile's colour
     int glass = 1;            // 0 clear, 1 frosted, 2 dark
     int launchStyle = 0;      // starting a game: 0 simple fade, 1 splash, 2 card zoom, 3 card flip, 4 dive in, 5 off
     bool clock24 = true;
@@ -78,6 +80,20 @@ struct Settings {
     bool profileSignIn = true;
     avatar360::Wardrobe profileAvatars;
     std::string wallpaper;      // "" = classic NXE, "nxe:<id>" = bundled art, else a custom picture path
+    std::map<std::string,theme360::Values> profileThemes;
+    theme360::Values themeDefault;
+    std::string themeProfile; // transient, bound only after the real account is resolved
+    theme360::Values currentTheme() const {return {theme360::normalize(accent),wallpaper};}
+    bool activateTheme(const std::string& id){
+        const auto next=avatar360::validId(id)?id:std::string();if(next==themeProfile)return false;
+        const auto before=currentTheme();
+        if(avatar360::validId(themeProfile))profileThemes[themeProfile]=before;
+        else themeDefault=before;
+        themeProfile=next;const auto found=profileThemes.find(next);
+        const auto& chosen=found==profileThemes.end()?themeDefault:found->second;
+        accent=theme360::normalize(chosen.accent);wallpaper=chosen.wallpaper;
+        return currentTheme()!=before;
+    }
     std::map<std::string, std::string> names; // + > Rename: by title ID (hex) or .nro path
     std::vector<std::string> sheetOrder; // Settings' tabs by name, in his order (new ones after)
     std::string user;         // who games start as (hex), "" = the last one who played
@@ -173,6 +189,24 @@ struct Settings {
             achSeenAt = j.value("achSeenAt", achSeenAt);
             introDone = j.value("introDone", introDone);
             wallpaper = j.value("wallpaper", wallpaper);
+            accent=theme360::normalize(accent);themeDefault=currentTheme();themeProfile.clear();profileThemes.clear();
+            auto readTheme=[](const nlohmann::json& value,theme360::Values base)->std::optional<theme360::Values>{
+                try{
+                    if(!value.is_object())return {};
+                    if(value.contains("accent")){if(!value["accent"].is_number_integer())return {};base.accent=theme360::normalize(value["accent"].get<int>());}
+                    if(value.contains("wallpaper")){if(!value["wallpaper"].is_string())return {};base.wallpaper=value["wallpaper"].get<std::string>();if(base.wallpaper.size()>4096)return {};}
+                    return base;
+                }catch(...){return {};}
+            };
+            if(j.contains("profileThemeDefault"))if(auto value=readTheme(j["profileThemeDefault"],themeDefault))themeDefault=*value;
+            if(j.contains("profileThemes") && j["profileThemes"].is_object())
+                for(const auto& [id,value]:j["profileThemes"].items()){
+                    if(profileThemes.size()>=32)break;
+                    if(avatar360::validId(id))if(auto theme=readTheme(value,themeDefault))profileThemes[id]=*theme;
+                }
+            // Resolve the real account before applying a per-profile value. The
+            // legacy root fields may contain the last active profile's theme.
+            accent=themeDefault.accent;wallpaper=themeDefault.wallpaper;
             names = j.value("names", names);
             sheetOrder = j.value("sheetOrder", sheetOrder);
             user = j.value("user", user);
@@ -221,6 +255,13 @@ struct Settings {
         j["notificationCards"] = notificationCards;
         j["lastPage"] = lastPage;
         j["profileSignIn"]=profileSignIn;
+        const auto fallback=themeProfile.empty()?currentTheme():themeDefault;
+        j["profileThemesVersion"]=1;
+        j["profileThemeDefault"]={{"accent",fallback.accent},{"wallpaper",fallback.wallpaper}};
+        j["profileThemes"]=nlohmann::json::object();
+        for(const auto& [id,value]:profileThemes)if(avatar360::validId(id) && id!=themeProfile && j["profileThemes"].size()<(avatar360::validId(themeProfile)?31u:32u))
+            j["profileThemes"][id]={{"accent",theme360::normalize(value.accent)},{"wallpaper",value.wallpaper}};
+        if(avatar360::validId(themeProfile))j["profileThemes"][themeProfile]={{"accent",theme360::normalize(accent)},{"wallpaper",wallpaper}};
         j["profileAvatars"]=nlohmann::json::object();
         for(const auto& [id,look]:profileAvatars)if(avatar360::validId(id)){
             if(look.expanded)j["profileAvatars"][id]={{"version",2},{"starter",look.value},{"items",look.items},{"colors",look.colors}};

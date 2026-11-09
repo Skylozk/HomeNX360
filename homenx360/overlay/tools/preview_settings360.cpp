@@ -24,7 +24,8 @@ struct Svg {
 int main(int argc,char** argv){
     const bool console=argc>1 && std::string(argv[1])=="console";
     Svg p;std::cout<<"<svg xmlns='http://www.w3.org/2000/svg' width='1280' height='720' viewBox='0 0 1280 720'>\n";
-    background(p,1);frame(p,1);orb(p,1);selection(p,row(0),1);
+    const int accent=argc>2?cards::theme360::normalize(std::stoi(argv[2])):cards::theme360::defaultAccent;
+    background(p,1,accent);frame(p,1);orb(p,1,accent);selection(p,row(0),1,accent);
     p.text(console?"Console Settings":"System Settings",95,79,34,{.88f,.92f,.80f});
     const auto& links=console?consoleLinks:systemLinks;
     for(int i=0;i<8;++i) {
