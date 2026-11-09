@@ -1,0 +1,82 @@
+name: Publish locally validated updater diagnostic
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_blob:
+        description: 'Git blob SHA of the locally validated diagnostic asset bundle'
+        required: true
+        type: string
+      bundle_sha256:
+        description: 'SHA-256 of that ZIP bundle'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      BUNDLE_BLOB: ${{ inputs.bundle_blob }}
+      BUNDLE_SHA256: ${{ inputs.bundle_sha256 }}
+    steps:
+      # This only transports an already-built diagnostic NRO. It does not claim
+      # to rebuild or hardware-test it; the supplied build record says so.
+      - name: Download and verify the diagnostic bundle
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, io, json, os, pathlib, re, subprocess, zipfile
+          blob=os.environ['BUNDLE_BLOB']; digest=os.environ['BUNDLE_SHA256']
+          assert re.fullmatch(r'[0-9a-f]{40}',blob)
+          assert re.fullmatch(r'[0-9a-f]{64}',digest)
+          response=json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GH_REPO"]}/git/blobs/{blob}']))
+          assert response['encoding']=='base64' and 0<response['size']<=8*1024*1024
+          data=base64.b64decode(response['content'])
+          assert len(data)==response['size'] and hashlib.sha256(data).hexdigest()==digest
+          expected={'HomeNX360-Updater.nro','HomeNX360-Updater-diagnostics.patch','UPDATER-DIAGNOSTIC.md','DIAGNOSTIC-BUILD.json','SHA256SUMS.txt'}
+          output=pathlib.Path('diagnostic-assets'); output.mkdir()
+          with zipfile.ZipFile(io.BytesIO(data)) as archive:
+              assert len(archive.namelist())==len(expected) and set(archive.namelist())==expected
+              assert sum(x.file_size for x in archive.infolist())<=8*1024*1024
+              assert archive.testzip() is None
+              for name in sorted(expected): (output/name).write_bytes(archive.read(name))
+          sums={line.split(None,1)[1]:line.split()[0] for line in (output/'SHA256SUMS.txt').read_text().splitlines()}
+          assert set(sums)==expected-{'SHA256SUMS.txt'}
+          for name,value in sums.items(): assert hashlib.sha256((output/name).read_bytes()).hexdigest()==value,name
+          record=json.loads((output/'DIAGNOSTIC-BUILD.json').read_text())
+          tag=record['release_tag']; revision=record['revision']
+          assert re.fullmatch(r'updater-v[0-9]+\.[0-9]+\.[0-9]+-diag\.[0-9]+',tag)
+          assert re.fullmatch(r'[0-9a-f]{40}',revision)
+          assert record['kind']=='standalone diagnostic updater'
+          assert record['built_locally'] is True and record['hardware_tested'] is False
+          assert record['source_patch_applies_and_matches_revision'] is True
+          assert set(record['sha256'])==expected-{'DIAGNOSTIC-BUILD.json','SHA256SUMS.txt'}
+          for name,value in record['sha256'].items(): assert sums[name]==value,name
+          nro=(output/'HomeNX360-Updater.nro').read_bytes()
+          assert nro[16:20]==b'NRO0' and record['build_identifier'].encode() in nro
+          assert b'Cannot open update source' in nro and b'last Switch FS 0x' in nro
+          commit=json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GH_REPO"]}/commits/{revision}']))
+          assert commit['sha']==revision
+          lookup=subprocess.run(['gh','api',f'repos/{os.environ["GH_REPO"]}/releases/tags/{tag}'],capture_output=True,text=True)
+          if lookup.returncode==0:
+              release=json.loads(lookup.stdout)
+              assert release['draft'] is True and release['prerelease'] is True
+              assert release['target_commitish']==revision
+          else:
+              assert 'HTTP 404' in lookup.stderr,lookup.stderr
+          with open(os.environ['GITHUB_ENV'],'a') as env:
+              env.write(f'RELEASE_TAG={tag}\nRELEASE_COMMIT={revision}\nRELEASE_EXISTS={str(lookup.returncode==0).lower()}\n')
+          print('Verified five diagnostic assets, NRO identity, build record and source revision.')
+          PY
+      - name: Upload the verified files and publish the diagnostic prerelease
+        run: |
+          if [ "$RELEASE_EXISTS" = false ]; then
+            gh release create "$RELEASE_TAG" --target "$RELEASE_COMMIT" --draft --prerelease --latest=false --title 'HomeNX360 Updater — I/O diagnostic build' --notes-file diagnostic-assets/UPDATER-DIAGNOSTIC.md
+          fi
+          gh release upload "$RELEASE_TAG" diagnostic-assets/* --clobber
+          gh release edit "$RELEASE_TAG" --draft=false --latest=false
