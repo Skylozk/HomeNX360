@@ -33,7 +33,10 @@ void CardsActivity::loadGuideHistory(){
 #ifdef SWITCHU_MENU
     const auto dms=m_discord.dms(std::numeric_limits<size_t>::max());
     if(!m_guideChat.valid(m_discord.currentAccount(),m_discord.state()==DiscordService::State::Ready,dms))return;
-    if(m_guideChatError && m_guideMessages.entries.empty())m_discord.openChannel(m_guideChat.target.channel);
-    else m_discord.olderMessages(m_guideChat.target.channel);
+    // openChannel retries an initial load even when a queued/local reply is
+    // already visible. For loaded chats it is a no-op; olderMessages itself
+    // rejects initial/in-flight loads, so these cannot start parallel fetches.
+    m_discord.openChannel(m_guideChat.target.channel);
+    m_discord.olderMessages(m_guideChat.target.channel);
 #endif
 }

@@ -71,8 +71,9 @@ int main(){
     app.replyGuideConversation();app.m_discord.channels.erase(app.m_discord.channels.begin()+1);app.accepted("removed DM");assert(app.m_discord.sends==1 && !app.m_guideChat.active);
     app.openGuideConversation(11);app.m_discord.status=cards::DiscordService::State::Connecting;const int count=app.keyboards;app.replyGuideConversation();assert(app.keyboards==count && !app.m_guideChat.active);
     app.m_discord.status=cards::DiscordService::State::Ready;app.openGuideConversation(11);app.loadGuideHistory();assert(app.m_discord.older==1);
-    app.m_guideChatError=true;app.m_guideMessages.clear();const auto opens=app.m_discord.opens;app.loadGuideHistory();assert(app.m_discord.opens==opens+1);
-    app.m_discord.account="account-b";app.loadGuideHistory();assert(app.m_discord.older==1);
+    app.m_guideChatError=true;app.m_guideMessages.replace({{77,"You","queued reply","12:00",true,true}},wrapText);
+    const auto opens=app.m_discord.opens;app.loadGuideHistory();assert(app.m_discord.opens==opens+1);
+    const auto older=app.m_discord.older;app.m_discord.account="account-b";app.loadGuideHistory();assert(app.m_discord.older==older && app.m_discord.opens==opens+1);
 #else
     app.openGuideConversation(11);app.replyGuideConversation();app.loadGuideHistory();assert(!app.m_guideChat.active && app.keyboards==0 && app.m_discord.opens==0 && app.m_discord.sends==0);
 #endif
