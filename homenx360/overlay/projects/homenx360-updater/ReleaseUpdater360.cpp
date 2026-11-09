@@ -24,6 +24,7 @@
 #include <filesystem>
 #include <fstream>
 #include <mutex>
+#include <memory>
 #include <set>
 #include <stdexcept>
 #include <string_view>
@@ -582,47 +583,49 @@ void addPending(const std::filesystem::path& destination) {
     if(!out)throw std::runtime_error("Unable to record a pending file replacement");
 }
 
+// Capture diagnostics before close/rollback calls can replace errno or the
+// native FS result. libnx maps many distinct FS failures to the same EIO.
+std::string fileFailure(const char* operation,const std::filesystem::path& path,int error) {
+    if(!error)error=EIO;
+#ifndef HOMENX360_UPDATER_HOST_TEST
+    const Result native=fsdevGetLastResult();
+#else
+    const Result native=0; // Host checks do not emulate Switch filesystem results.
+#endif
+    char code[48]{};
+    if(error==EIO && R_FAILED(native))std::snprintf(code,sizeof(code),"; last Switch FS 0x%08X",unsigned(native));
+    switchu::FileLog::log("[updater] %s path=%s errno=%d last_fs=0x%08X",operation,path.string().c_str(),error,unsigned(native));
+    return std::string(operation)+" "+path.string()+": "+std::strerror(error)+code;
+}
+
 void copyFileContents(const std::filesystem::path& source,
                       const std::filesystem::path& destination) {
     if(source.lexically_normal()==destination.lexically_normal())
         throw std::runtime_error("Update source and destination are the same path");
-    // libnx/newlib's std::filesystem::copy_file may report File exists for
-    // an existing destination despite overwrite_existing. Use the same bounded
-    // stdio write path for staged NRO aliases as for installed replacements.
-    std::FILE* input = std::fopen(source.string().c_str(), "rb");
-    if (!input)
-        throw std::runtime_error("Unable to open staged update file: "
-                                 + std::string(std::strerror(errno)));
-
-    std::FILE* output = std::fopen(destination.string().c_str(), "wb");
-    if (!output) {
-        const int savedErrno = errno;
-        std::fclose(input);
-        throw std::runtime_error("Unable to create update destination: "
-                                 + std::string(std::strerror(savedErrno)));
+    // Use bounded stdio for libnx/newlib compatibility, including replacement
+    // of existing staging aliases. Opening the source first preserves the
+    // destination when the extracted source cannot be read.
+    struct CloseFile {void operator()(std::FILE* file)const{std::fclose(file);}};
+    using File=std::unique_ptr<std::FILE,CloseFile>;
+    File input(std::fopen(source.string().c_str(),"rb"));
+    if(!input)throw std::runtime_error(fileFailure("Cannot open update source",source,errno));
+    File output(std::fopen(destination.string().c_str(),"wb"));
+    if(!output){
+        const auto error=fileFailure("Cannot create update destination",destination,errno);
+        throw std::runtime_error(error);
     }
-
-    std::vector<unsigned char> buffer(64 * 1024);
-    bool failed = false;
-    while (!failed) {
-        const std::size_t count = std::fread(buffer.data(), 1, buffer.size(), input);
-        if (count > 0 && std::fwrite(buffer.data(), 1, count, output) != count)
-            failed = true;
-        if (count < buffer.size()) {
-            if (std::ferror(input))
-                failed = true;
-            break;
-        }
+    std::vector<unsigned char> buffer(64*1024);std::string error;
+    while(error.empty()){
+        const auto count=std::fread(buffer.data(),1,buffer.size(),input.get());
+        if(std::ferror(input.get())){error=fileFailure("Cannot read update source",source,errno);break;}
+        if(count>0 && std::fwrite(buffer.data(),1,count,output.get())!=count){error=fileFailure("Cannot write update destination",destination,errno);break;}
+        if(count<buffer.size())break;
     }
-    if (std::fclose(input) != 0)
-        failed = true;
-    if (std::fclose(output) != 0)
-        failed = true;
-
-    if (failed) {
-        std::error_code removeEc;
-        std::filesystem::remove(destination, removeEc);
-        throw std::runtime_error("Unable to copy an update file to the SD card");
+    if(std::fclose(input.release())!=0 && error.empty())error=fileFailure("Cannot close update source",source,errno);
+    if(std::fclose(output.release())!=0 && error.empty())error=fileFailure("Cannot finish update destination",destination,errno);
+    if(!error.empty()){
+        std::error_code ec;std::filesystem::remove(destination,ec);
+        throw std::runtime_error(error);
     }
 }
 
@@ -661,8 +664,8 @@ void installFiles(const std::vector<std::string>& files,
             copyFileContents(item.source, item.temporary);
         } catch (const std::exception& ex) {
             rollback(replacements);
-            throw std::runtime_error("Unable to stage " + item.destination.string()
-                                     + ": " + ex.what());
+            switchu::FileLog::log("[updater] staging source=%s destination=%s: %s",item.source.string().c_str(),item.destination.string().c_str(),ex.what());
+            throw std::runtime_error(std::string("Update preparation failed: ")+ex.what());
         }
         const float fraction = static_cast<float>(i + 1)
             / std::max<std::size_t>(1, replacements.size());

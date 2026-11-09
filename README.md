@@ -39,6 +39,7 @@ For automatic updates of both installations, launch **HomeNX360-Updater.nro**.
 If an older updater reports **File exists**, replace it manually with the latest
 updater NRO first. The new updater includes an NXE-style progress/error screen.
 [Updater instructions](homenx360/UPDATER-GUIDE.md).
+[Standalone diagnostic updater for I/O errors](homenx360/UPDATER-DIAGNOSTIC.md).
 [Wallpaper selection and credits](homenx360/WALLPAPER-GUIDE.md).
 
 Read [installation and rollback instructions](homenx360/INSTALL.md).

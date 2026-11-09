@@ -23,6 +23,26 @@ int main(int argc,char**argv){
     put(stagedPreview,std::string(400000,'x'));copyFileContents(sourcePreview,stagedPreview);assert(get(stagedPreview)=="new-preview");
     copyFileContents(sourcePreview,stagedPreview);assert(get(stagedPreview)=="new-preview");
     bool samePath=false;try{copyFileContents(sourcePreview,sourcePreview);}catch(...){samePath=true;}assert(samePath && get(sourcePreview)=="new-preview");
+    // A missing extracted updater must identify the source, preserve installed
+    // files and remove temporary copies prepared before the failure.
+    const auto updaterSource=std::filesystem::path(kStagingRoot)/policy360::updaterPaths[0];
+    const auto held=updaterSource.string()+".test-held";
+    const std::string beforeFailure="switch/SwitchU/before-source-failure.bin";
+    put(std::filesystem::path(kStagingRoot)/beforeFailure,"new");put(std::filesystem::path("sdmc:/")/beforeFailure,"old");
+    put(std::filesystem::path("sdmc:/")/policy360::updaterPaths[0],"old-updater");
+    std::filesystem::rename(updaterSource,held);std::string sourceError;
+    try{installFiles({beforeFailure,policy360::updaterPaths[0]},false,progress,0,1);}catch(const std::exception& error){sourceError=error.what();}
+    assert(sourceError.find("Cannot open update source "+updaterSource.string())!=std::string::npos);
+    assert(get(std::filesystem::path("sdmc:/")/beforeFailure)=="old" && get(std::filesystem::path("sdmc:/")/policy360::updaterPaths[0])=="old-updater");
+    assert(!std::filesystem::exists(std::string("sdmc:/")+beforeFailure+".switchu-update-new"));
+    std::filesystem::rename(held,updaterSource);
+    // A read failure after fopen must close both handles and discard its partial
+    // destination. Directories trigger this failure on the Linux host.
+    const auto unreadable=std::filesystem::path(kStagingRoot)/"read-failure";
+    const auto partial=std::filesystem::path(kStagingRoot)/"discard-partial";
+    std::filesystem::create_directories(unreadable);sourceError.clear();
+    try{copyFileContents(unreadable,partial);}catch(const std::exception& error){sourceError=error.what();}
+    assert(sourceError.find("update source "+unreadable.string())!=std::string::npos && !std::filesystem::exists(partial));
     installFiles(files,false,progress,0,1);assert(get("sdmc:/switch/HomeNX360-preview.nro")=="new-preview");assert(get("sdmc:/switch/HomeNX360/HomeNX360.nro")=="new-preview");assert(get("sdmc:/switch/HomeNX360-Updater.nro")=="new-updater");assert(ReleaseUpdater::installedVersion()=="v0.8.1-preview.1");assert(get("sdmc:/config/CardsNX/settings.json")=="saved avatars");
     // A later rename collision must restore an already replaced file.
     put("sdmc:/switch/SwitchU/first.bin","old");put(std::filesystem::path(kStagingRoot)/"switch/SwitchU/first.bin","new");put(std::filesystem::path(kStagingRoot)/"switch/SwitchU/collision.bin","new");std::filesystem::create_directories("sdmc:/switch/SwitchU/collision.bin");bool failed=false;try{installFiles({"switch/SwitchU/first.bin","switch/SwitchU/collision.bin"},false,progress,0,1);}catch(...){failed=true;}assert(failed);assert(get("sdmc:/switch/SwitchU/first.bin")=="old");assert(std::filesystem::is_directory("sdmc:/switch/SwitchU/collision.bin"));assert(get("sdmc:/config/CardsNX/settings.json")=="saved avatars");
